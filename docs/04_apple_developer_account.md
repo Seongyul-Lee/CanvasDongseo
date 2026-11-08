@@ -23,7 +23,7 @@
 
 **Xcode의 역할 표시 문제**: Xcode → Settings → Apple Accounts는 같은 계정의 역할을 **Admin**으로 보여 주었고, Manage Certificates에서 Developer ID 인증서를 만들면 "This operation can only be performed by the Account Holder"로 거부됐다(2026-11-09). 웹 포털(developer.apple.com)에서는 같은 계정으로 문제없이 만들어졌다. Developer ID 인증서는 **웹 포털에서 만든다.** 계정을 지웠다가 다시 추가해도 역할은 Admin으로 표시됐다(2026-11-09). Manage Certificates 목록에도 G2 인증서 2개는 보이지 않고 이전 CA Developer ID Application만 보인다. 키체인의 서명 인증서와 프로파일은 로그아웃해도 그대로였다.
 
-**알려진 로컬 증상**: Xcode 계정이 가끔 로그아웃되고, 다시 로그인하면 인증서가 보이지 않고 팀을 다시 골라야 하는 일이 있었다. 2026-10-29에 만든 notarytool 키체인 프로파일(`canvasdongseo-notary`)도 그 뒤 로그인 키체인에서 사라져 있었다. 원인은 확인하지 않았다(§6).
+**알려진 로컬 증상**: Xcode 계정이 가끔 로그아웃되고, 다시 로그인하면 인증서가 보이지 않고 팀을 다시 골라야 하는 일이 있었다. 2026-10-29에 만든 notarytool 키체인 프로파일(`canvasdongseo-notary`)도 그 뒤 로그인 키체인에서 사라져 있었다. 원인은 확인하지 않았다.
 
 ## 2. 인증서
 
@@ -89,7 +89,5 @@
 
 **남은 일**
 
-- Xcode 로그아웃·키체인 항목 소실 증상의 원인 확인. 다시 생기면 시각을 기록해 시스템 로그를 본다
-- 새 G2 인증서 개인 키의 `.p12` 백업
 - 2027-02-02 이후 이전 CA 인증서가 만료되면 이 문서에서 행을 지운다
 - 멤버십 갱신(2027-02-10)
