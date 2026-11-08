@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | [System Architecture](../01_system_architecture.md), [PRD](../00_prd.md) |
+| 근거 | [System Architecture](../02_system_architecture.md), [PRD](../01_prd.md) |
 
 > **이 문서의 역할**: domain 레이어의 엔티티와 업무 규칙을 정한다. 구체 목록은 Functional Spec과 유스케이스를 정할 때 채운다.
 
@@ -21,7 +21,7 @@
 
 - UI·프레임워크·HTTP·키체인·AI·OS API를 모른다.
 - **직렬화를 하지 않는다.** `serde`를 쓰지 않는다. 직렬화는 DS DTO, 출력 DTO, ViewModel, IPC 타입이 맡는다.
-- 학교·학습에 관한 업무 규칙만 둔다. 학교 세션 갱신 시점 같은 인프라 정책은 [data_access/shared](05_data_access/README.md)에 둔다.
+- 학교·학습에 관한 업무 규칙만 둔다. 학교 세션 갱신 시점 같은 인프라 정책은 [data_access/shared](data_access/README.md)에 둔다.
 - 순수 함수와 값 타입으로 쓰고, 단위 테스트로 고정한다.
 
 ## 3. 엔티티 (후보)

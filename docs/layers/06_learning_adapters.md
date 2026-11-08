@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | [PRD §8.3](../00_prd.md), 2026-11-08 crates.io 조회 |
+| 근거 | [PRD §8.3](../01_prd.md), 2026-11-08 crates.io 조회 |
 
 > **이 문서의 역할**: 학습 포트(`Transcriber`·`TextRecognizer`·`SlideExtractor`, [application §4.3](02_application.md))의 OS별 구현을 정한다. 확장 단계 기능이며 macOS를 먼저 구현한다.
 

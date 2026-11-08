@@ -6,7 +6,7 @@
 | 근거 | 레거시 `CanvasDongseo-legacy`의 문서(`docs/02`, `docs/05`, `docs/15`)와 코드, 2026-11-08 로그인 세션으로 확인한 Canvas API 응답, Instructure 개발자 문서 |
 
 > **이 문서의 역할**: 앱이 학교 시스템의 데이터를 *어떤 구조로* 가져오는지 정의하고, 접근 구역별 문서를 묶는다. 경로와 인증의 상세는 구역별 문서(§3)에 있다.
-> data_access 레이어 안쪽(application 포트 아래)만 다룬다. 전체 레이어 구성, 기술 스택, 앱 command·IPC·`cdx` CLI, AI 연동은 [System Architecture](../../01_system_architecture.md)가 맡는다.
+> data_access 레이어 안쪽(application 포트 아래)만 다룬다. 전체 레이어 구성, 기술 스택, 앱 command·IPC·`cdx` CLI, AI 연동은 [System Architecture](../../02_system_architecture.md)가 맡는다.
 
 ---
 
@@ -32,9 +32,9 @@
 | D1 | 설계·개발은 **(B) 웹 세션 방식**으로 한다. LearningX 로그인으로 얻는 Canvas 웹 세션(`pseudonym_credentials`) 하나로 Canvas API와 LearningX를 함께 읽는다. 별도 Canvas API 토큰은 쓰지 않는다 | 초기 설정 단순화. 2026-11-08 세션으로 Canvas API GET·GraphQL 동작 확인 |
 | D2 | 정식 배포 전에는 **(A) OAuth2 방식**(학교 관리자가 발급한 Developer Key)을 검토한다. 인증은 §2.5의 `RequestAuthenticator`로 교체할 수 있게 둔다 | Canvas API Policy: 여러 사용자가 쓰는 앱은 OAuth로 토큰을 받아야 하고, 사용자에게 토큰을 직접 만들게 하면 안 된다. (B)는 정책상 회색 지대다 |
 | D3 | 레거시의 Canvas 토큰 자동 발급(`POST /profile/tokens`)과 직접 발급 안내는 쓰지 않는다 | D2와 같은 정책 조항 |
-| D4 | Commons의 `content_id` 다운로드 경로를 쓴다 | 공개 API는 아니지만 학교 측이 공식 허용한다고 회신(2026-11-08, 사용자 구두 전달, 서면 사본 미확보. 서면 확보는 배포 전 과제). 범위는 `content_id` 다운로드로 한정 ([PRD §9.2](../../00_prd.md)) |
+| D4 | Commons의 `content_id` 다운로드 경로를 쓴다 | 공개 API는 아니지만 학교 측이 공식 허용한다고 회신(2026-11-08, 사용자 구두 전달, 서면 사본 미확보. 서면 확보는 배포 전 과제). 범위는 `content_id` 다운로드로 한정 ([PRD §9.2](../../01_prd.md)) |
 | D5 | 업스트림 `canvas-mcp` 패키지에 의존하지 않는다. 필요한 Canvas 경로는 직접 만든 DS로 접근한다 | 레거시에서 Canvas 호출이 업스트림·직접 구현·인증 게이트웨이 세 곳에 흩어졌다 |
-| D6 | 학교 세션과 data_access는 앱 코어 프로세스 하나만 가진다. MCP 서버를 두지 않고, AI는 `cdx` CLI → 로컬 IPC → 코어 유스케이스로 데이터를 얻는다([System Architecture S3](../../01_system_architecture.md)) | 쿠키가 쓸 때마다 바뀌므로 세션 소유자가 둘이면 세션을 잃는다. 레거시는 MCP 서버 프로세스와 세션을 나눠 쓰느라 프로세스 간 잠금·키체인 재읽기가 구조의 중심이 됐다 |
+| D6 | 학교 세션과 data_access는 앱 코어 프로세스 하나만 가진다. MCP 서버를 두지 않고, AI는 `cdx` CLI → 로컬 IPC → 코어 유스케이스로 데이터를 얻는다([System Architecture S3](../../02_system_architecture.md)) | 쿠키가 쓸 때마다 바뀌므로 세션 소유자가 둘이면 세션을 잃는다. 레거시는 MCP 서버 프로세스와 세션을 나눠 쓰느라 프로세스 간 잠금·키체인 재읽기가 구조의 중심이 됐다 |
 
 ### 1.3 지키는 원칙
 
@@ -142,7 +142,7 @@ entrypoints     IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케이스�
 
 ### 2.6 의존 규칙
 
-각 항목을 Cargo crate로 나누고 `[dependencies]`로 강제한다. 의존 그래프 검사는 편집 직후 훅과 CI에서 돌린다([System Architecture §3.2](../../01_system_architecture.md)).
+각 항목을 Cargo crate로 나누고 `[dependencies]`로 강제한다. 의존 그래프 검사는 편집 직후 훅과 CI에서 돌린다([System Architecture §3.2](../../02_system_architecture.md)).
 
 | 규칙 | 내용 |
 |---|---|
@@ -194,9 +194,9 @@ Source(접근 구역) 하나에 문서 하나를 둔다. 경로, 인증, 응답 
 
 | 문서 | 다루는 내용 |
 |---|---|
-| [PRD](../../00_prd.md) | 제품 정의, 범위, 데이터 출처 확장 방향 |
-| [System Architecture](../../01_system_architecture.md) | 결정 요약, 프로세스 구조, 레이어 지도, 용어, 문서 색인 |
+| [PRD](../../01_prd.md) | 제품 정의, 범위, 데이터 출처 확장 방향 |
+| [System Architecture](../../02_system_architecture.md) | 결정 요약, 프로세스 구조, 레이어 지도, 용어, 문서 색인 |
 | [Application](../02_application.md) | 출력 포트 정의 |
-| [Security](../../03_cross_cutting/01_security.md) | 레이어를 가로지르는 보안 경계 |
+| [Security](../../cross_cutting/01_security.md) | 레이어를 가로지르는 보안 경계 |
 | 레거시 `../CanvasDongseo-legacy/docs/02_auth_session.md` | 인증 흐름 원본 기록(2026-10 확인) |
 | 레거시 `../CanvasDongseo-legacy/docs/05_download_sync.md` | 다운로드·동기화 원본 기록 |

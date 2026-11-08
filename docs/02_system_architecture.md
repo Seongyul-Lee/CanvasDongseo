@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | [PRD](00_prd.md), 레이어별 문서(§5), 레거시 `CanvasDongseo-legacy` 문서(`docs/14`·`15`·`16`)와 코드 |
+| 근거 | [PRD](01_prd.md), 레이어별 문서(§5), 레거시 `CanvasDongseo-legacy` 문서(`docs/14`·`15`·`16`)와 코드 |
 
 > **이 문서의 역할**: 여러 레이어에 걸치는 것만 정한다. 결정 요약, 프로세스 구조, 레이어 지도와 의존 규칙, 용어, 문서 색인.
 > 레이어 안의 상세는 [레이어별 문서](#5-문서-색인)에, 레이어를 가로지르는 주제(보안, 플랫폼)는 공통 문서에 둔다. 한 가지 사실은 한 문서에만 적고 나머지는 링크한다.
@@ -14,16 +14,16 @@
 
 | # | 결정 | 근거 | 상세 |
 |---|---|---|---|
-| S1 | 데스크톱 셸은 **Tauri 2**, 코어는 **Rust**로 한다 | 크로스플랫폼(macOS·Windows), OS 웹뷰라 메모리·설치 용량이 작다. 코어가 Rust 그대로라 연결층이 없다. 타입으로 오류 계약을 강제하기 쉽다 | [platform](03_cross_cutting/02_platform.md) |
+| S1 | 데스크톱 셸은 **Tauri 2**, 코어는 **Rust**로 한다 | 크로스플랫폼(macOS·Windows), OS 웹뷰라 메모리·설치 용량이 작다. 코어가 Rust 그대로라 연결층이 없다. 타입으로 오류 계약을 강제하기 쉽다 | [platform](cross_cutting/02_platform.md) |
 | S2 | 레이어마다 **Cargo crate**를 나눠 의존 방향을 컴파일러가 강제한다 | 금지된 의존은 빌드가 되지 않는다 | §3 |
-| S3 | **MCP 서버를 두지 않는다.** AI는 앱이 제공하는 CLI `cdx`를 Bash 도구로 호출하고, `cdx`는 실행 중인 코어에 로컬 IPC로 요청한다 | 학교 세션(쿠키가 쓸 때마다 바뀜)은 코어 하나만 가져야 한다. `cdx`는 세션을 갖지 않는다 | [entrypoints](02_layers/04_entrypoints.md) |
-| S4 | `cdx` 사용법은 **시스템 프롬프트**로 알려 준다(스킬 문서가 아님) | 제공자와 무관하게 같은 텍스트(`ToolGuide`)를 주입할 수 있다 | [entrypoints](02_layers/04_entrypoints.md) |
-| S5 | AI 제공자는 **역할별 포트(`AiInstallation`·`AiAccount`·`AiSession`) + 제공자별 어댑터 crate**로 둔다. MVP는 Claude Code | 다른 AI 구독을 기존 코드 수정 없이 추가한다([PRD §8.1](00_prd.md)) | [application](02_layers/02_application.md), [ai_adapters](02_layers/06_ai_adapters.md) |
-| S6 | AI 로그인은 **제공자 CLI에 위임**한다. 앱은 AI 자격 증명을 저장·중계하지 않는다 | 약관(자격 증명 수집·중계 금지), 터미널 로그인 재사용 | [ai_adapters](02_layers/06_ai_adapters.md) |
-| S7 | 대화는 **사용자 환경 그대로**(스킬·플러그인·커맨드·MCP) 실행하고, 무인 작업만 격리한다 | 학생은 앱 고유 기능 밖의 CLI 기능(PDF·PPTX 스킬, Computer Use, `/compact` 등)도 쓰려 한다 | [ai_adapters](02_layers/06_ai_adapters.md) |
-| S8 | **보안 경계는 코어에 둔다.** 제공자의 도구 제한은 보조 수단이다 | S7로 대화 중 AI가 임의 명령을 실행할 수 있다. 제공자마다 권한 제어가 다르다 | [security](03_cross_cutting/01_security.md) |
-| S9 | 학습 기능(전사·OCR·슬라이드 추출)은 **OS별 crate**로 나누고 macOS를 먼저 구현한다 | OS 고유 API·가속 의존성을 경계 뒤에 가둔다 | [learning_adapters](02_layers/07_learning_adapters.md) |
-| S10 | 유스케이스는 domain 엔티티가 아니라 **유스케이스 출력 DTO**를 돌려준다. Presenter가 이를 화면용 ViewModel·AI용 출력으로 바꾼다 | 소비자(화면, AI)가 둘이라 엔티티 변경이 바깥으로 번지지 않게 한다(Clean Architecture의 Response Model) | [application](02_layers/02_application.md), [presentation](02_layers/03_presentation.md) |
+| S3 | **MCP 서버를 두지 않는다.** AI는 앱이 제공하는 CLI `cdx`를 Bash 도구로 호출하고, `cdx`는 실행 중인 코어에 로컬 IPC로 요청한다 | 학교 세션(쿠키가 쓸 때마다 바뀜)은 코어 하나만 가져야 한다. `cdx`는 세션을 갖지 않는다 | [entrypoints](layers/04_entrypoints.md) |
+| S4 | `cdx` 사용법은 **시스템 프롬프트**로 알려 준다(스킬 문서가 아님) | 제공자와 무관하게 같은 텍스트(`ToolGuide`)를 주입할 수 있다 | [entrypoints](layers/04_entrypoints.md) |
+| S5 | AI 제공자는 **역할별 포트(`AiInstallation`·`AiAccount`·`AiSession`) + 제공자별 어댑터 crate**로 둔다. MVP는 Claude Code | 다른 AI 구독을 기존 코드 수정 없이 추가한다([PRD §8.1](01_prd.md)) | [application](layers/02_application.md), [ai_adapters](layers/05_ai_adapters.md) |
+| S6 | AI 로그인은 **제공자 CLI에 위임**한다. 앱은 AI 자격 증명을 저장·중계하지 않는다 | 약관(자격 증명 수집·중계 금지), 터미널 로그인 재사용 | [ai_adapters](layers/05_ai_adapters.md) |
+| S7 | 대화는 **사용자 환경 그대로**(스킬·플러그인·커맨드·MCP) 실행하고, 무인 작업만 격리한다 | 학생은 앱 고유 기능 밖의 CLI 기능(PDF·PPTX 스킬, Computer Use, `/compact` 등)도 쓰려 한다 | [ai_adapters](layers/05_ai_adapters.md) |
+| S8 | **보안 경계는 코어에 둔다.** 제공자의 도구 제한은 보조 수단이다 | S7로 대화 중 AI가 임의 명령을 실행할 수 있다. 제공자마다 권한 제어가 다르다 | [security](cross_cutting/01_security.md) |
+| S9 | 학습 기능(전사·OCR·슬라이드 추출)은 **OS별 crate**로 나누고 macOS를 먼저 구현한다 | OS 고유 API·가속 의존성을 경계 뒤에 가둔다 | [learning_adapters](layers/06_learning_adapters.md) |
+| S10 | 유스케이스는 domain 엔티티가 아니라 **유스케이스 출력 DTO**를 돌려준다. Presenter가 이를 화면용 ViewModel·AI용 출력으로 바꾼다 | 소비자(화면, AI)가 둘이라 엔티티 변경이 바깥으로 번지지 않게 한다(Clean Architecture의 Response Model) | [application](layers/02_application.md), [presentation](layers/03_presentation.md) |
 
 ## 2. 프로세스 구조
 
@@ -81,7 +81,7 @@ crates/
 |---|---|
 | `domain` | 없음(기초 crate만) |
 | `application` | `domain` |
-| `data_access/*`, `ai/*`, `learning/*` | `application`, `domain`. data_access 내부 규칙은 [data_access §2.6](02_layers/05_data_access/README.md) |
+| `data_access/*`, `ai/*`, `learning/*` | `application`, `domain`. data_access 내부 규칙은 [data_access §2.6](layers/data_access/README.md) |
 | `presentation` | `application` |
 | `entrypoints/*` | `application`, `ipc_protocol` |
 | `bin/app` | 전부 (composition root) |
@@ -114,21 +114,21 @@ crates/
 
 ## 5. 문서 색인
 
-**레이어** (`02_layers/`) — 각 문서는 역할, 링, crate, 의존, 주요 구성, 이웃 레이어와의 계약, 미확인 항목 순서로 쓴다.
+**레이어** (`layers/`) — 각 문서는 역할, 링, crate, 의존, 주요 구성, 이웃 레이어와의 계약, 미확인 항목 순서로 쓴다.
 
 | 문서 | 레이어 |
 |---|---|
-| [01_domain](02_layers/01_domain.md) | 엔티티, 업무 규칙 |
-| [02_application](02_layers/02_application.md) | 유스케이스, 출력 DTO, 출력 포트 카탈로그 |
-| [03_presentation](02_layers/03_presentation.md) | View · ViewModel · Presenter · Controller |
-| [04_entrypoints](02_layers/04_entrypoints.md) | `cdx`, IPC, `ToolGuide`, AI용 Presenter |
-| [05_data_access](02_layers/05_data_access/README.md) | 학교 데이터 접근(출처별 문서 포함) |
-| [06_ai_adapters](02_layers/06_ai_adapters.md) | AI 제공자 어댑터(로그인, 실행 모드, 커맨드) |
-| [07_learning_adapters](02_layers/07_learning_adapters.md) | OS별 전사·OCR·슬라이드 추출 |
+| [01_domain](layers/01_domain.md) | 엔티티, 업무 규칙 |
+| [02_application](layers/02_application.md) | 유스케이스, 출력 DTO, 출력 포트 카탈로그 |
+| [03_presentation](layers/03_presentation.md) | View · ViewModel · Presenter · Controller |
+| [04_entrypoints](layers/04_entrypoints.md) | `cdx`, IPC, `ToolGuide`, AI용 Presenter |
+| [data_access](layers/data_access/README.md) | 학교 데이터 접근(출처별 문서 포함) |
+| [05_ai_adapters](layers/05_ai_adapters.md) | AI 제공자 어댑터(로그인, 실행 모드, 커맨드) |
+| [06_learning_adapters](layers/06_learning_adapters.md) | OS별 전사·OCR·슬라이드 추출 |
 
-**공통** (`03_cross_cutting/`)
+**공통** (`cross_cutting/`)
 
 | 문서 | 주제 |
 |---|---|
-| [01_security](03_cross_cutting/01_security.md) | 보안 경계와 남는 위험 |
-| [02_platform](03_cross_cutting/02_platform.md) | 기술 스택, OS별 구성, 설치·배포 |
+| [01_security](cross_cutting/01_security.md) | 보안 경계와 남는 위험 |
+| [02_platform](cross_cutting/02_platform.md) | 기술 스택, OS별 구성, 설치·배포 |

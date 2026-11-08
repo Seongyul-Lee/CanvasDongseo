@@ -48,7 +48,7 @@
 | **대화** (기본) | 사람이 보는 채팅 | `-p --input-format stream-json --output-format stream-json --append-system-prompt <ToolGuide> --allowedTools "Bash(cdx *)"`. 사용자 설정·스킬·플러그인·MCP·커맨드를 그대로 쓴다. 나머지 도구의 권한 확인은 앱 화면으로 중계한다(`--permission-prompts host`) |
 | **격리** | 사람이 지켜보지 않는 작업(예: 정기 브리핑) | 위에 더해 `--setting-sources "" --strict-mcp-config --safe-mode --tools Bash --permission-mode dontAsk --permission-prompts none` |
 
-- 대화 모드에서 `cdx`만 미리 허용하는 것은 확인 창을 줄이는 편의다. 보안 경계가 아니다([security](../03_cross_cutting/01_security.md)).
+- 대화 모드에서 `cdx`만 미리 허용하는 것은 확인 창을 줄이는 편의다. 보안 경계가 아니다([security](../cross_cutting/01_security.md)).
 - 격리 모드에서 `Bash(cdx *)`가 명령 연결·치환·리디렉션을 막는 것은 실측했다(§5).
 - `ToolGuide` 주입: `--append-system-prompt`.
 

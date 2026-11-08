@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | [System Architecture](../01_system_architecture.md), 레거시 `docs/15`(UI가 오류 코드를 해석해 분기하지 않는다) |
+| 근거 | [System Architecture](../02_system_architecture.md), 레거시 `docs/15`(UI가 오류 코드를 해석해 분기하지 않는다) |
 
 > **이 문서의 역할**: 화면(WebView)과 코어 사이의 View · ViewModel · Presenter · Controller 역할과 위치를 정한다. 화면 구성과 흐름은 UX Strategy·User Flow가 맡는다.
 

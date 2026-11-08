@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | [System Architecture](../01_system_architecture.md), [Data Access Architecture](05_data_access/README.md) |
+| 근거 | [System Architecture](../02_system_architecture.md), [Data Access Architecture](data_access/README.md) |
 
 > **이 문서의 역할**: 유스케이스, 출력 DTO, 출력 포트(Repository·Gateway·AI·학습)의 정의를 둔다. **포트의 정의는 이 문서에만 둔다.** 구현은 각 어댑터 문서가 맡는다.
 
@@ -47,7 +47,7 @@
 | Gateway | 컬렉션이 아닌 외부 동작 | `MaterialDownloadGateway`, `MediaDownloadGateway`, `AuthGateway` |
 
 - 유스케이스가 필요한 단위로 나눈다. 출처 단위(`CanvasRepository`)로 만들지 않는다.
-- 구현과 계약은 [data_access §2](05_data_access/README.md).
+- 구현과 계약은 [data_access §2](data_access/README.md).
 
 ### 4.2 AI
 
@@ -72,7 +72,7 @@ AiSession
 
 - **중립 이벤트**: `TextDelta`, `ToolUse`, `ToolResult`, `PermissionRequest`, `UsageLimit`, `Done`, `Error`. 화면과 유스케이스는 제공자 형식을 모른다.
 - `session_spec`: 실행 모드(대화·격리), 작업 폴더, `ToolGuide`, 재개할 세션 ID.
-- 제공자 어댑터 crate 하나가 세 포트를 모두 구현하고, composition root에서 제공자 ID로 묶어 등록한다. 구현은 [ai_adapters](06_ai_adapters.md).
+- 제공자 어댑터 crate 하나가 세 포트를 모두 구현하고, composition root에서 제공자 ID로 묶어 등록한다. 구현은 [ai_adapters](05_ai_adapters.md).
 
 ### 4.3 학습
 
@@ -82,7 +82,7 @@ AiSession
 | `TextRecognizer` | 이미지 글자 인식 |
 | `SlideExtractor` | 동영상에서 슬라이드 장면 추출 |
 
-구현은 [learning_adapters](07_learning_adapters.md).
+구현은 [learning_adapters](06_learning_adapters.md).
 
 ## 5. 이웃 레이어와의 계약
 
