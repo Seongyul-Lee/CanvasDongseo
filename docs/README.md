@@ -16,6 +16,7 @@
 |---|---|
 | [layers/](layers/) | 레이어별 문서(domain, application, presentation, entrypoints, data_access, ai_adapters, learning_adapters) |
 | [cross_cutting/](cross_cutting/) | 레이어를 가로지르는 주제(security, platform) |
+| [measurements/](measurements/) | 설계 결정의 근거가 된 실측 보고서 |
 
 ## 쓰는 규칙
 

@@ -120,13 +120,13 @@ AiSession
 | `Temporary` | 네트워크·요청 제한. 다시 시도할 수 있다 |
 | `Rejected` | 사용자가 거부했거나 정책(격리 모드 쓰기 등)으로 거부됐다 |
 | `AiUnavailable` | AI 제공자 미설치·로그아웃·한도 초과 |
-| `ComponentMissing` | 학습 부품(ffmpeg, 전사 모델, OCR 언어 등)이 없거나 확인에 실패했다. 어떤 부품인지(열거형)를 함께 준다. 화면은 이 오류로 설치 복구를 안내한다 |
+| `ComponentMissing` | 학습 부품(ffmpeg, 전사 모델, OCR 언어 등)이 없거나 해시·서명 확인에 실패했다. 어떤 부품인지와 **복구 방법**(`Installer`: 설치 프로그램 다시 실행, `OsSettings`: OS 설정에서 설치)을 열거형으로 함께 준다. 화면은 복구 방법만 보고 안내를 고른다 |
 
 - data_access의 공통 오류([data_access §2.4](data_access/README.md))는 출력 포트 구현이 위 오류로 바꾼다.
 
 ### 4.6 작업 (오래 걸리는 유스케이스)
 
-전사(30분 강의에 macOS 약 1분, CPU 수 분 이상)와 슬라이드 PDF는 작업으로 실행한다.
+전사와 슬라이드 PDF는 수 분이 걸릴 수 있어 작업으로 실행한다(실측 시간은 [learning_adapters §3](06_learning_adapters.md)).
 
 | 구성 | 종류 | 내용 | 구현 |
 |---|---|---|---|
