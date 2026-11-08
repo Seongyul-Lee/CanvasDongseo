@@ -33,6 +33,7 @@ View(SPA) ─command─▶ Controller(tauri command) ─▶ 유스케이스
 | Presenter | `presentation` | 출력 DTO·오류를 ViewModel로 바꾼다. 어떤 배너·안내 행동을 줄지 같은 판단을 한다 |
 | Controller | `presentation`의 tauri command | 입력을 받아 유스케이스를 부르고 Presenter에 넘긴다. 로직 없음 |
 
+- ViewModel은 Clean Architecture의 뜻으로, Presenter가 만든 동작 없는 데이터다. MVVM(Android·iOS)의 ViewModel처럼 상태 변경이나 동작을 담지 않는다.
 - 판단이 들어간 표시 문구는 Presenter에서, 순수 서식(로캘 숫자·날짜 포맷)은 View에서 만든다.
 - ViewModel 타입은 Rust에서 TypeScript로 생성해 어긋나지 않게 한다(`ts-rs`·`specta` 등, 미조사).
 - Tauri capabilities로 WebView가 부를 수 있는 command를 제한한다.
@@ -48,19 +49,20 @@ ui/src/
   components/  재사용 UI. props는 ViewModel 조각이다
   screens/     컴포넌트 조립과 store 연결만 한다
   stores/      ViewModel 보관. 값을 새로 만들지 않는다
-  ipc/         생성된 ViewModel 타입, command 래퍼
+  commands/    생성된 ViewModel 타입, Tauri command 래퍼
 ```
 
 | 폴더 | 의존할 수 있는 것 | 하지 않는 것 |
 |---|---|---|
 | `theme` | 없음 | 컴포넌트·화면 코드 |
-| `components` | `theme`, `ipc`의 타입 | store·command 호출, 조건 분기로 표시 판단 |
+| `components` | `theme`, `commands`의 타입 | store·command 호출, 조건 분기로 표시 판단 |
 | `screens` | `components`, `stores`, `theme` | command 직접 호출, ViewModel 가공 |
-| `stores` | `ipc` | 표시 판단, 값 계산 |
-| `ipc` | 없음(생성 코드와 Tauri API) | 상태 보관 |
+| `stores` | `commands` | 표시 판단, 값 계산, 파생 값(selector 계산) |
+| `commands` | 없음(생성 코드와 Tauri API) | 상태 보관 |
 
 - 화면 상태에 따른 표시 판단(배너 종류, 버튼 활성 여부)은 ViewModel 필드로 받는다. 컴포넌트는 필드 값을 그대로 그린다(`banner.kind`에 맞는 변형을 고르는 것까지는 View의 일이다).
-- 구현 순서: ViewModel 타입·Presenter(Rust, 테스트 먼저) → TypeScript 타입 생성 → `theme` → `components` → `screens`. 로직을 먼저 만들고 화면은 얇게 얹는다.
+- `commands/`는 WebView ↔ 코어의 Tauri command 경로다. `cdx` ↔ 코어의 IPC([entrypoints](04_entrypoints.md))와 다르다.
+- 구현 순서: ViewModel 타입·Presenter(Rust, 테스트 먼저) → TypeScript 타입 생성 → `theme` → `components` → `screens`. 로직을 먼저 만들고 화면은 테스트가 필요 없을 만큼 얇게 얹는다(Humble Object).
 - 위 의존 방향은 `eslint-plugin-boundaries`로 검사해 편집 직후 훅과 CI에 건다.
 
 ### 2.2 디자인 토큰
