@@ -86,7 +86,7 @@ AiSession
 | `Transcriber` | Gateway | `required_audio_format()`으로 필요한 음성 형식을 알리고, 음성 → 시각이 붙은 문장 목록을 낸다. 진행률·`CancelToken`을 받는다 | `learning/transcribe` |
 | `TextRecognizer` | Gateway | `supports(languages)`로 지원 언어를 알리고, 이미지 → 글자와 글자 상자 위치를 낸다 | `learning/macos`, `learning/windows` |
 | `SlidePdfWriter` | Gateway | 확정 장면·쪽 표기·OCR 결과 → PDF 바이트(임시 파일). 경로를 정하지 않는다 | `learning/pdf` |
-| `LearningOutputRepository` | Repository | 슬라이드 PDF·스크립트의 저장(원자적 쓰기)·조회·존재 확인. 위치는 domain의 이름 규칙으로 정한 키로만 받는다. 저장 직후 해시를 앱 데이터에 기록하고, 조회 때 해시가 맞는지와 그에 따른 신뢰 등급(`Official`/`Peer`, [security §4.1](../cross_cutting/01_security.md))을 함께 돌려준다 | `local_store` |
+| `LearningOutputRepository` | Repository | 슬라이드 PDF·스크립트의 저장(원자적 쓰기)·조회·존재 확인. 위치는 domain의 이름 규칙으로 정한 키로만 받는다. 저장 직후 해시를 앱 데이터에 기록하되 기록마다 **HMAC**을 붙이고(키는 Data Protection 키체인), 조회 때 HMAC과 해시가 맞는지와 그에 따른 신뢰 등급(`Official`/`Peer`, [security §4.1](../cross_cutting/01_security.md))을 함께 돌려준다 | `local_store` |
 | `ComponentStore` | Gateway | 부품(ffmpeg, 전사 모델, VAD 모델)의 위치 찾기와 SHA-256 확인. 없거나 다르면 `ComponentMissing` | `local_store` |
 
 - 슬라이드 판정(구간·묶음·점수·자동 확정)은 포트 뒤에 두지 않는다. `ExtractSlidePdf`가 [domain §4.1](01_domain.md) 규칙으로 직접 판정한다. AI 검토 단계는 없다.

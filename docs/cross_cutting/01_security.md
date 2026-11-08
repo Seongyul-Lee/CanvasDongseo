@@ -17,7 +17,7 @@
 | R2 | 사용자가 **다른 학생의** 데이터를 읽기·쓰기·삭제하는 것 | 학번 매개변수를 바꿔 학생지원시스템에 조회 요청(IDOR) |
 | R3 | **다른 사람이 쓴 글의 프롬프트 주입**으로 AI가 위험 행동을 하는 것 | 학생정보 수정·신청·퇴학 요청 쿼리 전송, 데이터를 외부 커뮤니티로 유출 |
 | R4 | **악성 학습 입력**(학교 서버에서 받은 동영상·자료 파일)이 파서를 통해 로컬 파일을 읽거나 코드를 실행하는 것 | `.mp4` 이름을 단 HLS 재생목록이 홈 폴더 파일을 프레임으로 그려 OCR → PDF → AI 대화로 흘림(§5.3에서 재현). 동영상을 올리는 쪽(교수·학교, 또는 그 계정을 탈취한 사람)이 공격자다 |
-| R5 | **부품·학습 결과물 변조**: 배포 경로나 같은 사용자 권한 프로세스(주입당한 AI의 명령 포함)가 실행 파일·모델·결과 파일을 바꿔치기하는 것 | 바꾼 ffmpeg가 앱 권한으로 실행됨, 스크립트 파일에 지시문을 심어 공식 자료처럼 AI에 들어가게 함 |
+| R5 | **부품·학습 결과물 변조**: 배포 경로나 같은 사용자 권한 프로세스(주입당한 AI의 명령 포함)가 실행 파일·모델·결과 파일, 그리고 **앱 데이터의 무결성 기록·작업 폴더**를 바꿔치기하는 것 | 바꾼 ffmpeg가 앱 권한으로 실행됨, 스크립트 파일에 지시문을 심어 공식 자료처럼 AI에 들어가게 함 |
 
 **범위 밖**: 사용자 본인이 자기 정보를 자기 의도로 외부에 보내거나 앱에서 꺼내는 것. 사용자의 책임이다.
 
@@ -50,11 +50,11 @@
 | 다른 사람이 쓴 글은 원문 대신 격리 요약을 AI에 준다. 읽은 직후와 위험 행동 직전에 경고한다 | R3 | §4, [entrypoints §5·§6](../layers/04_entrypoints.md) |
 | 학교 HTML은 정화해서 그리고, WebView는 엄격한 CSP와 Tauri capabilities로 제한한다 | R1, R3 | [presentation §2.3](../layers/03_presentation.md) |
 | 기록·크래시 보고에 비밀과 학교 데이터 본문을 남기지 않는다 | R1 | [data_access §2.5](../layers/data_access/README.md) 기록 규칙, [platform §3](02_platform.md) |
-| 동영상 디코딩은 형식 고정(`-f mp4`), 필요한 demuxer·프로토콜만 켠 빌드, stdin 입력, **App Sandbox**(파일·네트워크 없음)로 한다 | R4 | [learning_adapters §3.1](../layers/06_learning_adapters.md), §5.3 |
+| 동영상 디코딩은 형식 고정(`-f mp4 -i fd:`), 필요한 기능만 켠 빌드(`file` 프로토콜 없음), 읽기 전용 stdin 핸들(stdio 외 상속 없음), **App Sandbox**(파일·네트워크 없음)로 한다. 실행 전 서명 요구 조건과 샌드박스 권한을 확인한다. Windows는 격리가 확인되기 전 학습 기능을 끈다 | R4 | [learning_adapters §3.1](../layers/06_learning_adapters.md), §5.3 |
 | 입력 크기·길이·해상도와 후보·묶음 수, 자식 프로세스 시간에 상한을 둔다 | R4 | [learning_adapters §3.4](../layers/06_learning_adapters.md) |
 | 학교 데이터(과목명·제목)로 만드는 경로는 이름 정리 규칙을 거친다 | R4 | [domain §4.2](../layers/01_domain.md) |
 | 부품은 관리자만 쓰는 공용 경로에 두고, 해시(실행 파일은 코드 서명도)를 확인한 뒤에만 쓴다. 설치 프로그램의 받기 절차는 링크·임시 파일 공격을 막는다 | R5 | [learning_adapters §4](../layers/06_learning_adapters.md), [platform §3](02_platform.md) |
-| 학습 결과물은 만든 직후 해시를 앱 데이터에 기록하고, 맞지 않으면 `Peer` 등급으로 다룬다 | R3, R5 | §4.1, [application §4.3](../layers/02_application.md) `LearningOutputRepository` |
+| 학습 결과물은 만든 직후 해시를 기록하고 기록에 HMAC(키는 Data Protection 키체인)을 붙인다. HMAC이나 해시가 맞지 않으면 `Peer` 등급으로 다룬다. 다시 만들기는 동영상에서 다시 뽑는다 | R3, R5 | §4.1, [application §4.3](../layers/02_application.md) `LearningOutputRepository` |
 
 ## 4. 프롬프트 주입 대응 (R3)
 
@@ -69,6 +69,8 @@ DS가 응답을 만들 때 **구조로** 판단한다(내용을 해석하지 않
 | `Peer` | 다른 사람이 쓴 글. 경로 종류(토론·게시판·메시지·그룹) 또는 작성자 ID ≠ 로그인 ID | 토론 글·댓글, LearningX 게시판, 메시지 |
 
 **학습 결과물**(슬라이드 PDF의 OCR 글자, 스크립트)은 강의 동영상에서 앱이 만든 것이라 `Official`이다. 단 사용자 폴더에 있어 앱 밖에서 바뀔 수 있으므로, `LearningOutputRepository`가 만든 직후 기록한 해시와 **읽을 때 해시가 맞을 때만** `Official`로 주고, 맞지 않거나 기록이 없으면 `Peer`로 다룬다(격리 요약·시점 경고).
+- 기록 자체도 같은 사용자 권한의 앱 데이터에 있으므로, 기록마다 HMAC-SHA256을 붙인다. HMAC 키는 Data Protection 키체인(앱 접근 그룹)에만 두어 다른 프로그램(주입당한 AI의 명령 포함)이 읽지 못한다(§5.2 실측). 결과물과 기록을 함께 바꿔도 HMAC이 맞지 않아 `Peer`가 된다.
+- 작업 폴더(판정 기록)도 같은 HMAC으로 확인한다. 후보 장면 이미지는 남기지 않으므로 다시 만들기의 OCR 입력은 언제나 동영상에서 새로 뽑은 장면이다.
 
 ### 4.2 장치
 
@@ -120,7 +122,12 @@ ffmpeg를 App Sandbox 권한(`com.apple.security.app-sandbox`, 파일 접근 권
 | 형식 자동 판별 + 재생목록 입력 | — | 거부(빌드에 hls·concat 없음) |
 | 네트워크(`https://`) | 접속됨 | **거부**(DNS 차단, 빌드에 프로토콜 없음) |
 | 홈 폴더에 파일 쓰기 | 써짐 | **거부** |
+| `moov`가 끝에 있는 mp4: `-i pipe:0` | 실패(0프레임) | — |
+| 같은 파일: `-i fd:`(같은 stdin 핸들) | 성공 | **성공**(전체 프레임, `-ss` 장면 추출) |
+| `fd,pipe`만 켠 빌드에서 경로로 열기(`file:` 포함) | — | **거부**(`Protocol not found`) |
 
+- 위 표의 정상 경로 수치는 `-i pipe:0`(앞쪽 `moov` 영상)으로 잰 값이고, `fd:`로 바꾼 빌드에서도 1,661프레임 11.2초·음성 1,660초로 같았다.
+- 서명 요구 조건(`codesign -dr -`)은 `identifier "io.github.seongyul-lee.canvasdongseo.ffmpeg" and anchor apple generic and … certificate leaf[subject.OU] = "468HW42V9P"`였다. 앱이 실행 전에 이 조건과 `app-sandbox` 권한을 확인한다.
 - 명령줄 실행 파일에 권한만 넣으면 실행 즉시 `_libsecinit_appsandbox`에서 SIGTRAP으로 죽는다. **번들 식별자가 있는 최소 `.app` 번들**(`Contents/MacOS/ffmpeg` + `Info.plist`)로 감싸야 한다.
 - Hardened Runtime(공증 조건)에서는 라이브러리 검증 때문에 Homebrew처럼 다른 서명의 dylib을 쓰는 빌드가 뜨지 않는다. 시스템 프레임워크에만 의존하는 **정적 빌드**는 뜬다.
 - 공증(notarization) 제출은 하지 않았다(§7).
@@ -134,6 +141,9 @@ ffmpeg를 App Sandbox 권한(`com.apple.security.app-sandbox`, 파일 접근 권
 | 같은 사용자 권한의 악성 프로그램이 화면·브라우저 등 앱 밖 경로로 정보를 얻음 | OS 수준 문제로 앱이 막을 수 없다. 앱 안의 비밀과 IPC만 지킨다(R1) |
 | 사용자가 대화 모드 권한을 넓게 열어 둠 | 사용자 선택 |
 | Windows에서 Credential Manager의 같은 사용자 접근 | 미확인. Windows 단계에서 검토([platform §4](02_platform.md)) |
+| 강의 동영상 속 슬라이드·음성에 올린 쪽(교수·학교)이 지시문을 넣음 | 학습 결과물은 `Official`이다. 학교·교수가 쓴 공지를 `Official`로 믿는 판단(§4.1)과 같다. 계정 탈취로 올린 경우는 R4의 파서 공격만 막는다 |
+
+**출시 관문**: Windows는 ffmpeg 격리(§7 수용 기준)를 통과하기 전까지 학습 기능(슬라이드 PDF·전사)을 켜지 않는다. 데이터 조회·대화 등 나머지 기능은 영향이 없다. 디코더 메모리 버그를 통한 코드 실행(R4)은 샌드박스만 막을 수 있어서다.
 
 - 학교 시스템의 IDOR 결함(학교 측 문제)은 [07_student_portal §3.4](../layers/data_access/07_student_portal.md), 데이터 접근 경로별 위험은 [data_access §4](../layers/data_access/README.md).
 
