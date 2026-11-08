@@ -82,7 +82,6 @@
 
 ## 4. 미확인 항목
 
-- Developer ID 프로파일 + 공증한 `.pkg` 설치본에서 키체인 접근 그룹이 동작하는지. 수용 기준: [키체인 측정](../measurements/2026-11_keychain_prompts.md) §3.1·§3.2의 성공 조합 결과를 그대로 재현한다
 - Windows 비밀 저장: Credential Manager는 같은 사용자 프로세스가 읽을 수 있을 것으로 예상한다. 대안(DPAPI 범위, 앱 전용 보호) 검토 필요
 - Windows에서 Claude Code 공식 설치 스크립트의 실행 정책 처리
 - macOS 서명·공증, 자동 업데이트 방식

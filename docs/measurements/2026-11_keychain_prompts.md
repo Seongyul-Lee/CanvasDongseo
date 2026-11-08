@@ -55,7 +55,7 @@
 
 - 어느 경우에도 허용 창은 뜨지 않았다. 실패는 "실행되지 않음" 또는 "비밀이 없음"으로 나타난다.
 - 종료 사유는 시스템 로그에서 확인하지 못했다. 제한된 entitlement를 프로파일이 승인하지 않아 AMFI가 막은 것으로 추정한다.
-- 배포 빌드에는 **Developer ID 프로파일**(Developer ID 인증서를 포함한 프로파일)이 필요하다. 개발 프로파일을 그대로 넣으면 앱이 뜨지 않는다. 이 Mac에는 아직 Developer ID 프로파일이 없어 배포 조합은 측정하지 못했다(§6).
+- 배포 빌드에는 **Developer ID 프로파일**(Developer ID 인증서를 포함한 프로파일)이 필요하다. 개발 프로파일을 그대로 넣으면 앱이 뜨지 않는다. 배포 조합은 §3.5에서 측정했다.
 
 ### 3.3 M3 `claude` CLI의 키체인 읽기
 
@@ -88,6 +88,25 @@ PATH 맨 앞에 `security` 기록용 shim을 두었다. shim은 기록을 남긴
 - 화면 잠금 중에 도는 정기 갱신·정기 브리핑은 `WhenUnlocked`이면 비밀을 읽지 못한다. 이때 앱이 "로그아웃"으로 오판하면 사용자에게 재로그인을 요구하게 된다.
 - 첫 잠금 해제 전(재부팅 직후 로그인 화면)은 측정하지 않았다.
 
+### 3.5 배포 경로(공증한 `.pkg` 설치본)
+
+같은 측정용 바이너리를 배포와 같은 경로로 만들어 설치했다. 인증서·프로파일 현황은 [Apple Developer 계정](../04_apple_developer_account.md)에 있다.
+
+| 단계 | 내용 | 결과 |
+|---|---|---|
+| 프로파일 | `xcodebuild -exportArchive`(`developer-id`, `-allowProvisioningUpdates`)로 만든 Developer ID 프로파일. 새 G2 인증서를 만든 뒤 export를 다시 해서 프로파일에 G2 인증서가 들어간 것을 확인했다 | 첫 프로파일에는 이전 CA 인증서만 있었다 |
+| 앱 서명 | Developer ID Application(G2, SHA-1로 지정) + Hardened Runtime + 타임스탬프 + entitlement(§2) | `codesign -v --strict` 통과 |
+| 패키지 | `pkgbuild` → `productsign`(Developer ID Installer, G2) | `pkgutil --check-signature` 통과 |
+| 공증 | `notarytool submit --wait` | **Accepted**, issues 없음. 새 인증서로 처음 제출해 약 30분 넘게 걸렸다(이전 제출은 약 4분) |
+| staple·평가 | `stapler staple`, quarantine 속성을 붙인 뒤 `spctl -t install` | `accepted`, `source=Notarized Developer ID` |
+| 설치 | `sudo installer -pkg … -target /` → `/Applications` | 설치본 `spctl` `accepted` |
+| 키체인(직접 실행) | `AfterFirstUnlockThisDeviceOnly`로 저장·읽기 | 성공, `agrp` = 앱 접근 그룹, `pdmn` = `cku` |
+| 키체인(`open`으로 실행) | LaunchServices·Gatekeeper 경로 | 실행 종료 없이 읽기 성공 |
+| 개발 빌드와 공유 | Apple Development 서명 개발 빌드가 설치본이 만든 항목 읽기 | 성공 |
+
+- 배포본과 개발 빌드가 같은 접근 그룹을 쓰므로, **개발 기기에서는 개발 빌드가 배포본의 비밀을 읽고 쓴다.** 개발 중 시험이 실사용 세션(쿠키는 쓸 때마다 바뀜)을 깨뜨릴 수 있으므로 개발 빌드는 서비스 이름에 접미사를 붙여 항목을 나눈다.
+- 화면 잠금 중 읽기(M4)를 설치본으로 다시 측정했다: 잠그고 약 11초 뒤부터 `WhenUnlocked`는 `-25308`, `AfterFirstUnlockThisDeviceOnly`는 계속 성공해 §3.4와 같았다. 잠금 해제 뒤 복구는 측정 시간 안에 풀지 않아 §3.4 결과로 대신한다.
+
 ## 4. 결정
 
 | 결정 | 근거 |
@@ -96,7 +115,8 @@ PATH 맨 앞에 `security` 기록용 shim을 두었다. shim은 기록을 남긴
 | `access-group`을 명시하고 `cloud-sync`는 켜지 않는다 | M1 |
 | 정책이 다른 기존 항목을 발견하면 값을 읽어 지우고 새 정책으로 다시 만든다 | M1 순서 2 |
 | `-25308`은 "잠겨 있어 지금 읽을 수 없음"으로, `-34018`은 "서명·entitlement 오류"로, `-25300`은 "저장된 값 없음"으로 구분한다. 앞의 둘을 로그아웃으로 다루지 않는다 | M2, M4 |
-| 배포 빌드는 Developer ID 프로파일을 번들에 넣는다. 서명 후 검사에서 프로파일·entitlement·인증서 조합을 확인한다 | M2 |
+| 배포 빌드는 Developer ID 프로파일을 번들에 넣는다. 서명 후 검사에서 프로파일·entitlement·인증서 조합을 확인한다 | M2, §3.5 |
+| 개발 빌드는 키체인 서비스 이름에 접미사를 붙여 배포본과 항목을 나눈다 | §3.5 |
 | `claude` 프로세스는 대화마다 하나를 오래 쓰고, CLI의 시작 구간(상태 확인 포함)만 한 줄로 세운다. 실행 전체를 세우면 대화 중 격리 요약 세션과 교착된다 | M3 |
 
 ## 5. 앱이 하지 않는 것
@@ -106,6 +126,5 @@ PATH 맨 앞에 `security` 기록용 shim을 두었다. shim은 기록을 남긴
 
 ## 6. 측정하지 못한 것
 
-- Developer ID 프로파일 + 공증한 `.pkg` 설치본에서 M1·M2 재현(프로파일을 아직 만들지 않음)
 - 재부팅 뒤 첫 잠금 해제 전 `AfterFirstUnlock` 항목 읽기
 - `claude` 자격 증명의 허용이 풀린 상태에서 실제로 뜨는 창의 수(지금은 허용 상태라 창이 뜨지 않음)
