@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | 2026-11-08 확인(별도 표시가 없으면). 레거시 `CanvasDongseo-legacy` 문서·코드 |
+| 근거 | 2026-11-08 확인(별도 표시가 없으면) |
 
 > **이 문서의 역할**: LearningX API로 접근하는 데이터(주차학습·출결·수업자료실·게시판)와 도구별 학생 권한을 정의한다. Source `learningx`.
 > 구조(레이어, `<I>`·DS 배치, 공통 오류, HTTP 정책)는 [README](README.md)를 따른다.
@@ -17,7 +17,7 @@
 
 ## 2. 경로
 
-| 데이터 | 경로 | 주요 필드 (레거시 기준) |
+| 데이터 | 경로 | 주요 필드 |
 |---|---|---|
 | 주차학습(차시 목록) | `GET /courses/{id}/modules?include_detail=true` | 항목 `content_type`(`attendance_item` = 차시), `content_data.week_position`, `lesson_position`, `item_id`, `use_attendance`, `unlock_at`, `due_at`, `late_at`, `lock_at`, `item_content_data.content_id`, `content_type`(PDF·VIDEO 등), `duration`, `total_file_size`, `updated_at`, `completed`, `completion_determinable` |
 | 출결 | `GET /courses/{id}/attendance_items/summary` | `attendance_summaries[*].item_id`, `attendance_status`(`attendance`·`none` 등) |

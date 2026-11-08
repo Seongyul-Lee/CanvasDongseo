@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | 2026-11-08 확인(별도 표시가 없으면). 레거시 `CanvasDongseo-legacy` 문서·코드 |
+| 근거 | 2026-11-08 확인(별도 표시가 없으면) |
 
 > **이 문서의 역할**: LearningX의 `content_id`로 강의 PDF·동영상·첨부 원본을 내려받는 경로를 정의한다. Source `commons`.
 > 구조(레이어, `<I>`·DS 배치, 공통 오류, HTTP 정책)는 [README](README.md)를 따른다.
@@ -12,7 +12,7 @@
 
 ## 1. 공통
 
-- 인증 필요 없음(레거시 확인). 목록(`content_id`)은 LearningX에서 받는다.
+- 인증 필요 없음(2026-10 확인). 목록(`content_id`)은 LearningX에서 받는다.
 - `content_id` 다운로드 경로는 학교 측이 "학교 서버에 이 방식으로 접근하는 것이라면 공식적으로 허용한다"고 회신했다(2026-11-08, 사용자 구두 전달, 서면 사본 미확보, 범위는 `content_id` 다운로드로 한정. 서면 확보는 배포 전 과제, [PRD §9.2](../../01_prd.md)). 다만 공개 API가 아니므로 형식이 바뀌면 `SourceChanged`로 알린다.
 
 ## 2. 경로
@@ -24,7 +24,7 @@
 | 2-동영상 | `main_media_list@default_media_id`와 같은 `main_media`의 이름(예: `screen.mp4`)을 `media_uri[@method="progressive"][@target="all"]`의 `[MEDIA_FILE]` 자리에 넣은 주소 | 호스트 `dongseo-cms.edge.naverncp.com`. **`Referer: https://dcms.dongseo.ac.kr/` 필요**(없으면 403) |
 | 2-일반 파일 | `content.php`가 "Not Supported Content Type"을 주는 수업자료실 파일 | `https://dcms.dongseo.ac.kr/index.php?module=xn_media_content2013&act=dispXn_media_content2013DownloadContent&content_id=<id>`. 확장자는 `Content-Disposition`에서 가져온다 |
 
-## 3. 다운로드 동작 (레거시 기준)
+## 3. 다운로드 동작
 
 - 크기는 `HEAD`로 확인하고, 거부되면 `GET Range: bytes=0-0`으로 확인한다.
 - 강한 ETag가 있으면 `Range`/`If-Range`로 이어 받는다. 서버가 Range를 무시하면(200) 처음부터 받는다.

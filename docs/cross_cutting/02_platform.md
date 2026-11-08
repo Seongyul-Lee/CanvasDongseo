@@ -69,5 +69,5 @@
 
 - `apple-native-keyring-store`를 Tauri 앱 번들에서 쓸 때의 접근 그룹 지정 방법
 - Windows 비밀 저장: Credential Manager는 같은 사용자 프로세스가 읽을 수 있을 것으로 예상한다. 대안(DPAPI 범위, 앱 전용 보호) 검토 필요
-- Windows에서 Claude Code 공식 설치 스크립트의 실행 정책 처리(레거시 Q-S2)
+- Windows에서 Claude Code 공식 설치 스크립트의 실행 정책 처리
 - macOS 서명·공증, 자동 업데이트 방식
