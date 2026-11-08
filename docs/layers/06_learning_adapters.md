@@ -49,7 +49,7 @@
 
 | 포트 | 구현 | macOS | Windows |
 |---|---|---|---|
-| `FrameDecoder`, `AudioDecoder` | `learning/media`: ffmpeg 사이드카(LGPL 정적 빌드)를 자식 프로세스로 띄워 파이프로 읽는다 | 같음 | 같음 |
+| `FrameDecoder`, `AudioDecoder` | `learning/media`: ffmpeg 사이드카(LGPL 정적 빌드)를 자식 프로세스로 띄우고, 동영상은 stdin으로 넣고 결과는 stdout으로 읽는다 | App Sandbox 번들 | 격리 방법 미확인(§6) |
 | `Transcriber` | `learning/transcribe`: `whisper-rs`(whisper.cpp) | Metal | CPU (Vulkan은 착수 때 측정) |
 | `TextRecognizer` | OS API | `learning/macos`: `objc2-vision`(Vision) | `learning/windows`: `windows` crate(Windows.Media.Ocr) |
 | `SlidePdfWriter` | `learning/pdf`: Rust PDF crate(착수 때 선정, 한글 글꼴 포함·보이지 않는 글자 층 지원 필수). PDF 바이트만 만들고 경로는 정하지 않는다 | 같음 | 같음 |
@@ -62,7 +62,17 @@
 - **하드웨어 디코딩(VideoToolbox 등)을 쓰지 않는다.** 실측에서 일반 디코딩보다 약 9배 느렸다(작은 프레임을 하나씩 내보내는 작업이라 복사 비용이 크다).
 - 실측 시간(전부 디코딩, 26~35분 강의): 1080p 11.4~18.1초, 720p 이하 2.8~8.4초.
 - 원본 해상도 장면 추출은 `-ss (i + 0.46)/fps -frames:v 1`로 한다. fps 필터의 i번째 프레임은 i+0.5초 직전 화면이라, i초로 찾으면 전환 직후에 앞 슬라이드를 뽑는다(2026-10-26 실측).
-- 앱이 받은 파일이라도 안에 든 재생목록이 원격을 열지 못하게 `-protocol_whitelist file`을 준다.
+
+**신뢰할 수 없는 입력으로 다룬다** ([security R4](../cross_cutting/01_security.md))
+
+학교 서버에서 받은 동영상은 신뢰하지 않는다. ffmpeg는 확장자가 아니라 내용으로 형식을 고르므로, `.mp4` 이름을 단 재생목록이 로컬 파일을 읽을 수 있다(2026-11-09 재현, [security §5.3](../cross_cutting/01_security.md)). 네 겹으로 막는다.
+
+| 겹 | 규칙 |
+|---|---|
+| 형식 고정 | 입력은 항상 `-f mp4 -i pipe:0`. 형식 자동 판별을 쓰지 않는다 |
+| 빌드 축소 | 켜는 것만 적는다. demuxer: mov/mp4, matroska/webm, aac, mp3, wav. muxer: rawvideo, wav, null. 프로토콜: file, pipe만. 필터: fps, scale, format, crop. **hls·concat 등 재생목록 demuxer와 네트워크 프로토콜은 빌드에 없다** |
+| 입력 방식 | 앱이 동영상 파일을 열어 그 핸들을 stdin으로 넘긴다(파일 핸들이라 탐색 가능). ffmpeg에 경로를 주지 않는다. 결과(회색조 프레임, rgb24 장면, wav 음성)는 stdout으로만 받는다 |
+| 샌드박스 | macOS: ffmpeg를 `.app` 번들(`Contents/MacOS/ffmpeg` + 번들 식별자 `io.github.seongyul-lee.canvasdongseo.ffmpeg`)로 감싸 **App Sandbox 권한(파일 접근 권한 없음) + Hardened Runtime**으로 Developer ID 서명한다. 파일·네트워크·쓰기가 모두 거부되고 속도 차이는 없다(실측). Windows는 미확인(§6) |
 
 ### 3.2 전사
 
@@ -83,6 +93,19 @@
 - 쪽 = 장면(원본 해상도) + 아래쪽 여백 띠의 타임스탬프(`12:34 (다시 나옴 18:02)`). 쪽 순서는 처음 나온 시각 순이고, 책갈피는 `페이지 n — mm:ss`다.
 - 문서 정보에 원본 동영상 제목, `content_id`, 만든 날짜를 넣는다.
 
+### 3.4 상한 ([security R4](../cross_cutting/01_security.md))
+
+초기값이며 실측 최대값의 여러 배로 잡았다. 넘으면 작업을 시작하지 않거나 끊고 `Rejected`로 알린다.
+
+| 대상 | 상한 | 실측 최대(2026-11-09) |
+|---|---|---|
+| 동영상 파일 크기 | 4GB | 0.5GB |
+| 재생 길이 | 4시간 | 약 67분 |
+| 해상도 | 3840×2160 | 1920×1080 |
+| 묶음(슬라이드) 수 | 500 | 수십 개 |
+| 묶음당 후보 | 12 ([domain §4.1](01_domain.md)) | 12 |
+| ffmpeg 한 번 실행 시간 | 30분 | 18초 |
+
 ## 4. 부품
 
 | 부품 | 크기 | 쓰는 곳 |
@@ -93,7 +116,7 @@
 
 - 설치 패키지에 넣지 않고 설치 과정에서 자동으로 받는다. 받는 주체·위치·복구는 [platform §3](../cross_cutting/02_platform.md)에 있다.
 - **모든 부품은 앱에 고정한 SHA-256으로 확인한 뒤에만 쓴다.** 실행 파일(ffmpeg)은 여기에 더해 코드 서명(macOS: 우리 팀 ID `468HW42V9P`의 Developer ID 서명, Windows: Authenticode)을 확인한 뒤에만 실행한다.
-- 확인 시점: 설치 프로그램이 받은 직후, 그리고 앱이 작업을 시작할 때마다(`ComponentStore`). 574MB 모델의 SHA-256 계산은 0.2~1.0초다(2026-11-09 M5 실측).
+- 확인 시점: 설치 프로그램이 받은 직후, 그리고 앱이 작업을 시작할 때마다(`ComponentStore`). 574MB 모델의 SHA-256 계산은 0.2~1.0초다(2026-11-09 M5 실측). 확인한 파일은 열어 둔 핸들 그대로 쓰고, 확인 뒤 경로로 다시 열지 않는다(확인과 사용 사이 바꿔치기 방지).
 
 | 파일 | SHA-256 |
 |---|---|
@@ -122,6 +145,7 @@
 - 슬라이드 판정 기준값(전환 0.2, 같은 슬라이드 0.55, 펜 색 기준)은 운영체제 everlec 영상으로 조정한 값이다. 레이아웃이 다른 영상(AI기반창업마케팅, 제작 영상)으로 다시 확인한다.
 - 전사 절대 정확도: 실측은 mlx-whisper와의 일치도다. 사람이 받아 적은 정답 구간으로 글자 오류율을 잰다.
 - Windows: 실제 노트북의 CPU·Vulkan 전사 속도, Windows.Media.Ocr 한국어 품질과 언어 팩 설치 조건
-- ffmpeg 배포 빌드의 OS·아키텍처별 SHA-256(배포 저장소에 올릴 때 고정)
+- ffmpeg 배포 빌드의 OS·아키텍처별 SHA-256. 수용 기준: 배포 저장소 릴리스의 파일 해시를 이 문서 §4 표에 적고, 설치 프로그램이 그 값으로 확인한다
+- Windows ffmpeg 격리(AppContainer 등). 수용 기준은 [security §7](../cross_cutting/01_security.md)
 - `whisper-rs` 유지 상태(최근 갱신 2026-03), PDF crate 선정
 - `objc2-vision` 바인딩 범위(텍스트 인식 요청 API 포함 여부)
