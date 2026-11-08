@@ -3,10 +3,9 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 상태 | 작성됨 |
 | 근거 | 2026-11-08 확인(별도 표시가 없으면). 레거시 `CanvasDongseo-legacy` 문서·코드, Instructure 개발자 문서 |
 
-> **이 문서의 역할**: Canvas REST·GraphQL로 접근하는 데이터와 경로를 정의한다. Component `canvas`.
+> **이 문서의 역할**: Canvas REST·GraphQL로 접근하는 데이터와 경로를 정의한다. Source `canvas`.
 > 구조(레이어, `<I>`·DS 배치, 공통 오류, HTTP 정책)는 [README](README.md)를 따른다.
 
 ---
