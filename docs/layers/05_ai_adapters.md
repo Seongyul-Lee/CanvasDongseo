@@ -49,6 +49,7 @@
 | **격리** | 사람이 지켜보지 않는 작업(예: 정기 브리핑), `Peer` 원문 요약(§5) | 위에 더해 `--setting-sources "" --strict-mcp-config --safe-mode --tools Bash --permission-mode dontAsk --permission-prompts none`. 요약 세션은 `--tools ""`(도구 없음) |
 
 - 대화 모드에서 `cdx`만 미리 허용하는 것은 확인 창을 줄이는 편의다. 보안 경계가 아니다([security](../cross_cutting/01_security.md)).
+- **키체인 허용 창 줄이기**: `claude`는 로그인 키체인의 자기 자격 증명을 프로세스 시작 때만 읽는다(측정: `auth status` 4회, 첫 턴 5회, 이후 턴 0회). 토큰 갱신이나 Claude Desktop이 항목을 다시 쓰면 허용이 풀려 읽기마다 창이 뜰 수 있다. 그래서 대화마다 프로세스 하나를 오래 쓰고, CLI의 **시작 구간**(실행부터 첫 `system/init` 이벤트나 종료까지, 상태 확인·정기 작업·격리 요약 세션 포함)만 한 줄로 세운다. 실행 전체를 한 줄로 세우지 않는다: 살아 있는 대화 프로세스가 `cdx` 응답을 기다리는 동안 코어가 격리 요약 세션(§5)을 띄워야 하므로, 실행 전체를 세우면 서로를 기다린다. 시작 구간이 시간 초과되거나 로그아웃으로 나오면 대기 중인 시작을 멈추고, 화면에서 "항상 허용"과 키체인 잠금 해제를 안내한다. 앱은 이 항목을 읽거나 고치지 않는다([키체인 측정](../measurements/2026-11_keychain_prompts.md))
 - 격리 모드는 **제공자 CLI의 옵션**에 기댄다(코어가 강제하는 경계가 아니다). 격리 모드에서 쓰기를 거부하는 것은 코어가 강제한다([entrypoints §4](04_entrypoints.md)).
 - `ToolGuide` 주입: `--append-system-prompt`.
 - 모델 선택(`/model`)은 `session_spec`의 모델 값으로 `--model`에 넘긴다.
