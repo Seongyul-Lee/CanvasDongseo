@@ -109,6 +109,8 @@ DS가 응답을 만들 때 **구조로** 판단한다(내용을 해석하지 않
 | entitlement 없이 Data Protection 키체인 | 저장 실패(`-34018`) |
 | **Data Protection 키체인 + 앱 접근 그룹**(`468HW42V9P.io.github.seongyul-lee.canvasdongseo`) | `security`: 항목을 찾지 못함. 같은 팀 서명의 다른 프로그램: 찾지 못함(`-25300`). 앱은 재실행 후에도 읽음 |
 
+- **허용 창**(2026-11-09): Data Protection 키체인에는 ACL 허용 창이 없다. 서명·프로파일이 어긋나면 창 대신 실행 즉시 종료되거나 `-34018`이 난다. 화면 잠금 중에는 `WhenUnlocked` 항목 읽기가 `-25308`로 실패하고, `AfterFirstUnlockThisDeviceOnly`는 성공한다. 남는 허용 창은 앱이 실행하는 `claude` CLI의 로그인 키체인 항목에서 생긴다. 측정과 결정은 [키체인 측정](../measurements/2026-11_keychain_prompts.md)에 둔다.
+
 ### 5.3 ffmpeg 샌드박스 (2026-11-09, macOS 27.0, Apple M5)
 
 ffmpeg를 App Sandbox 권한(`com.apple.security.app-sandbox`, 파일 접근 권한 없음)으로 Developer ID 서명하고, 강의 동영상을 stdin으로 넘겨 시험했다. 대조군은 같은 버전의 일반 ffmpeg다.

@@ -145,9 +145,11 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 | 문서 | 주제 |
 |---|---|
 | [Design Process](03_design_process.md) | 와이어프레임부터 화면별 토큰까지 디자인 단계와 산출물 |
+| [Apple Developer 계정](04_apple_developer_account.md) | 멤버십, 인증서, 프로파일, 번들 ID, 공증 자격 증명 현황 |
 
 **측정** (`measurements/`)
 
 | 문서 | 주제 |
 |---|---|
 | [2026-11 강의 동영상 처리](measurements/2026-11_lecture_media_processing.md) | 키프레임 디코딩, 전사 엔진·모델 비교, 최종 결정 |
+| [2026-11 키체인 허용 창](measurements/2026-11_keychain_prompts.md) | 접근 그룹·정책 적용, 서명 변형, 화면 잠금 중 읽기, `claude` CLI 키체인 읽기 |

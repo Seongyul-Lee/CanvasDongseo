@@ -120,7 +120,7 @@ entrypoints     IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케이스�
 | `AuthGateway` | `<I>` (application 소유) | 로그인·로그아웃·상태 조회. `LoginWithOtp` 같은 유스케이스가 쓴다 |
 | `WebSessionLogin` | `AuthGateway` 구현의 일부 | 학번·비밀번호·OTP → 세션 ([01_auth §2](01_auth.md)) |
 | `SessionRefresher` | 내부 | 쿠키 → LTI → 새 `xn_api_token` ([01_auth §3](01_auth.md)) |
-| `SessionStore` | `<I>` + 키체인 구현 | 쿠키·토큰·학번·비밀번호 저장. 바뀐 쿠키는 받는 즉시 저장한다. macOS는 **Data Protection 키체인(앱 접근 그룹)**에 저장한다. 로그인 키체인은 같은 사용자의 다른 프로세스가 허용 창 없이 읽을 수 있다([security §5.2](../../cross_cutting/01_security.md)) |
+| `SessionStore` | `<I>` + 키체인 구현 | 쿠키·토큰·학번·비밀번호 저장. 바뀐 쿠키는 받는 즉시 저장한다. macOS는 **Data Protection 키체인(앱 접근 그룹)**에 저장한다. 로그인 키체인은 같은 사용자의 다른 프로세스가 허용 창 없이 읽을 수 있다([security §5.2](../../cross_cutting/01_security.md)). 저장소는 `access-group`을 명시하고 `cloud-sync`는 끈다. 항목은 `AfterFirstUnlockThisDeviceOnly`로 만든다(화면 잠금 중 갱신이 읽을 수 있게). 정책은 만들 때만 붙으므로, 정책이 다른 기존 항목은 지우고 다시 만든다. 실패는 `Locked`(-25308, 잠시 뒤 재시도), `Misconfigured`(-34018, 서명·entitlement 오류), `NotFound`(-25300)로 나눠 돌려주고 앞의 둘을 로그아웃으로 다루지 않는다. 시작 때 한 번 읽어 메모리에 두고, 값이 실제로 바뀔 때만 쓴다([키체인 측정](../../measurements/2026-11_keychain_prompts.md)) |
 | 세션 갱신 정책 | shared 안의 순수 모듈 | 만료 임박, 유휴, 깨어남, 로그아웃 상태를 보고 갱신·대기·안내를 정한다 |
 | HTTP 정책 | 공통 클라이언트 | 아래 표 |
 
