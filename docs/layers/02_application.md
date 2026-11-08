@@ -35,7 +35,8 @@
 | 자료 | 강의 자료·동영상 내려받기 |
 | AI | 설치 감지, 로그인·로그아웃, 대화 시작·전송·취소, 권한 확인 응답, 대화 기록 관리 |
 | 대화 안전 | `Peer` 읽음 기록, hook 판정(`pass` / `warn` / `deny_once`), `Peer` 원문 격리 요약([security §4](../cross_cutting/01_security.md)) |
-| 학습(확장) | 전사, 슬라이드 추출, 요약·퀴즈 생성 |
+| 학습(확장) | `ExtractSlidePdf`(동영상 → 슬라이드 PDF), `Transcribe`(동영상 → 스크립트), 요약·퀴즈 생성 |
+| 작업 | 작업 상태 조회, 취소 (§4.6) |
 
 구체 목록과 출력 DTO는 Functional Spec 이후 확정한다.
 
@@ -78,13 +79,21 @@ AiSession
 
 ### 4.3 학습
 
-| 포트 | 하는 일 |
-|---|---|
-| `Transcriber` | 강의 동영상 음성을 텍스트로 |
-| `TextRecognizer` | 이미지 글자 인식 |
-| `SlideExtractor` | 동영상에서 슬라이드 장면 추출 |
+| 포트 | 종류 | 하는 일 | 구현 |
+|---|---|---|---|
+| `FrameDecoder` | Gateway | 동영상에서 **호출자가 정한** 간격·폭의 회색조 프레임 스트림, 지정 시각의 원본 해상도 장면 | `learning/media` |
+| `AudioDecoder` | Gateway | 동영상에서 **호출자가 정한** 샘플레이트·채널의 PCM | `learning/media` |
+| `Transcriber` | Gateway | `required_audio_format()`으로 필요한 음성 형식을 알리고, 음성 → 시각이 붙은 문장 목록을 낸다. 진행률·`CancelToken`을 받는다 | `learning/transcribe` |
+| `TextRecognizer` | Gateway | `supports(languages)`로 지원 언어를 알리고, 이미지 → 글자와 글자 상자 위치를 낸다 | `learning/macos`, `learning/windows` |
+| `SlidePdfWriter` | Gateway | 확정 장면·쪽 표기·OCR 결과 → PDF 바이트(임시 파일). 경로를 정하지 않는다 | `learning/pdf` |
+| `LearningOutputRepository` | Repository | 슬라이드 PDF·스크립트의 저장(원자적 쓰기)·조회·존재 확인. 위치는 domain의 이름 규칙으로 정한 키로만 받는다. 저장 직후 해시를 앱 데이터에 기록하되 기록마다 **HMAC**을 붙이고(키는 Data Protection 키체인), 조회 때 HMAC과 해시가 맞는지와 그에 따른 신뢰 등급(`Official`/`Peer`, [security §4.1](../cross_cutting/01_security.md))을 함께 돌려준다 | `local_store` |
+| `ComponentStore` | Gateway | 부품(ffmpeg, 전사 모델, VAD 모델)의 위치 찾기와 SHA-256 확인. 없거나 다르면 `ComponentMissing` | `local_store` |
 
-구현은 [learning_adapters](06_learning_adapters.md).
+- 슬라이드 판정(구간·묶음·점수·자동 확정)은 포트 뒤에 두지 않는다. `ExtractSlidePdf`가 [domain §4.1](01_domain.md) 규칙으로 직접 판정한다. AI 검토 단계는 없다.
+- 포트에는 특정 엔진의 형식(예: Whisper의 16kHz)을 적지 않는다. 디코딩 간격·폭은 domain 상수를, 음성 형식은 `Transcriber`가 알린 값을 유스케이스가 넘긴다. 엔진을 바꿔도 포트는 그대로다(OCP).
+- 부품을 쓰는 어댑터(`learning/media`, `learning/transcribe`)는 `ComponentStore`를 주입받아 위치를 얻는다. 해시 확인을 어댑터마다 따로 하지 않는다.
+- `TextRecognizer`의 두 구현은 지원 언어가 없을 때(예: Windows 한국어 OCR 언어 팩 없음) 똑같이 `ComponentMissing`으로 실패한다(LSP).
+- 구현은 [learning_adapters](06_learning_adapters.md).
 
 ### 4.4 사용자 상호작용과 로컬 저장
 
@@ -111,15 +120,32 @@ AiSession
 | `Temporary` | 네트워크·요청 제한. 다시 시도할 수 있다 |
 | `Rejected` | 사용자가 거부했거나 정책(격리 모드 쓰기 등)으로 거부됐다 |
 | `AiUnavailable` | AI 제공자 미설치·로그아웃·한도 초과 |
+| `ComponentMissing` | 학습 부품(ffmpeg, 전사 모델, OCR 언어 등)이 없거나 해시·서명 확인에 실패했다. 어떤 부품인지와 **복구 방법**(`Installer`: 설치 프로그램 다시 실행, `OsSettings`: OS 설정에서 설치)을 열거형으로 함께 준다. 화면은 복구 방법만 보고 안내를 고른다 |
 
 - data_access의 공통 오류([data_access §2.4](data_access/README.md))는 출력 포트 구현이 위 오류로 바꾼다.
+
+### 4.6 작업 (오래 걸리는 유스케이스)
+
+전사와 슬라이드 PDF는 수 분이 걸릴 수 있어 작업으로 실행한다(실측 시간은 [learning_adapters §3](06_learning_adapters.md)).
+
+| 구성 | 종류 | 내용 | 구현 |
+|---|---|---|---|
+| `JobRegistry` | application 내부 | 작업 ID 발급, 상태 전이(`queued`→`running`→`done`·`failed`·`cancelled`) 규칙, 진행률·결과 보관. **실행하지 않는다** | application |
+| `JobSpawner` | 출력 포트 | 작업 본문(유스케이스 호출)을 백그라운드에서 실행한다 | `bin/app`(tokio) |
+| `CancelToken` | 값 타입 | 런타임과 무관한 취소 신호. 유스케이스가 단계 사이에서 확인하고 `Transcriber`에 넘긴다 | application |
+| `ProgressSink` | 출력 포트 | 진행률 이벤트를 화면에 보낸다 | presentation |
+
+- application은 비동기 런타임(tokio)에 의존하지 않는다. 실행은 `JobSpawner` 뒤에 둔다(의존성 규칙, [System Architecture §3.2](../02_system_architecture.md)).
+- 취소되거나 실패하면 반쯤 만든 결과 파일은 남기지 않는다(`LearningOutputRepository`의 원자적 쓰기).
+- 화면(Tauri command)과 `cdx`(작업 ID로 상태 조회)가 같은 작업을 본다.
 
 ## 5. 이웃 레이어와의 계약
 
 | 이웃 | 계약 |
 |---|---|
-| presentation, entrypoints | 유스케이스를 부르고 출력 DTO·application 오류를 받는다. presentation은 §4.4의 `UserConfirmation`·`OtpPrompt`를 구현한다 |
+| presentation, entrypoints | 유스케이스를 부르고 출력 DTO·application 오류를 받는다. presentation은 §4.4의 `UserConfirmation`·`OtpPrompt`와 §4.6의 `ProgressSink`를 구현한다 |
 | data_access, ai, learning, local_store | 위 출력 포트를 구현한다. 공통 오류는 application 오류로 바꿔 넘긴다 |
+| bin/app | `JobSpawner`를 구현하고(tokio), 모든 포트 구현을 조립한다 |
 
 ## 6. 미확인 항목
 

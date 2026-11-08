@@ -30,7 +30,7 @@
 | 테스트 | `cargo test`, `wiremock` | 0.6.5 (2025-08-24) | 전체 | DS 계약 테스트, 실측 응답 픽스처 |
 | 의존성 검사 | `cargo-deny` | — | CI | 라이선스·취약점·금지 crate |
 | 프런트엔드 | `react` + Vite (SPA) | 19.3.1 (2026-10-14) | presentation | 대화 UI 라이브러리가 풍부하고 AI 에이전트의 코드 정확도가 높다 |
-| 학습 | `whisper-rs`, `objc2-vision`, ffmpeg | [learning_adapters](../layers/06_learning_adapters.md) | learning | 확장 단계 |
+| 학습 | `whisper-rs`(whisper.cpp 1.9.5로 실측), ffmpeg 9.0.2(LGPL 정적 빌드 사이드카), `objc2-vision`, `windows`(OCR) | [learning_adapters](../layers/06_learning_adapters.md) | learning | 확장 단계. 전사 모델 `large-v3-turbo-q5_0` + Silero VAD |
 
 - GraphQL은 전용 클라이언트 없이 JSON POST로 보낸다([02_canvas §4](../layers/data_access/02_canvas.md)).
 - 레지스트리(학과 게시판 코드, 포털 조회 허용 목록·학번 매개변수)는 앱에 포함하는 데이터 파일(TOML)로 두고, 읽을 때 타입으로 검증한다.
@@ -50,6 +50,21 @@
 - macOS를 먼저 개발·배포하고 Windows를 잇는다([PRD §7.1](../01_prd.md)).
 - AI 제공자 CLI는 재배포하지 않고, 사용자 동의 뒤 공식 설치 프로그램을 실행한다.
 - 서명·공증, 자동 업데이트, 설치 패키지 형식은 착수 때 정한다.
+
+**학습 부품** (목록·크기·해시·확인 규칙은 [learning_adapters §4](../layers/06_learning_adapters.md))
+
+- 설치 패키지에 넣지 않는다(모델 제공자 정책상 재배포 문제를 피한다).
+- **설치 과정에서 사용자 조작 없이 자동으로 내려받는다.** 앱 안에 따로 설치하는 단계를 두지 않는다.
+  - macOS: **`.pkg` 설치 프로그램**으로 배포하고, postinstall 스크립트가 부품을 받는다(2026-11-09 결정). DMG는 설치 단계가 없어 쓰지 않는다. `.pkg`는 Developer ID Installer 인증서로 서명하고 공증한다.
+  - Windows: 설치 프로그램(NSIS 또는 MSI, 착수 때 선정)의 설치 단계에서 받는다.
+- 받는 주소는 허용 목록(https)에 두고, 받은 직후 예상 크기와 고정 해시(실행 파일은 서명도)를 확인한다. 실패하면 반쯤 받은 파일을 지운다.
+- **받기 절차**(postinstall은 root로 실행되므로 링크·임시 파일 공격을 막는다):
+  1. `/tmp`처럼 다른 사용자가 쓸 수 있는 곳을 쓰지 않는다. 대상 경로 아래 root 전용(0700) 임시 폴더를 새로 만들고, 그 안에 받는다.
+  2. 경로의 각 단계가 심볼릭 링크가 아닌지 확인하고(링크면 중단), 파일은 링크를 따라가지 않게(`O_NOFOLLOW`) 연다.
+  3. 해시·서명을 확인한 뒤 같은 볼륨 안에서 원자적으로 이름을 바꿔 제자리에 둔다.
+  4. 최종 권한: 폴더 root:wheel 0755, 파일 0644(실행 파일 0755). 사용자는 읽기만 한다.
+- 위치: 설치 프로그램이 관리자 권한으로 쓰고 사용자는 읽기만 하는 공용 경로. macOS `/Library/Application Support/CanvasDongseo/components/<부품>/<버전>-<해시 앞 12자리>/`(postinstall은 root로 실행되므로 사용자별 앱 데이터에 쓰지 않는다). 사용자 프로세스(AI가 실행한 명령 포함)가 부품을 바꿔치기하지 못하게 하는 효과도 있다. 앱은 이 경로에 쓰지 않고 읽기만 한다.
+- **받기와 다시 받기는 설치 프로그램만 한다.** 받기에 실패해도 설치는 끝내고, 앱이 `ComponentMissing`(복구: 설치 프로그램)을 받으면 화면은 "설치 프로그램을 다시 실행"을 안내한다. 앱은 부품을 스스로 받지 않는다.
 
 **앱 식별자와 서명** (2026-11-08 등록)
 
@@ -71,3 +86,5 @@
 - Windows 비밀 저장: Credential Manager는 같은 사용자 프로세스가 읽을 수 있을 것으로 예상한다. 대안(DPAPI 범위, 앱 전용 보호) 검토 필요
 - Windows에서 Claude Code 공식 설치 스크립트의 실행 정책 처리
 - macOS 서명·공증, 자동 업데이트 방식
+- Windows 설치 프로그램 형식(NSIS·MSI)과 공용 부품 경로. 수용 기준: `%ProgramData%` 아래 폴더의 ACL이 Administrators·SYSTEM만 쓰기, Users는 읽기·실행만이며, 일반 사용자 프로세스의 쓰기·이름 바꾸기·삭제가 거부되는 것을 확인한다
+- 자동 업데이트 때 부품 버전이 바뀌면 누가 받는지. 수용 기준: 부품을 받는 주체가 여전히 관리자 권한의 설치 프로그램뿐이고(앱은 받지 않음), 새 해시가 업데이트된 앱 안에 고정되어 있다
