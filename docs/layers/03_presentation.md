@@ -76,22 +76,35 @@ ui/src/
 - `design/`의 HTML 목업도 같은 `tokens.css`를 불러온다. 목업에서 고친 값이 앱에 그대로 반영된다. 디자인 절차는 [Design Process](../03_design_process.md)에 있다.
 - 라이트·다크 모드는 토큰 세트 두 벌로 두고 OS 설정(`prefers-color-scheme`)을 따른다.
 
+### 2.3 신뢰하지 않는 HTML과 WebView 보안
+
+공지·과제 설명·게시판 본문 같은 학교 HTML은 다른 사람이 쓴 내용이다. WebView에서 스크립트가 실행되면 같은 WebView의 command(쓰기 승인 포함)를 부를 수 있으므로 다음을 지킨다.
+
+| 규칙 | 내용 |
+|---|---|
+| 정화 | 학교 HTML은 Presenter(Rust)에서 허용 목록 방식으로 정화한 뒤 ViewModel에 넣는다. 스크립트, 이벤트 속성, `javascript:` 링크, iframe, form을 지운다 |
+| 렌더링 | 정화된 HTML은 스크립트가 없는 샌드박스 iframe(`sandbox` 속성, `allow-scripts` 없음)에 그린다 |
+| CSP | `script-src 'self'`(인라인 스크립트 금지), `connect-src`는 Tauri IPC만, 외부 이미지는 허용 목록 호스트만 |
+| capabilities | WebView가 부를 수 있는 command를 Tauri capabilities로 제한한다 |
+| 확인 화면 | `UserConfirmation`의 내용은 코어가 만든 값만 그린다. 승인 command는 요청 ID·내용 해시를 함께 보낸다([application §4.4](02_application.md)) |
+| 링크 | 외부 링크는 OS 브라우저로 연다. 앱 WebView 안에서 이동하지 않는다 |
+
 ## 3. 대화 화면의 슬래시 커맨드
 
 | 분류 | 예 | 처리 |
 |---|---|---|
-| 앱이 대신 처리 | `/clear`, `/login`, `/model` | 새 대화, 제공자 로그인 화면, 모델 선택으로 연결. 대화 기록의 원본은 앱이다 |
+| 앱이 대신 처리 | `/clear`, `/login`, `/model` | 새 대화, 제공자 로그인 화면, 모델 선택(`session_spec`의 모델 값)으로 연결. 대화 기록의 원본은 앱이다 |
 | 그대로 전달 | `/compact`, 사용자 커스텀 커맨드, 스킬·플러그인 커맨드 | 제공자 CLI에 그대로 보낸다 |
 | 대화형 전용 | `/config`, `/mcp` 화면, `/resume` 선택기 | "앱에서 지원하지 않음" 안내 |
 
 - 분류는 제공자마다 다르므로 `AiSession.capabilities()`로 받는다([application §4.2](02_application.md)). 사용할 수 있는 커맨드·스킬 목록은 대화 시작 이벤트에서 받아 입력창 자동 완성에 쓴다.
-- AI가 요청한 권한 확인(`PermissionRequest`)과 개인 데이터 쓰기 확인은 앱 화면에서 받는다.
+- AI가 요청한 권한 확인(`PermissionRequest`)과 개인 데이터 쓰기 확인(`UserConfirmation`)은 앱 화면에서 받는다.
 
 ## 4. 이웃 레이어와의 계약
 
 | 이웃 | 계약 |
 |---|---|
-| application | 유스케이스만 호출한다. 출력 DTO를 받는다 |
+| application | 유스케이스만 호출한다. 출력 DTO를 받는다. `UserConfirmation`·`OtpPrompt` 포트를 구현한다 |
 | 프런트엔드 | command 이름과 ViewModel 타입(생성된 TypeScript)이 계약이다 |
 
 ## 5. 미확인 항목

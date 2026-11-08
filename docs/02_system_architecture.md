@@ -21,7 +21,7 @@
 | S5 | AI 제공자는 **역할별 포트(`AiInstallation`·`AiAccount`·`AiSession`) + 제공자별 어댑터 crate**로 둔다. MVP는 Claude Code | 다른 AI 구독을 기존 코드 수정 없이 추가한다([PRD §8.1](01_prd.md)) | [application](layers/02_application.md), [ai_adapters](layers/05_ai_adapters.md) |
 | S6 | AI 로그인은 **제공자 CLI에 위임**한다. 앱은 AI 자격 증명을 저장·중계하지 않는다 | 약관(자격 증명 수집·중계 금지), 터미널 로그인 재사용 | [ai_adapters](layers/05_ai_adapters.md) |
 | S7 | 대화는 **사용자 환경 그대로**(스킬·플러그인·커맨드·MCP) 실행하고, 무인 작업만 격리한다 | 학생은 앱 고유 기능 밖의 CLI 기능(PDF·PPTX 스킬, Computer Use, `/compact` 등)도 쓰려 한다 | [ai_adapters](layers/05_ai_adapters.md) |
-| S8 | **보안 경계는 코어에 둔다.** 제공자의 도구 제한은 보조 수단이다 | S7로 대화 중 AI가 임의 명령을 실행할 수 있다. 제공자마다 권한 제어가 다르다 | [security](cross_cutting/01_security.md) |
+| S8 | **학교 데이터·비밀·쓰기의 경계는 코어에 둔다.** AI의 도구 사용은 막지 않고, 다른 사람이 쓴 글을 읽은 대화에만 격리 요약과 시점 경고를 더한다. 비밀은 Data Protection 키체인(앱 접근 그룹)에 둔다 | S7로 대화 중 AI가 임의 명령을 실행할 수 있다. 제공자마다 권한 제어가 다르다. 책임 범위는 외부 탈취, 다른 학생 데이터 접근, 주입에 의한 위험 행동 | [security](cross_cutting/01_security.md) |
 | S9 | 학습 기능(전사·OCR·슬라이드 추출)은 **OS별 crate**로 나누고 macOS를 먼저 구현한다 | OS 고유 API·가속 의존성을 경계 뒤에 가둔다 | [learning_adapters](layers/06_learning_adapters.md) |
 | S10 | 유스케이스는 domain 엔티티가 아니라 **유스케이스 출력 DTO**를 돌려준다. Presenter가 이를 화면용 ViewModel·AI용 출력으로 바꾼다 | 소비자(화면, AI)가 둘이라 엔티티 변경이 바깥으로 번지지 않게 한다(Clean Architecture의 Response Model) | [application](layers/02_application.md), [presentation](layers/03_presentation.md) |
 
@@ -66,6 +66,7 @@ crates/
     (codex/ gemini/ …)    추가 제공자
   learning/
     macos/  (windows/)    학습 포트 구현
+  local_store/            앱 로컬 저장(대화 기록, 설정) 포트 구현
   presentation/           Tauri command(Controller), 화면용 Presenter·ViewModel
   entrypoints/
     ipc_server/           cdx 요청 ↔ 유스케이스, AI용 Presenter
@@ -81,11 +82,12 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 
 | crate | 의존할 수 있는 것 |
 |---|---|
-| `domain` | 없음(기초 crate만) |
+| `domain` | 기초 crate만. 외부 crate는 `jiff`만 |
 | `application` | `domain` |
-| `data_access/*`, `ai/*`, `learning/*` | `application`, `domain`. data_access 내부 규칙은 [data_access §2.6](layers/data_access/README.md) |
+| `data_access/*`, `ai/*`, `learning/*`, `local_store` | `application`, `domain`. data_access 내부(`repositories`, `shared`, Source) 규칙은 [data_access §2.6](layers/data_access/README.md) |
 | `presentation` | `application` |
 | `entrypoints/*` | `application`, `ipc_protocol` |
+| `ipc_protocol` | 기초 crate만(`serde`, `clap`) |
 | `bin/app` | 전부 (composition root) |
 | `bin/cdx` | `ipc_protocol`만. 코어 로직·세션·학교 서버 접근이 없다 |
 
@@ -99,7 +101,7 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 | Entities | `domain` |
 | Use Cases | `application` (유스케이스, 출력 DTO, 출력 포트) |
 | Interface Adapters | `presentation`(Controller·Presenter·ViewModel), `entrypoints/ipc_server`(AI용 Presenter), `data_access/repositories`(출력 포트 구현), AI 어댑터의 이벤트 변환 |
-| Frameworks & Drivers | Tauri, WebView SPA(View), `data_access`의 Source와 `shared`(HTTP·키체인), AI CLI 프로세스, OS 학습 API |
+| Frameworks & Drivers | Tauri, WebView SPA(View), `data_access`의 Source와 `shared`(HTTP·키체인), AI CLI 프로세스, OS 학습 API, `local_store` |
 | Main | `bin/app` (composition root) |
 
 ## 4. 용어
