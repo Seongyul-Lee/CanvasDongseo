@@ -127,6 +127,7 @@ interface       앱 RPC, MCP 서버 — 유스케이스만 호출한다
 
 - Commons는 인증이 필요 없으므로 `RequestAuthenticator`에 의존하지 않는다.
 - OTP 입력은 사용자와 주고받는 흐름이므로 유스케이스(application)가 조율한다. shared는 한 번의 로그인 시도만 수행한다.
+- 위 표는 Canvas·LearningX 세션(쿠키·`xn_api_token`) 기준이다. **학사행정웹서비스(별도 SSO `dsso`)와 스마트출결은 세션이 따로**다. 각각 `RequestAuthenticator`·`SessionStore` 구현을 하나씩 더 두고, 로그인 학번도 함께 보관한다(IDOR 방어에 쓴다, [07 §3.5](07_student_portal.md)). 포털은 2차 인증이 없고 60분 세션을 `sessionExtend.do`로 연장한다. 세션 만료 시 재로그인, 로그인 실패 잠김 처리는 그 구현에 둔다. 상세·미확인은 [07_student_portal](07_student_portal.md).
 
 **HTTP 정책**
 
