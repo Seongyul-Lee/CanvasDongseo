@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 상태 | 초안. 구역별 문서는 [§3](#3-접근-구역-문서) 참조. 학생지원시스템은 조사 예정 |
+| 상태 | 초안. 구역별 문서는 [§3](#3-접근-구역-문서) 참조 |
 | 근거 | 레거시 `CanvasDongseo-legacy`의 문서(`docs/02`, `docs/05`, `docs/15`)와 코드, 2026-11-08 로그인 세션으로 확인한 Canvas API 응답, Instructure 개발자 문서 |
 
 > **이 문서의 역할**: 앱이 학교 시스템의 데이터를 *어떤 구조로* 가져오는지 정의하고, 접근 구역별 문서를 묶는다. 경로와 인증의 상세는 구역별 문서(§3)에 있다.
@@ -24,7 +24,7 @@
 | Commons (강의 PDF·동영상 원본) | `dcms.dongseo.ac.kr`, 동영상 CDN `dongseo-cms.edge.naverncp.com` | [05_commons](05_commons.md) |
 | 학교 공지 | `www.dongseo.ac.kr/kr/` | [06_school_site](06_school_site.md) |
 | 학과·기관 공지 | `uni.dongseo.ac.kr/{사이트 코드}/` | [06_school_site](06_school_site.md) |
-| 학생지원시스템 | — | [07_student_portal](07_student_portal.md) (조사 예정) |
+| 학생지원시스템 (학사행정웹서비스) | `im.dongseo.ac.kr`, SSO `dsso.dongseo.ac.kr` | [07_student_portal](07_student_portal.md) |
 
 ### 1.2 결정 사항
 
@@ -166,7 +166,7 @@ Component(접근 구역) 하나에 문서 하나를 둔다. 경로, 인증, 응�
 | [04_smart_attendance](04_smart_attendance.md) | `smart_attendance` | 전자출결 |
 | [05_commons](05_commons.md) | `commons` | 강의 PDF·동영상·첨부 원본 다운로드 |
 | [06_school_site](06_school_site.md) | `school_site` | 학교 공지, 학과·기관 공지, 학과 게시판 목록 |
-| [07_student_portal](07_student_portal.md) | `student_portal` | 학생지원시스템 (조사 예정) |
+| [07_student_portal](07_student_portal.md) | `student_portal` | 학사행정웹서비스: 별도 로그인, 범용 조회 창구, 메뉴별 서비스 목록 |
 
 새 출처를 더할 때는 Component와 문서를 함께 추가하고 이 표에 행을 더한다.
 
@@ -182,6 +182,7 @@ Component(접근 구역) 하나에 문서 하나를 둔다. 경로, 인증, 응�
 |---|---|
 | 방식 B의 Canvas API Policy 문제(D1·D2) | 배포 전 (A) 검토. 인증은 `RequestAuthenticator`로 교체 가능하게 둔다 |
 | LearningX·SSO·Commons·학교 홈페이지는 공개 API가 아님 | 단계별 형식 검사와 `SourceChanged`. 실패 단계 이름으로 어디가 바뀌었는지 알 수 있게 한다 |
+| 학생지원시스템·스마트출결이 요청 매개변수의 학번을 세션과 대조하지 않음(IDOR, 학교 측 결함, [07 §3.4](07_student_portal.md)) | 앱은 학번을 입력받지 않고 **세션 학번으로만** 요청을 만든다. 외부 학번은 덮어쓰고, 응답의 학번이 다르면 폐기한다. 학교에 별도 보고(사용자 진행) |
 
 ### 4.2 미확인 항목
 
