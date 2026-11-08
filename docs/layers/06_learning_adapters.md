@@ -3,9 +3,9 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | [PRD §8.3](../01_prd.md), 2026-11-08 crates.io 조회 |
+| 근거 | [PRD §8.3](../01_prd.md), 2026-11-08~09 실측(Apple M5, LearningX 영상 4개 과목 15개. 측정 보고서는 이 문서를 더한 PR의 코멘트), 2026-10-26 영상→PDF 실측(운영체제 2주차 1차시) |
 
-> **이 문서의 역할**: 학습 포트(`Transcriber`·`TextRecognizer`·`SlideExtractor`, [application §4.3](02_application.md))의 OS별 구현을 정한다. 확장 단계 기능이며 macOS를 먼저 구현한다.
+> **이 문서의 역할**: 강의 동영상 → 슬라이드 PDF·스크립트 기능의 처리 방식과, 학습 포트([application §4.3](02_application.md))의 구현을 정한다. 확장 단계 기능이며 macOS를 먼저 구현한다.
 
 ---
 
@@ -14,24 +14,107 @@
 | 항목 | 내용 |
 |---|---|
 | 링 | Frameworks & Drivers |
-| crate | `learning/macos`, `learning/windows`(나중) |
+| crate | `learning/media`, `learning/transcribe`, `learning/pdf`(두 OS 공통), `learning/macos`, `learning/windows`(OCR만) |
 | 의존할 수 있는 것 | `application`, `domain` |
 
-- composition root에서 `#[cfg(target_os)]`로 구현을 고른다. 구현이 없는 OS에서는 "지원하지 않음"을 돌려준다.
+- **OS별로 나누는 것은 OCR뿐이다**(S9). 디코딩·전사·PDF는 두 OS가 같은 crate를 쓰고, 빌드 기능 플래그(가속)만 다르다.
+- 슬라이드 판정 규칙(구간·묶음·점수)은 어댑터가 아니라 [domain §4.1](01_domain.md)에 있다. 앱이 신뢰하는 것은 앱의 로직뿐이므로, 판정은 외부 도구에 맡기지 않는다.
+- composition root에서 `#[cfg(target_os)]`로 OCR 구현을 고른다. 구현이 없는 OS에서는 `NotAvailable`을 돌려준다.
 
-## 2. 구현
+## 2. 처리 흐름
 
-| 포트 | macOS (먼저) | Windows (다음) |
+```
+동영상(.mp4, data_access의 MediaDownloadGateway로 받은 로컬 파일)
+ ├─ 슬라이드 PDF (ExtractSlidePdf)
+ │   ① FrameDecoder   1fps · 폭 320 · 회색조 raw 프레임 스트림      learning/media
+ │   ② domain         슬라이드 영역 검출 → 구간 → 재등장 묶음 → 후보 → 점수 → 자동 확정
+ │   ③ FrameDecoder   확정 장면을 원본 해상도로 추출               learning/media
+ │   ④ TextRecognizer 장면마다 OCR(한국어·영어)                    learning/macos | windows
+ │   ⑤ SlidePdfWriter 장면 + 타임스탬프 띠 + 보이지 않는 OCR 글자 층 + 책갈피   learning/pdf
+ │   ⑥ LearningOutputRepository  domain 이름 규칙의 키로 원자적 저장        local_store
+ └─ 스크립트 (Transcribe)
+     ① AudioDecoder   Transcriber가 알린 형식(whisper.cpp는 16kHz 모노)   learning/media
+     ② Transcriber    whisper.cpp + VAD → [mm:ss] 문장 줄          learning/transcribe
+     ③ LearningOutputRepository  스크립트 저장                       local_store
+```
+
+- **AI 검토 단계는 없다.** 묶음마다 domain 규칙으로 자동 확정한다. 2026-10-26 실측에서 검토한 13개 묶음 모두 자동 추천이 AI 판단과 같았고, 단계를 늘려 처리 시간을 늘리지 않는다.
+- **학교 서버의 자막·대본은 쓰지 않는다.** 스크립트는 항상 앱이 전사한다([05_commons](data_access/05_commons.md)).
+- 두 작업 모두 오래 걸리므로 작업(Job)으로 실행한다([application §4.6](02_application.md)).
+- 디코딩 간격·폭(domain 상수)과 음성 형식(`Transcriber::required_audio_format()`)은 유스케이스가 포트에 넘긴다. 아래 수치는 그 값이 무엇인지 적은 것이지 포트 계약이 아니다.
+
+## 3. 구현
+
+| 포트 | 구현 | macOS | Windows |
+|---|---|---|---|
+| `FrameDecoder`, `AudioDecoder` | `learning/media`: ffmpeg 사이드카(LGPL 정적 빌드)를 자식 프로세스로 띄워 파이프로 읽는다 | 같음 | 같음 |
+| `Transcriber` | `learning/transcribe`: `whisper-rs`(whisper.cpp) | Metal | CPU (Vulkan은 착수 때 측정) |
+| `TextRecognizer` | OS API | `learning/macos`: `objc2-vision`(Vision) | `learning/windows`: `windows` crate(Windows.Media.Ocr) |
+| `SlidePdfWriter` | `learning/pdf`: Rust PDF crate(착수 때 선정, 한글 글꼴 포함·보이지 않는 글자 층 지원 필수). PDF 바이트만 만들고 경로는 정하지 않는다 | 같음 | 같음 |
+| `LearningOutputRepository`, `ComponentStore` | `local_store`(앱 로컬 파일) | 같음 | 같음 |
+
+### 3.1 디코딩
+
+- 신호 추출은 **모든 프레임을 디코딩**한다: `-vf fps=1,scale=320:-2`, `-pix_fmt gray`, rawvideo 파이프.
+- **키프레임만 디코딩하지 않는다.** 실측: everlec 녹화(키프레임 1초 간격)는 데이터의 46~71%가 키프레임이라 약 10%만 줄었고, 그 밖의 녹화는 키프레임 간격이 7.7~13.3초라 슬라이드 전환을 놓친다.
+- **하드웨어 디코딩(VideoToolbox 등)을 쓰지 않는다.** 실측에서 일반 디코딩보다 약 9배 느렸다(작은 프레임을 하나씩 내보내는 작업이라 복사 비용이 크다).
+- 실측 시간(전부 디코딩): 30분 안팎 강의 하나에 2.8~18.1초.
+- 원본 해상도 장면 추출은 `-ss (i + 0.46)/fps -frames:v 1`로 한다. fps 필터의 i번째 프레임은 i+0.5초 직전 화면이라, i초로 찾으면 전환 직후에 앞 슬라이드를 뽑는다(2026-10-26 실측).
+- 앱이 받은 파일이라도 안에 든 재생목록이 원격을 열지 못하게 `-protocol_whitelist file`을 준다.
+
+### 3.2 전사
+
+| 항목 | 값 | 근거 |
 |---|---|---|
-| `Transcriber` | `whisper-rs` 0.16.0 (whisper.cpp, Metal 가속) | `whisper-rs` (CPU/CUDA) |
-| `TextRecognizer` | `objc2-vision` 0.3.2 (Apple Vision) | `windows` crate (Windows.Media.Ocr) |
-| `SlideExtractor` | ffmpeg 사이드카 + 장면 비교 | ffmpeg 사이드카 |
+| 엔진 | whisper.cpp (`whisper-rs`) | Rust에서 쓸 수 있고 두 OS가 같은 코드를 쓴다 |
+| 모델 | `ggml-large-v3-turbo-q5_0.bin` (574MB) | 원본(1.6GB)보다 3배 작고 빠르다. mlx-whisper와의 글자 차이 1.7~2.4%, 원본과 0.4~0.7%p 차이이며 대부분 띄어쓰기다 |
+| VAD | Silero v5.1.2 (`ggml-silero-v5.1.2.bin`, 0.9MB), **항상 켬** | VAD 없이 양자화 모델이 문장 묶음을 통째로 빠뜨린 경우가 있었다(글자 차이 4.1% → VAD 켜면 2.3%) |
+| 설정 | 언어 `ko`, 앞 문맥 미사용(`max_context = 0`) | 반복 환각을 막는다 |
+| 출력 | 줄마다 `[mm:ss] 문장` | 학습 기능의 출처 표기(`3주차 강의 12:30`)에 쓴다 |
+| 실측 속도 | M5 Metal: 10분 음성 약 20초. CPU만: 약 170초 | 30분 강의 기준 macOS 약 1분, CPU 약 8.5분 이상 |
 
-- 전사는 Rust에서 쓸 수 있는 whisper.cpp 계열을 쓴다(Python 전용 구현은 쓰지 않는다).
-- 모델 파일은 앱에 포함하지 않고 처음 쓸 때 내려받는다(크기·라이선스 확인 필요).
+- 전사 호출은 중간에 멈출 수 없으므로, whisper-rs의 중단 콜백(abort callback)으로 취소를 전달한다. 구간 단위 진행률을 작업 진행률로 보낸다.
 
-## 3. 미확인 항목
+### 3.3 OCR과 PDF
 
-- `whisper-rs` 갱신이 느린 편(최근 2026-03). 착수 때 유지 상태 재확인
+- OCR 결과의 글자 상자 위치에 **보이지 않는 글자**(render mode 3)를 깔아 PDF에서 검색·복사가 되게 한다.
+- 쪽 = 장면(원본 해상도) + 아래쪽 여백 띠의 타임스탬프(`12:34 (다시 나옴 18:02)`). 쪽 순서는 처음 나온 시각 순이고, 책갈피는 `페이지 n — mm:ss`다.
+- 문서 정보에 원본 동영상 제목, `content_id`, 만든 날짜를 넣는다.
+
+## 4. 부품
+
+| 부품 | 크기 | 쓰는 곳 |
+|---|---|---|
+| ffmpeg (LGPL 정적 빌드, 앱이 쓰는 기능만 켬) | 약 6MB(2026-10-30 실측) | `learning/media` |
+| `ggml-large-v3-turbo-q5_0.bin` | 574MB | `learning/transcribe` |
+| `ggml-silero-v5.1.2.bin` | 0.9MB | `learning/transcribe` |
+
+- **설치 패키지에 넣지 않고, 설치 과정에서 사용자 조작 없이 자동으로 내려받는다.** 모델 제공자 정책상 재배포 문제를 피한다. 앱 안의 별도 설치 단계는 없다. macOS는 `.pkg` 설치 프로그램의 postinstall, Windows는 설치 프로그램의 설치 단계가 받는다. 위치·복구는 [platform §3](../cross_cutting/02_platform.md).
+- 받은 파일은 앱에 고정한 SHA-256으로 확인한 뒤에만 쓴다. 고정값(2026-11-09 Hugging Face에서 받은 파일):
+
+| 파일 | SHA-256 |
+|---|---|
+| `ggml-large-v3-turbo-q5_0.bin` | `394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2` |
+| `ggml-silero-v5.1.2.bin` | `29940d98d42b91fbd05ce489f3ecf7c72f0a42f027e4875919a28fb4c04ea2cf` |
+
+- 부품 위치 찾기와 해시 확인은 `ComponentStore` 한곳에서 하고, `learning/media`·`learning/transcribe`는 이를 주입받는다.
+- 부품이 없거나 해시가 다르면 `ComponentMissing`(부품 종류 포함)을 돌려주고, 화면은 설치 복구를 안내한다([application §4.5](02_application.md)).
+- Windows에서 한국어 OCR 언어 팩이 없을 때도 `TextRecognizer`가 `ComponentMissing`으로 실패한다(두 OS 구현이 같은 방식으로 실패, LSP).
+
+## 5. 결과 파일
+
+| 항목 | 위치 |
+|---|---|
+| 슬라이드 PDF | `<학습 자료 폴더>/<학기>/<과목>/슬라이드/{NN}주차_{M}차시_{제목}.pdf` |
+| 스크립트 | `<학습 자료 폴더>/<학기>/<과목>/스크립트/{NN}주차_{M}차시_{제목}.txt` |
+| 작업 폴더(후보 장면, 판정 기록) | `<앱 데이터>/work/<content_id>/`. 다시 만들 때 쓴다 |
+
+- 이름 규칙과 짝 규칙은 [domain §4.2](01_domain.md)에 있다. 이 표는 `LearningOutputRepository` 구현이 키를 바꾸는 실제 위치다.
+
+## 6. 미확인 항목
+
+- 슬라이드 판정 기준값(전환 0.2, 같은 슬라이드 0.55, 펜 색 기준)은 운영체제 everlec 영상으로 조정한 값이다. 레이아웃이 다른 영상(AI기반창업마케팅, 제작 영상)으로 다시 확인한다.
+- 전사 절대 정확도: 실측은 mlx-whisper와의 일치도다. 사람이 받아 적은 정답 구간으로 글자 오류율을 잰다.
+- Windows: 실제 노트북의 CPU·Vulkan 전사 속도, Windows.Media.Ocr 한국어 품질과 언어 팩 설치 조건
+- `whisper-rs` 유지 상태(최근 갱신 2026-03), PDF crate 선정
 - `objc2-vision` 바인딩 범위(텍스트 인식 요청 API 포함 여부)
-- 전사 모델 크기·속도와 배포 방식
