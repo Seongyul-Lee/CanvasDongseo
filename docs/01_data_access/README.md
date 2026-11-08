@@ -33,7 +33,7 @@
 | D1 | 설계·개발은 **(B) 웹 세션 방식**으로 한다. LearningX 로그인으로 얻는 Canvas 웹 세션(`pseudonym_credentials`) 하나로 Canvas API와 LearningX를 함께 읽는다. 별도 Canvas API 토큰은 쓰지 않는다 | 초기 설정 단순화. 2026-11-08 세션으로 Canvas API GET·GraphQL 동작 확인 |
 | D2 | 정식 배포 전에는 **(A) OAuth2 방식**(학교 관리자가 발급한 Developer Key)을 검토한다. 인증은 §2.5의 `RequestAuthenticator`로 교체할 수 있게 둔다 | Canvas API Policy: 여러 사용자가 쓰는 앱은 OAuth로 토큰을 받아야 하고, 사용자에게 토큰을 직접 만들게 하면 안 된다. (B)는 정책상 회색 지대다 |
 | D3 | 레거시의 Canvas 토큰 자동 발급(`POST /profile/tokens`)과 직접 발급 안내는 쓰지 않는다 | D2와 같은 정책 조항 |
-| D4 | Commons의 `content_id` 다운로드 경로를 쓴다 | 공개 API는 아니지만 학교 측에 문의해 사용 허가를 받음(사용자 전달) |
+| D4 | Commons의 `content_id` 다운로드 경로를 쓴다 | 공개 API는 아니지만 학교 측이 공식 허용한다고 회신(2026-11-08, 사용자 구두 전달, 서면 사본 미확보. 서면 확보는 배포 전 과제). 범위는 `content_id` 다운로드로 한정 ([PRD §9.2](../00_prd.md)) |
 | D5 | 업스트림 `canvas-mcp` 패키지에 의존하지 않는다. 필요한 Canvas 경로는 직접 만든 DS로 접근한다 | 레거시에서 Canvas 호출이 업스트림·직접 구현·인증 게이트웨이 세 곳에 흩어졌다 |
 | D6 | 데이터 접근은 MCP를 거치지 않는다. 앱과 MCP 서버는 같은 유스케이스를 거쳐 data_access 레이어를 쓴다 | MCP는 바깥으로 내보이는 프로토콜이다. 프로세스 경계를 두면 레거시처럼 세션 공유(프로세스 간 잠금, 키체인 재읽기)가 구조의 중심이 된다 |
 
