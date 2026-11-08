@@ -41,7 +41,7 @@ View(SPA) ─command─▶ Controller(tauri command) ─▶ 유스케이스
 
 ### 2.1 프런트엔드 SPA 내부 구조
 
-화면을 그리는 계층을 theme · components · screens로 나누고, ViewModel 보관과 command 호출을 따로 둔다.
+화면을 그리는 계층을 theme · components · screens로 나누고, ViewModel 타입, ViewModel 보관, command 호출을 따로 둔다.
 
 ```
 ui/src/
@@ -49,20 +49,24 @@ ui/src/
   components/  재사용 UI. props는 ViewModel 조각이다
   screens/     컴포넌트 조립과 store 연결만 한다
   stores/      ViewModel 보관. 값을 새로 만들지 않는다
-  commands/    생성된 ViewModel 타입, Tauri command 래퍼
+  viewmodels/  Rust에서 생성한 ViewModel·이벤트 타입. 손으로 고치지 않는다
+  commands/    Tauri command 래퍼
 ```
 
 | 폴더 | 의존할 수 있는 것 | 하지 않는 것 |
 |---|---|---|
 | `theme` | 없음 | 컴포넌트·화면 코드 |
-| `components` | `theme`, `commands`의 타입 | store·command 호출, 조건 분기로 표시 판단 |
+| `viewmodels` | 없음(생성 코드) | 손으로 고치기 |
+| `components` | `theme`, `viewmodels` | store·command 호출, 조건 분기로 표시 판단 |
 | `screens` | `components`, `stores`, `theme` | command 직접 호출, ViewModel 가공 |
-| `stores` | `commands` | 표시 판단, 값 계산, 파생 값(selector 계산) |
-| `commands` | 없음(생성 코드와 Tauri API) | 상태 보관 |
+| `stores` | `commands`, `viewmodels` | 표시 판단, 값 계산, 파생 값(selector 계산) |
+| `commands` | `viewmodels`, Tauri API | 상태 보관 |
 
 - 화면 상태에 따른 표시 판단(배너 종류, 버튼 활성 여부)은 ViewModel 필드로 받는다. 컴포넌트는 필드 값을 그대로 그린다(`banner.kind`에 맞는 변형을 고르는 것까지는 View의 일이다).
+- 사용자 동작은 `screens` → store 액션 → `commands` 래퍼 순서로 코어에 간다. 응답과 코어 이벤트는 store에 들어가고 `screens`가 store를 구독해 그린다.
+- `viewmodels/`는 화면과 코어 사이의 계약이다. command 응답뿐 아니라 이벤트(AI 스트림, 진행률)의 타입도 여기에 있다.
 - `commands/`는 WebView ↔ 코어의 Tauri command 경로다. `cdx` ↔ 코어의 IPC([entrypoints](04_entrypoints.md))와 다르다.
-- 구현 순서: ViewModel 타입·Presenter(Rust, 테스트 먼저) → TypeScript 타입 생성 → `theme` → `components` → `screens`. 로직을 먼저 만들고 화면은 테스트가 필요 없을 만큼 얇게 얹는다(Humble Object).
+- 구현 순서: ViewModel 타입·Presenter(Rust, 테스트 먼저) → TypeScript 타입 생성(`viewmodels/`) → `theme` → `components` → `screens`. 로직을 먼저 만들고 화면은 테스트가 필요 없을 만큼 얇게 얹는다(Humble Object).
 - 위 의존 방향은 `eslint-plugin-boundaries`로 검사해 편집 직후 훅과 CI에 건다.
 
 ### 2.2 디자인 토큰

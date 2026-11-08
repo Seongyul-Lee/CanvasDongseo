@@ -73,6 +73,8 @@ crates/
   bin/
     app/                  Tauri 앱 + composition root
     cdx/                  CLI
+ui/                       프런트엔드 SPA(React). View와 ViewModel 보관 (presentation §2.1)
+design/                   디자인 목업·샘플 JSON (Design Process)
 ```
 
 ### 3.2 의존 규칙 (Cargo `[dependencies]`로 강제)
@@ -132,3 +134,9 @@ crates/
 |---|---|
 | [01_security](cross_cutting/01_security.md) | 보안 경계와 남는 위험 |
 | [02_platform](cross_cutting/02_platform.md) | 기술 스택, OS별 구성, 설치·배포 |
+
+**절차**
+
+| 문서 | 주제 |
+|---|---|
+| [Design Process](03_design_process.md) | 와이어프레임부터 화면별 토큰까지 디자인 단계와 산출물 |

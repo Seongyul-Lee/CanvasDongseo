@@ -17,7 +17,7 @@
 
 | 단계 | 산출물 | 위치 |
 |---|---|---|
-| 1. 와이어프레임 | 화면별 HTML 목업, ViewModel 모양의 샘플 JSON | `design/wireframes/` |
+| 1. 와이어프레임 | 화면별 HTML 목업, ViewModel 모양의 샘플 JSON | 목업: `design/wireframes/`, 샘플: `design/samples/` |
 | 2. Foundation | 색·타이포·간격·모서리·그림자·아이콘·포커스 링 목업 | `design/foundation/` |
 | 3. 화면별 디자인 | `tokens.json` 값, 토큰을 적용한 화면 목업 | 토큰: `ui/src/theme/tokens.json`, 목업: `design/screens/` |
 | 4. 구현 | [Presentation](layers/03_presentation.md) §2.1 구현 순서를 따른다 | `ui/`, `crates/presentation` |
