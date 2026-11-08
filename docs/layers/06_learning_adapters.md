@@ -27,7 +27,7 @@
 | `TextRecognizer` | `objc2-vision` 0.3.2 (Apple Vision) | `windows` crate (Windows.Media.Ocr) |
 | `SlideExtractor` | ffmpeg 사이드카 + 장면 비교 | ffmpeg 사이드카 |
 
-- 레거시는 `mlx-whisper`(Python 전용)를 썼다. Rust에서는 whisper.cpp 계열로 바꾼다.
+- 전사는 Rust에서 쓸 수 있는 whisper.cpp 계열을 쓴다(Python 전용 구현은 쓰지 않는다).
 - 모델 파일은 앱에 포함하지 않고 처음 쓸 때 내려받는다(크기·라이선스 확인 필요).
 
 ## 3. 미확인 항목

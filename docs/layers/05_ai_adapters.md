@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | 레거시 `docs/14_ports_and_rpc.md` §2.1.2·§2.1.3, `docs/16_ai_runtime.md`, `src/canvas_dongseo/infrastructure/ai/claude_cli.py`, 2026-11-08 Claude Code 2.1.319 실측(§6) |
+| 근거 | 2026-10-26 Claude Code 2.1.310·codex-cli 0.160.0 로그인 실측, 2026-11-08 Claude Code 2.1.319 실측(§6) |
 
 > **이 문서의 역할**: AI 포트(`AiInstallation`·`AiAccount`·`AiSession`, [application §4.2](02_application.md))의 제공자별 구현을 정한다. MVP는 Claude Code다.
 
@@ -20,7 +20,7 @@
 - 새 제공자 = crate 하나 추가 + composition root 등록. 기존 crate는 고치지 않는다.
 - 제공자 형식(stream-json, app-server JSON 등)은 어댑터 안에서 중립 이벤트로 바꾼다.
 
-## 2. Claude 로그인 (레거시 방식 유지)
+## 2. Claude 로그인
 
 | 항목 | 방식 |
 |---|---|
@@ -38,7 +38,7 @@
 | 방식 | 쓰지 않는 이유 |
 |---|---|
 | `claude setup-token` → 앱 키체인 → `CLAUDE_CODE_OAUTH_TOKEN` | 앱이 장기 AI 토큰을 보관·중계한다(S6 위반) |
-| 앱 전용 `CLAUDE_CONFIG_DIR` | 로그인을 따로 해야 하고, 재개 기록이 계정 폴더에 묶여 복잡해진다. 레거시에서 만들었다 되돌림 |
+| 앱 전용 `CLAUDE_CONFIG_DIR` | 로그인을 따로 해야 하고, 대화 재개 기록이 계정 폴더에 묶여 대화마다 계정을 추적해야 한다 |
 | `--bare` | 구독 OAuth·키체인을 읽지 않는다(API 키 전용) |
 
 ## 3. 실행 모드
@@ -114,9 +114,9 @@
 
 ## 7. 추가 제공자 메모
 
-- Codex: `codex app-server`(한 줄 JSON). 로그인은 `account/login/start`가 주는 `authUrl`을 앱이 연다. 포트 1455 충돌 때 기기 코드 방식. 지시 주입·도구 제한 방법은 착수 때 확인한다(레거시 `docs/14` §2.1.3).
+- Codex: `codex app-server`(한 줄 JSON). 로그인은 `account/login/start`가 주는 `authUrl`을 앱이 연다. 포트 1455 충돌 때 기기 코드 방식. 지시 주입·도구 제한 방법은 착수 때 확인한다.
 
 ## 8. 미확인 항목
 
-- 대화 모드에서 권한 확인 요청을 stream-json으로 중계하는 메시지 형식(`--permission-prompts host`). 레거시는 CLI 제어 메시지로 처리했다(레거시 `docs/16` §3.2.2)
+- 대화 모드에서 권한 확인 요청을 stream-json으로 중계하는 메시지 형식(`--permission-prompts host`, CLI 제어 메시지로 예상)
 - `/clear`·`/compact`를 stream-json 입력으로 보냈을 때의 정확한 동작

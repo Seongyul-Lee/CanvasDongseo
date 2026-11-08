@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | 2026-11-08 확인(별도 표시가 없으면). 레거시 `CanvasDongseo-legacy` 문서·코드, Instructure 개발자 문서 |
+| 근거 | 2026-11-08 확인(별도 표시가 없으면), Instructure 개발자 문서 |
 
 > **이 문서의 역할**: Canvas REST·GraphQL로 접근하는 데이터와 경로를 정의한다. Source `canvas`.
 > 구조(레이어, `<I>`·DS 배치, 공통 오류, HTTP 정책)는 [README](README.md)를 따른다.
@@ -14,7 +14,7 @@
 
 - 기준 주소: `https://canvas.dongseo.ac.kr/api/v1`, GraphQL `POST https://canvas.dongseo.ac.kr/api/graphql`
 - 방식 B에서는 쿠키 세션으로 호출한다. JSON 앞의 `while(1);`를 제거한다. GraphQL과 쓰기 요청에는 `X-CSRF-Token`이 필요하다.
-- 페이지네이션: 기본 10개, `per_page` 최대값은 정해지지 않았다(레거시는 100). 항상 `Link` 헤더를 따른다.
+- 페이지네이션: 기본 10개, `per_page` 최대값은 정해지지 않았다(100으로 동작 확인). 항상 `Link` 헤더를 따른다.
 - 요청 제한: 요청마다 `X-Request-Cost`가 차감되고 `X-Rate-Limit-Remaining`으로 남은 양을 알려 준다. 동시에 한 요청만 보내면 제한에 거의 걸리지 않는다.
 
 ## 2. REST 경로
@@ -46,10 +46,10 @@
 | 캘린더 일정 | `GET /calendar_events?type=event&all_events=true&context_codes[]=course_{id}` | ✅ | |
 | 캘린더 과제 | `GET /calendar_events?type=assignment&all_events=true&context_codes[]=course_{id}` | ✅ | `context_codes`가 없으면 0건 |
 | 플래너 메모 | `GET /planner_notes` | ✅ | |
-| 플래너 메모 쓰기 | `POST /planner_notes`, `PUT·DELETE /planner_notes/{id}` | 미확인 (레거시 사용) | 개인 데이터 쓰기 예외([README §1.3](README.md)) |
-| 플래너 완료 표시 | `POST /planner/overrides`, `PUT /planner/overrides/{id}` | 미확인 (레거시 사용) | 개인 데이터 쓰기 예외([README §1.3](README.md)) |
-| 개인 캘린더 일정 쓰기 | `POST /calendar_events`(`context_code=user_{id}`), `PUT·DELETE /calendar_events/{id}` | 미확인 (레거시 사용) | 개인 데이터 쓰기 예외([README §1.3](README.md)). 과목 일정은 만들지 않는다 |
-| 메시지 상세 | `GET /conversations/{id}` | ✅ (레거시 사용) | |
+| 플래너 메모 쓰기 | `POST /planner_notes`, `PUT·DELETE /planner_notes/{id}` | 미확인 | 개인 데이터 쓰기 예외([README §1.3](README.md)) |
+| 플래너 완료 표시 | `POST /planner/overrides`, `PUT /planner/overrides/{id}` | 미확인 | 개인 데이터 쓰기 예외([README §1.3](README.md)) |
+| 개인 캘린더 일정 쓰기 | `POST /calendar_events`(`context_code=user_{id}`), `PUT·DELETE /calendar_events/{id}` | 미확인 | 개인 데이터 쓰기 예외([README §1.3](README.md)). 과목 일정은 만들지 않는다 |
+| 메시지 상세 | `GET /conversations/{id}` | ✅ | |
 | 안 읽은 메시지 수 | `GET /conversations/unread_count` | ✅ | |
 | 활동 요약 | `GET /users/self/activity_stream/summary` | ✅ | 종류별 안 읽은 수 |
 | 내 그룹 | `GET /users/self/groups` | ✅ | |
@@ -71,12 +71,12 @@
 | 분석 | `GET /courses/{id}/analytics/users/self/activity` | ⛔ 401 | |
 | 학기 목록 | `GET /accounts/self/terms` | ⛔ 401 | 과목의 `include[]=term`으로 대신한다 |
 
-- 페이지·퀴즈·과목 파일은 확인한 과목에서 막혔지만, 레거시 업스트림 도구(`list_pages`, `get_page_content`, `list_quizzes`, `get_quiz_details`, `list_course_files`, `read_course_file`, `get_front_page`)가 쓰던 경로다. 과목마다 열릴 수 있으므로 DS는 구현해 두고 `NotAvailable`을 정상 결과로 다룬다.
+- 페이지·퀴즈·과목 파일·첫 페이지는 확인한 과목에서 막혔지만 Canvas가 학생에게 여는 경로다. 과목마다 열릴 수 있으므로 DS는 구현해 두고 `NotAvailable`을 정상 결과로 다룬다.
 - 404 "사용 안 함"은 과목마다 다를 수 있다. 막힌 경로는 `NotAvailable`로 다루고, 과목마다 다시 확인한다.
 
 ## 3. LTI 도구 번호 찾기
 
-레거시는 주차학습 도구 번호 `70`을 코드에 고정했다. 새 설계에서는 과목 탭에서 찾는다.
+도구 번호는 과목·학교 설정에 따라 다를 수 있으므로 코드에 고정하지 않고 과목 탭에서 찾는다.
 
 - `GET /courses/{id}/tabs`의 `id`가 `context_external_tool_<번호>` 형식이다.
 - 운영체제 과목(44947)의 탭(2026-11-08 확인):
