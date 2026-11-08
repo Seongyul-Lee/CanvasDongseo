@@ -38,6 +38,38 @@ View(SPA) ─command─▶ Controller(tauri command) ─▶ 유스케이스
 - Tauri capabilities로 WebView가 부를 수 있는 command를 제한한다.
 - AI용 Presenter는 이 레이어가 아니라 [entrypoints](04_entrypoints.md)에 있다.
 
+### 2.1 프런트엔드 SPA 내부 구조
+
+화면을 그리는 계층을 theme · components · screens로 나누고, ViewModel 보관과 command 호출을 따로 둔다.
+
+```
+ui/src/
+  theme/       디자인 토큰(tokens.json 원본)과 생성된 CSS 변수
+  components/  재사용 UI. props는 ViewModel 조각이다
+  screens/     컴포넌트 조립과 store 연결만 한다
+  stores/      ViewModel 보관. 값을 새로 만들지 않는다
+  ipc/         생성된 ViewModel 타입, command 래퍼
+```
+
+| 폴더 | 의존할 수 있는 것 | 하지 않는 것 |
+|---|---|---|
+| `theme` | 없음 | 컴포넌트·화면 코드 |
+| `components` | `theme`, `ipc`의 타입 | store·command 호출, 조건 분기로 표시 판단 |
+| `screens` | `components`, `stores`, `theme` | command 직접 호출, ViewModel 가공 |
+| `stores` | `ipc` | 표시 판단, 값 계산 |
+| `ipc` | 없음(생성 코드와 Tauri API) | 상태 보관 |
+
+- 화면 상태에 따른 표시 판단(배너 종류, 버튼 활성 여부)은 ViewModel 필드로 받는다. 컴포넌트는 필드 값을 그대로 그린다(`banner.kind`에 맞는 변형을 고르는 것까지는 View의 일이다).
+- 구현 순서: ViewModel 타입·Presenter(Rust, 테스트 먼저) → TypeScript 타입 생성 → `theme` → `components` → `screens`. 로직을 먼저 만들고 화면은 얇게 얹는다.
+- 위 의존 방향은 `eslint-plugin-boundaries`로 검사해 편집 직후 훅과 CI에 건다.
+
+### 2.2 디자인 토큰
+
+- 원본은 `ui/src/theme/tokens.json`(DTCG 형식) 하나다. 앱이 import하므로 앱 안에 둔다.
+- 빌드 도구(Style Dictionary 등, 미정)가 원본에서 `tokens.css`(CSS 변수)를 만든다. 컴포넌트는 CSS 변수만 쓰고 값을 직접 적지 않는다.
+- `design/`의 HTML 목업도 같은 `tokens.css`를 불러온다. 목업에서 고친 값이 앱에 그대로 반영된다. 디자인 절차는 [Design Process](../03_design_process.md)에 있다.
+- 라이트·다크 모드는 토큰 세트 두 벌로 두고 OS 설정(`prefers-color-scheme`)을 따른다.
+
 ## 3. 대화 화면의 슬래시 커맨드
 
 | 분류 | 예 | 처리 |
@@ -58,5 +90,5 @@ View(SPA) ─command─▶ Controller(tauri command) ─▶ 유스케이스
 
 ## 5. 미확인 항목
 
-- 프런트엔드 프레임워크(Svelte 또는 React). UX Strategy 뒤 확정
 - Rust → TypeScript 타입 생성 도구
+- 토큰 빌드 도구(Style Dictionary 등)와 `tokens.css` 생성물의 커밋 여부

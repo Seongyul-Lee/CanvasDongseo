@@ -29,7 +29,7 @@
 | CLI | `clap` | 4.6.7 (2026-09-14) | bin/cdx | `ToolGuide` 생성 |
 | 테스트 | `cargo test`, `wiremock` | 0.6.5 (2025-08-24) | 전체 | DS 계약 테스트, 실측 응답 픽스처 |
 | 의존성 검사 | `cargo-deny` | — | CI | 라이선스·취약점·금지 crate |
-| 프런트엔드 | 가벼운 SPA + Vite | 미정 | presentation | Svelte 또는 React. UX Strategy 뒤 확정 |
+| 프런트엔드 | `react` + Vite (SPA) | 19.3.1 (2026-11-06) | presentation | 대화 UI 라이브러리가 풍부하고 AI 에이전트의 코드 정확도가 높다 |
 | 학습 | `whisper-rs`, `objc2-vision`, ffmpeg | [learning_adapters](../layers/06_learning_adapters.md) | learning | 확장 단계 |
 
 - GraphQL은 전용 클라이언트 없이 JSON POST로 보낸다([02_canvas §4](../layers/data_access/02_canvas.md)).
