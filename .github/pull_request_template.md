@@ -8,6 +8,8 @@ PR 하나에는 근본적인 문제 하나만 담아 주세요.
   refactor: Canvas 응답 변환을 Repository로 이동
   test: 마감 문구 Presenter 테스트 추가
   chore: 이슈 템플릿 추가
+
+develop으로 머지할 때는 반드시 Squash Merge를 사용해 주세요. 머지 커밋 제목도 위 형식을 따릅니다.
 -->
 
 ## 📝 Problem (문제 배경)
