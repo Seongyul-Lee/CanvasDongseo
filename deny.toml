@@ -2,12 +2,12 @@
 # 실행: cargo deny check
 
 [graph]
-# 배포 대상 OS의 의존만 본다(platform §3)
+# 배포 대상 OS(macOS, Windows)의 의존만 본다. Linux는 CI 러너일 뿐 배포하지 않으므로
+# Tauri의 Linux 전용 의존(gtk 등)은 배포물에 들어가지 않는다(build_ci §5.3, platform §3)
 targets = [
     "aarch64-apple-darwin",
     "x86_64-apple-darwin",
     "x86_64-pc-windows-msvc",
-    "x86_64-unknown-linux-gnu",
 ]
 all-features = true
 
@@ -17,9 +17,15 @@ ignore = []
 
 [licenses]
 # 허용 라이선스. 새 라이선스가 필요하면 사유를 PR에 적고 더한다
+# 모두 배포물에 고지하면 쓸 수 있는 라이선스다(고지 절차는 platform §1).
+# MPL-2.0은 파일 단위 약한 copyleft로, 수정 없이 쓰면 고지만 필요하다(Tauri의 cssparser·selectors 등)
 allow = [
     "Apache-2.0",
+    "BSD-3-Clause",
     "MIT",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Zlib",
 ]
 confidence-threshold = 0.9
 
