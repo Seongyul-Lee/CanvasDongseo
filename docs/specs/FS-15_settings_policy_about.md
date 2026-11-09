@@ -111,7 +111,7 @@
 
 ## 6. 미확인 항목
 
-- **로그아웃 뒤 학생 이름 표시**: [UX Strategy §7.1](../06_ux_strategy.md#71-내비게이션-골격)은 계정 자리에 대해 "연결 상태와 관계없이 이름을 보인다"고 쓰고, [FS-03 F6](FS-03_school_account.md)은 "저장한 학생 이름도 지운다"고 쓴다. 로그아웃 뒤에는 이름이 없으므로 계정 자리에 무엇을 보일지(빈 자리, 연결 안내) 정한다. "연결 상태와 관계없이"가 세션 만료·곧 만료를 뜻하는지 로그아웃까지 뜻하는지 UX Strategy에서 확인한다
+- **로그아웃 뒤 학생 이름 표시**: [UX Strategy §7.1](../06_ux_strategy.md#71-내비게이션-골격)은 계정 자리에 대해 "연결 상태와 관계없이 이름을 보인다"고 쓰고, [FS-03 F6](FS-03_school_account.md)은 로그아웃 때 학생 이름을 지울지 정하지 않고 이 항목으로 미룬다. 지운다면 로그아웃 뒤 계정 자리에 무엇을 보일지(빈 자리, 연결 안내) 정한다. "연결 상태와 관계없이"가 세션 만료·곧 만료를 뜻하는지 로그아웃까지 뜻하는지 UX Strategy에서 확인한다
 - **학습 부품의 라이선스 고지**: [platform §1](../cross_cutting/02_platform.md#1-기술-스택)은 고지 대상을 "가져온 코드와 서드파티 패키지(npm, Rust crate)"로 적는다. 설치 과정에서 받는 ffmpeg(LGPL 정적 빌드), 전사 모델(`ggml-large-v3-turbo-q5_0`), VAD 모델(Silero), whisper.cpp는 npm·Rust 패키지가 아니다([learning_adapters §4](../layers/06_learning_adapters.md#4-부품)). LGPL 사이드카는 고지와 소스 제공 방법이 필요할 수 있으므로 고지 목록에 넣을지 정한다. 한글 글꼴의 라이선스([Design Process](../03_design_process.md) Foundation)도 같다
 - 오픈소스 라이선스 목록 생성 도구와 형식([platform §4](../cross_cutting/02_platform.md#4-미확인-항목)). AC11은 도구를 정한 뒤 확인한다
 - 앱 버전의 원천(Tauri 설정의 버전, `Cargo.toml`)과 빌드 번호·커밋을 함께 보일지(F4, 추론)

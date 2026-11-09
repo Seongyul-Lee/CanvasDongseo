@@ -100,7 +100,7 @@
 | 과목 공지·토론 조회 중 세션 만료 | `SessionExpired` | 없음. 유스케이스가 창 안에서 처리하고, 창을 닫거나 대기 상한을 넘기면 `NeedsLogin` | OTP 입력 창, 입력 뒤 원래 요청 다시 실행([FS-03](FS-03_school_account.md) F5) |
 | 과목에서 토론·게시판을 쓰지 않음 | `NotAvailable` | `NotAvailable` | 그 과목에는 게시판이 없다는 안내 |
 | LearningX 게시글 경로 미확인 | — | `NotAvailable`(추론, §6) | 게시판 목록만 보인다 |
-| 격리 요약 세션을 쓸 수 없음 | — | `AiUnavailable(LoggedOut)`·`AiUnavailable(UsageLimit)` 등 | 원문은 넘기지 않고 "원문은 앱에서 보기"만 준다(F5) |
+| 격리 요약 세션을 쓸 수 없음 | `AiUnavailable(LoggedOut)`·`AiUnavailable(UsageLimit)` 등 | 없음. 요청은 성공하고 그 항목만 "요약하지 못함"으로 돌려준다(F5) | 원문은 넘기지 않고 "원문은 앱에서 보기"만 준다(F5) |
 | 위험 도구 호출 때 코어에 연결할 수 없음 | — | — | 통과(F7) |
 | 원문 보기 때 원문을 다시 가져오지 못함 | `Network` 등 | `Temporary` | 패널 안에서 다시 시도 |
 
