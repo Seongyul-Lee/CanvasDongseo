@@ -1,5 +1,4 @@
-# 항상 도는 검사(build_ci §5.4): 의존 그래프(cargo xtask deps-check), cargo deny, cargo fmt --check,
-# 프런트엔드 폴더 의존 검사(presentation §2.1, eslint-plugin-boundaries)
+# 항상 도는 검사(build_ci §5.4): 의존 그래프(cargo xtask deps-check), cargo deny, cargo fmt --check(바뀐 crate만)
 # 영향 범위와 관계없이 develop으로 가는 PR과 develop 푸시마다 돈다(build_ci §5.1)
 name: checks
 
@@ -12,9 +11,10 @@ on:
 permissions:
   contents: read
 
+# PR은 새 푸시가 오면 앞 실행을 취소한다. develop 푸시는 커밋마다 끝까지 검사한다(연속 머지에서 앞 커밋이 빠지지 않게)
 concurrency:
-  group: checks-${{ github.ref }}
-  cancel-in-progress: true
+  group: checks-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -50,26 +50,10 @@ jobs:
     name: cargo fmt --check
     runs-on: ubuntu-latest
     steps:
+      # 바뀐 crate를 구하려면 이력이 필요하다(merge-base, 푸시 전 커밋)
       - uses: actions/checkout@v5
-      - run: rustup toolchain install
-      # build_ci §5.4는 "바뀐 crate만"이지만, 바뀐 crate 계산(cargo xtask affected)은 #18에서 만든다.
-      # 그때까지는 워크스페이스 전체를 검사한다(바뀐 crate를 포함하는 상위 집합)
-      - run: cargo fmt --all --check
-
-  # ui/src 폴더 의존 검사(presentation §2.1). 영향 범위 계산(#18)이 생기기 전까지 항상 돈다
-  ui-boundaries:
-    name: ui typecheck · lint(boundaries)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: ui/package-lock.json
-      - run: npm --prefix ui ci
-      - run: npm --prefix ui run typecheck
-      # eslint-plugin-boundaries 포함
-      - run: npm --prefix ui run lint
-      # 위반 픽스처로 폴더 의존 규칙이 실제로 위반을 잡는지 확인한다
-      - run: npm --prefix ui test
+          fetch-depth: 0
+      - run: rustup toolchain install
+      # 바뀐 crate만 검사한다(build_ci §5.4). 전체를 돌리는 경로가 바뀌면 --all로 검사한다
+      - run: cargo xtask affected --event "${{ github.event_name == 'push' && 'push' || 'pr' }}" --base-ref "origin/${{ github.base_ref || 'develop' }}" --before "${{ github.event_name == 'push' && github.event.before || '' }}" --fmt

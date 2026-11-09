@@ -80,7 +80,7 @@
 | 이벤트 | 범위 |
 |---|---|
 | develop으로 가는 PR | develop과의 merge-base 대비 바뀐 파일로 영향 범위를 계산한다(§5.2) |
-| develop 푸시 | Squash Merge라 커밋 하나가 PR 하나다. `HEAD~1` 대비로 계산한다 |
+| develop 푸시 | 푸시 전 커밋(`github.event.before`) 대비로 계산한다. 이 저장소는 Squash Merge 외에 rebase merge·merge commit도 허용하므로 한 번에 여러 커밋이 푸시될 수 있고, `HEAD~1` 대비면 앞 커밋의 변경이 빠진다. `before`가 없거나 `0000…`(새 브랜치)이거나 그 커밋이 저장소에 없으면(force push 등) 전체를 돌린다. 연속 머지에서 앞 커밋의 검사가 취소되지 않도록 develop 푸시는 실행을 취소하지 않는다(`cancel-in-progress`는 PR에서만) |
 | 배포 빌드 | 영향 범위를 쓰지 않고 전체를 빌드·테스트한다(배포 흐름은 미확인, §7) |
 
 ### 5.2 영향 범위 계산 (`cargo xtask affected`)
