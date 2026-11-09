@@ -1,0 +1,15 @@
+[package]
+name = "presenters-school"
+description = "[presentation/presenters] school Presenter·ViewModel"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+usecases-school.workspace = true
+presenters-common.workspace = true
+app-kernel.workspace = true
+
+[lints]
+workspace = true

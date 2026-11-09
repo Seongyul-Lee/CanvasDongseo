@@ -1,0 +1,16 @@
+[package]
+name = "usecases-ai"
+description = "[application/usecases] AI 대화 유스케이스와 출력 DTO"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+app-kernel.workspace = true
+domain-core.workspace = true
+ports-ai.workspace = true
+ports-common.workspace = true
+
+[lints]
+workspace = true

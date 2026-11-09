@@ -1,0 +1,14 @@
+[package]
+name = "ports-ai"
+description = "[application/ports] AiInstallation·AiAccount·AiSession, 중립 이벤트, ConversationRepository"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+app-kernel.workspace = true
+domain-core.workspace = true
+
+[lints]
+workspace = true

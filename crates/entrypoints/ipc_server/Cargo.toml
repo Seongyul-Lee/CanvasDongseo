@@ -1,0 +1,18 @@
+[package]
+name = "ipc-server"
+description = "[entrypoints] cdx 요청 ↔ 유스케이스, AI용 Presenter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+usecases-school.workspace = true
+usecases-ai.workspace = true
+usecases-learning.workspace = true
+usecases-jobs.workspace = true
+ipc-wire.workspace = true
+app-kernel.workspace = true
+
+[lints]
+workspace = true

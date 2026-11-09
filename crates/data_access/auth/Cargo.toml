@@ -1,0 +1,17 @@
+[package]
+name = "data-access-auth"
+description = "[data_access] 인증 구현, AuthGateway 구현, SessionStore"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+data-access-http.workspace = true
+data-access-ds-core.workspace = true
+ports-school.workspace = true
+app-kernel.workspace = true
+platform-keychain.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,17 @@
+[package]
+name = "local-store-learning"
+description = "[local_store] LearningOutputRepository·ComponentStore 구현"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+ports-learning.workspace = true
+app-kernel.workspace = true
+domain-core.workspace = true
+platform-fs.workspace = true
+platform-keychain.workspace = true
+
+[lints]
+workspace = true

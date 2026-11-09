@@ -1,0 +1,24 @@
+[package]
+name = "tauri-commands"
+description = "[presentation] Tauri command(Controller), UserConfirmation·OtpPrompt·ProgressSink 구현"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+usecases-school.workspace = true
+usecases-ai.workspace = true
+usecases-learning.workspace = true
+usecases-jobs.workspace = true
+presenters-common.workspace = true
+presenters-school.workspace = true
+presenters-ai.workspace = true
+presenters-learning.workspace = true
+presenters-jobs.workspace = true
+presenters-shell.workspace = true
+ports-common.workspace = true
+app-kernel.workspace = true
+
+[lints]
+workspace = true

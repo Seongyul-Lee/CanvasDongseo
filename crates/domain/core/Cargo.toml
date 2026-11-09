@@ -1,0 +1,12 @@
+[package]
+name = "domain-core"
+description = "[domain] 엔티티, 학교 업무 규칙, 학습 결과물 이름 규칙"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

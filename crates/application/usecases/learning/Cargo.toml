@@ -1,0 +1,18 @@
+[package]
+name = "usecases-learning"
+description = "[application/usecases] 학습 유스케이스와 출력 DTO"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+app-kernel.workspace = true
+domain-core.workspace = true
+domain-slides.workspace = true
+ports-learning.workspace = true
+ports-common.workspace = true
+usecases-jobs.workspace = true
+
+[lints]
+workspace = true

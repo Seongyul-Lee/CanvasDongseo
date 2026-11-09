@@ -1,0 +1,12 @@
+[package]
+name = "domain-slides"
+description = "[domain] 슬라이드 판정 규칙. domain/core도 모른다"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

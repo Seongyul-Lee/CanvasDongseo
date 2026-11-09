@@ -1,0 +1,12 @@
+[package]
+name = "ipc-wire"
+description = "[ipc] cdx ↔ ipc_server 요청·응답 타입"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

@@ -1,0 +1,15 @@
+[package]
+name = "presenters-jobs"
+description = "[presentation/presenters] jobs Presenter·ViewModel"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+usecases-jobs.workspace = true
+presenters-common.workspace = true
+app-kernel.workspace = true
+
+[lints]
+workspace = true

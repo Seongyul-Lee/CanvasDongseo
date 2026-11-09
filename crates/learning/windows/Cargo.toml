@@ -1,0 +1,15 @@
+[package]
+name = "learning-windows"
+description = "[learning 어댑터] TextRecognizer (Windows OCR, 아직 구현하지 않음)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+ports-learning.workspace = true
+app-kernel.workspace = true
+domain-core.workspace = true
+
+[lints]
+workspace = true

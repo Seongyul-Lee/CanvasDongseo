@@ -1,0 +1,13 @@
+[package]
+name = "presenters-common"
+description = "[presentation/presenters] application 오류 → 공통 ViewModel 조각"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+app-kernel.workspace = true
+
+[lints]
+workspace = true

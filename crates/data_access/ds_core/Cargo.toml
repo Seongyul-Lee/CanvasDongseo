@@ -1,0 +1,12 @@
+[package]
+name = "data-access-ds-core"
+description = "[data_access] data_access 공통 오류"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

@@ -1,0 +1,17 @@
+[package]
+name = "presenters-shell"
+description = "[presentation/presenters] 앱 골격 표시: 연결 상태 모음, 대화별 상태"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+usecases-school.workspace = true
+usecases-ai.workspace = true
+usecases-jobs.workspace = true
+presenters-common.workspace = true
+app-kernel.workspace = true
+
+[lints]
+workspace = true

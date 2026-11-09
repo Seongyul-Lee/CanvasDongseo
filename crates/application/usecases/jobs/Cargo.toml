@@ -1,0 +1,15 @@
+[package]
+name = "usecases-jobs"
+description = "[application/usecases] JobRegistry, 작업 상태 조회·취소"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+app-kernel.workspace = true
+domain-core.workspace = true
+ports-common.workspace = true
+
+[lints]
+workspace = true

@@ -139,7 +139,7 @@
 
 ## 7. 미확인 항목
 
-- trait의 `async fn`을 dyn으로 쓸 수 있는지(착수 때 툴체인 기준). 수용 기준: 포트가 proc-macro 없이 `Arc<dyn Port>`로 주입된다
+- ~~trait의 `async fn`을 dyn으로 쓸 수 있는지~~ **확인함(2026-11-09, Rust 1.99.1, `rust-toolchain.toml`)**. trait의 `async fn`은 dyn으로 쓸 수 없다(`E0038: the trait is not dyn compatible ... because method is async`). §4의 대안대로 `application/kernel`에 `BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>`를 두고, 포트 메서드는 `async fn` 대신 이를 돌려준다. proc-macro와 tokio 없이 `Arc<dyn Port>`로 주입되고 future가 `Send`임을 `crates/application/kernel/tests/main.rs`(테스트 전용 포트)로 확인했다. 같은 crate의 `compile_fail,E0038` doctest가 `async fn` 포트의 dyn 사용이 막혀 있음을 고정하므로, 툴체인을 올려 이 doctest가 실패하면 `async fn`으로 바꿀 수 있는지 다시 본다. `BoxStream`은 스트림 trait(`futures-core` 등)를 정해야 하므로 스트리밍 포트를 만들 때 더한다
 - 개발 프로필의 의존 crate 최적화 수준(착수 때 측정)
 - 배포 빌드 흐름(태그·브랜치, 서명·공증 단계를 CI에서 할지)
 - macOS 러너 비용과 실행 빈도
