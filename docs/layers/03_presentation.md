@@ -66,15 +66,17 @@ ui/src/
 - 사용자 동작은 `screens` → store 액션 → `commands` 래퍼 순서로 코어에 간다. 응답과 코어 이벤트는 store에 들어가고 `screens`가 store를 구독해 그린다.
 - `viewmodels/`는 화면과 코어 사이의 계약이다. command 응답뿐 아니라 이벤트(AI 스트림, 진행률)의 타입도 여기에 있다.
 - `commands/`는 WebView ↔ 코어의 Tauri command 경로다. `cdx` ↔ 코어의 IPC([entrypoints](04_entrypoints.md))와 다르다.
-- 구현 순서: ViewModel 타입·Presenter(Rust, 테스트 먼저) → TypeScript 타입 생성(`viewmodels/`) → `theme` → `components` → `screens`. 로직을 먼저 만들고 화면은 테스트가 필요 없을 만큼 얇게 얹는다(Humble Object).
+- 구현 순서: ViewModel 타입·Presenter(Rust, 테스트 먼저. 기대값은 `design/samples/`의 샘플 JSON이다 — [Design Process §2.3](../03_design_process.md#23-목업)) → TypeScript 타입 생성(`viewmodels/`) → `theme` → `components` → `screens`. 로직을 먼저 만들고 화면은 테스트가 필요 없을 만큼 얇게 얹는다(Humble Object).
 - 위 의존 방향은 `eslint-plugin-boundaries`로 검사해 편집 직후 훅과 CI에 건다.
 
 ### 2.2 디자인 토큰
 
 - 원본은 `ui/src/theme/tokens.json`(DTCG 형식) 하나다. 앱이 import하므로 앱 안에 둔다.
+- 토큰은 원시 토큰(색 단계, 간격 단계)과 이를 가리키는 의미 토큰(`surface`, `textMuted`, `warningSurface` 등) 2단으로 둔다. 컴포넌트는 의미 토큰만 쓴다.
 - 빌드 도구(Style Dictionary 등, 미정)가 원본에서 `tokens.css`(CSS 변수)를 만든다. 컴포넌트는 CSS 변수만 쓰고 값을 직접 적지 않는다.
 - `design/`의 HTML 목업도 같은 `tokens.css`를 불러온다. 목업에서 고친 값이 앱에 그대로 반영된다. 디자인 절차는 [Design Process](../03_design_process.md)에 있다.
-- 라이트·다크 모드는 토큰 세트 두 벌로 두고 OS 설정(`prefers-color-scheme`)을 따른다.
+- 라이트·다크 모드는 의미 토큰이 가리키는 원시 토큰을 두 벌로 두고 OS 설정(`prefers-color-scheme`)을 따른다.
+- `components`는 키보드 조작·포커스·스크린 리더 지원을 갖춘 스타일 없는 컴포넌트 라이브러리 위에 만들고, 겉모습만 토큰으로 입힌다(라이브러리는 미확인).
 
 ### 2.3 신뢰하지 않는 HTML과 WebView 보안
 
@@ -111,3 +113,4 @@ ui/src/
 
 - Rust → TypeScript 타입 생성 도구
 - 토큰 빌드 도구(Style Dictionary 등)와 `tokens.css` 생성물의 커밋 여부
+- 기반 컴포넌트 라이브러리(스타일 없는 접근성 컴포넌트)

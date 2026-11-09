@@ -1,0 +1,29 @@
+name: 스프린트
+description: 1주 스프린트 하나를 연다 (월요일 ~ 일요일)
+title: "[스프린트] S"
+body:
+  - type: input
+    id: name
+    attributes:
+      label: 스프린트 이름
+      placeholder: 예) S01
+    validations:
+      required: true
+  - type: input
+    id: period
+    attributes:
+      label: 기간
+      placeholder: 예) 11/9(월) ~ 11/15(일)
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: 이번 스프린트에 끝내고 싶은 것
+      description: 넣을 백로그 항목은 스프린트 중에도 언제든 바꿀 수 있다.
+    validations:
+      required: true
+  - type: textarea
+    id: memo
+    attributes:
+      label: 메모
