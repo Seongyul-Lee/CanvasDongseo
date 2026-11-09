@@ -10,6 +10,7 @@
 | [02_system_architecture](02_system_architecture.md) | 결정 요약, 프로세스 구조, 레이어 지도, 용어, 전체 문서 색인 |
 | [03_design_process](03_design_process.md) | 디자인 단계와 산출물 |
 | [04_apple_developer_account](04_apple_developer_account.md) | Apple 계정·Developer Program, 인증서, 프로파일, 번들 ID, 공증 자격 증명 현황 |
+| [05_scrum_board](05_scrum_board.md) | 스프린트 운영 규칙, GitHub Projects 필드·View, 이슈 템플릿 |
 
 ## 폴더
 
