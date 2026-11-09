@@ -11,6 +11,7 @@
 | [03_design_process](03_design_process.md) | 디자인 단계와 산출물 |
 | [04_apple_developer_account](04_apple_developer_account.md) | Apple 계정·Developer Program, 인증서, 프로파일, 번들 ID, 공증 자격 증명 현황 |
 | [05_scrum_board](05_scrum_board.md) | 스프린트 운영 규칙, GitHub Projects 필드·View, 이슈 템플릿 |
+| [06_ux_strategy](06_ux_strategy.md) | Actor·시나리오, 경험 원칙, 기준 디자인(T3 Code), 화면 구성, 문구 원칙 |
 
 ## 폴더
 

@@ -3,16 +3,16 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | [PRD](01_prd.md), UX Strategy(작성 예정), [Presentation](layers/03_presentation.md), [스크럼 보드](05_scrum_board.md) |
+| 근거 | [PRD](01_prd.md), [UX Strategy](06_ux_strategy.md), [Presentation](layers/03_presentation.md), [스크럼 보드](05_scrum_board.md) |
 
-> **이 문서의 역할**: 화면 디자인을 *어떤 순서로, 어떤 산출물로* 진행하는지 정한다. Actor·시나리오, UX 원칙, 화면 구성, 문구·용어 규칙은 UX Strategy가, 앱 안의 구현 구조(theme·components·screens, 토큰 import)는 [Presentation](layers/03_presentation.md)이, 스프린트 운영은 [스크럼 보드](05_scrum_board.md)가 맡는다.
+> **이 문서의 역할**: 화면 디자인을 *어떤 순서로, 어떤 산출물로* 진행하는지 정한다. Actor·시나리오, UX 원칙, 기준 디자인(T3 Code), 화면 구성, 문구 원칙은 [UX Strategy](06_ux_strategy.md)가, 앱 안의 구현 구조(theme·components·screens, 토큰 import)는 [Presentation](layers/03_presentation.md)이, 스프린트 운영은 [스크럼 보드](05_scrum_board.md)가 맡는다.
 
 ---
 
 ## 1. 흐름
 
 ```
-[입력]        UX Strategy (Actor → 시나리오, 화면 구성, 문구·용어 규칙)
+[입력]        UX Strategy (Actor → 시나리오, 기준 디자인, 화면 구성, 문구 원칙)
 [처음 한 번]  Foundation
 [기능마다]    ① User Flow → ② 상태 목록 → ③ 목업 → ④ 구현 → ⑤ 실제 앱 확인 → ⑥ 시나리오 점검
 ```
@@ -23,10 +23,10 @@
 
 | 단계 | 입력 | 산출물 | 위치 |
 |---|---|---|---|
-| Foundation | UX Strategy, [Presentation §2.2](layers/03_presentation.md#22-디자인-토큰) | 기반 컴포넌트 선택, 원시·의미 토큰, 색·타이포·간격·모서리·그림자·아이콘·포커스 링 목업 | 토큰: `ui/src/theme/tokens.json`, 목업: `design/foundation/` |
+| Foundation | UX Strategy §3, [Presentation §2.2](layers/03_presentation.md#22-디자인-토큰) | T3 Code에서 가져온 토큰·기본 부품과 출처 기록, 한글 글꼴, 문구·용어·한글 표기 규칙 | `ui/src/theme/`, `ui/src/components/ui/`, `ui/UPSTREAM.md`, `design/writing.md` |
 | ① User Flow | UX Strategy의 시나리오 | 시작 → 성공까지의 흐름과 실패·중단 갈래 | User Flow 문서(작성 예정) |
 | ② 상태 목록 | User Flow, §2.2의 상태 출처 | 이 기능에서 생길 수 있는 상태와 각 상태의 ViewModel 샘플 | `design/samples/<기능>/` |
-| ③ 목업 | 상태 목록, 샘플 | 구조 목업 → 토큰을 적용한 목업 | `design/wireframes/`, `design/screens/` |
+| ③ 목업 | 상태 목록, 샘플 | SPA 샘플 모드로 그린 상태별 화면 | `ui/`(샘플 모드), 캡처는 PR |
 | ④ 구현 | 샘플, 목업 | [Presentation §2.1](layers/03_presentation.md#21-프런트엔드-spa-내부-구조) 구현 순서를 따른다 | `ui/`, `crates/presentation/*` |
 | ⑤ 실제 앱 확인 | 상태 목록 | 상태별 캡처, PR의 before/after | PR(레포에 커밋하지 않는다) |
 | ⑥ 시나리오 점검 | 시나리오, User Flow | 시나리오별 통과·막힘 기록 | PR 본문 |
@@ -35,18 +35,24 @@
 
 ### 2.1 Foundation
 
-- **기반 컴포넌트를 먼저 고른다.** 키보드 조작·포커스·스크린 리더 지원을 갖춘 스타일 없는 컴포넌트 라이브러리를 쓰고, 겉모습만 토큰으로 입힌다. 다이얼로그·메뉴·포커스 처리를 직접 만들지 않는다. 후보와 결정은 [Presentation §5](layers/03_presentation.md#5-미확인-항목)에 둔다.
-- **토큰은 2단이다.** 원시 토큰(색 단계, 간격 단계)과 의미 토큰(`surface`, `textMuted`, `warningSurface` 등)으로 나누고, 컴포넌트와 목업은 의미 토큰만 쓴다. 라이트·다크는 의미 토큰이 가리키는 원시 토큰만 바꾼다. 형식은 [Presentation §2.2](layers/03_presentation.md#22-디자인-토큰).
-- 모바일과 달리 데스크톱에서 추가로 정한다.
-  - 라이트·다크 모드(OS 설정을 따른다)
-  - 창 크기 변화에 따른 배치(고정 폭이 아니다)
-  - 키보드 조작과 포커스 표시
-  - 한글 글꼴: OS 기본(macOS Apple SD Gothic Neo, Windows Malgun Gothic)을 쓸지, 글꼴을 앱에 포함할지
-- 문구, 용어, 한글 표기 규칙은 Foundation에서 정하지 않는다. **UX Strategy가 먼저 정하고 우선한다.** Foundation이나 이후 단계에서 바꾸거나 더해야 하면 UX Strategy를 함께 고친다.
+기준 디자인은 T3 Code다([UX Strategy §3](06_ux_strategy.md#3-기준-디자인-t3-code)). Foundation은 디자인을 새로 설계하지 않고, 기준 버전에서 가져와 우리 것을 더한다.
+
+| 순서 | 할 일 | 산출물 |
+|---|---|---|
+| 1 | 기준 버전과 가져온 파일 목록을 기록한다. 가져온 파일에 브랜드 자산(T3 Code·다른 회사 로고)이 섞였는지 점검해 기록한다 | `ui/UPSTREAM.md`: 기준 버전·커밋, 가져온 파일마다 원본 경로, 고친 파일과 이유, 브랜드 자산 점검 결과 |
+| 2 | 그대로 가져올 것을 복사한다: `apps/web/src/index.css`, `apps/web/src/components/ui/`(Base UI 래퍼), lucide 아이콘 | `ui/src/theme/t3code.css`, `ui/src/components/ui/` |
+| 3 | 기본 테마 값만 쓴다. 실행 중에 색을 계산해 변수를 덮어쓰는 코드(`themePalette.ts`, `appearanceContrast.ts` 등)는 가져오지 않는다 | |
+| 4 | 한글 글꼴을 고르고 `--font-sans` 앞에 넣는다. 크기와 색은 그대로 둔다. 화면이 깨질 때만 줄 간격을 고친다 | `ui/src/theme/app.css`, 글꼴 파일과 라이선스 |
+| 5 | 문구, 용어, 한글 표기 규칙을 정한다. [UX Strategy §10](06_ux_strategy.md#10-문구-원칙)의 문구 원칙을 따른다 | `design/writing.md` |
+
+- **가져온 파일은 고치지 않는다.** 우리 것은 별도 파일(`theme/app.css`, `components/ui/` 밖의 컴포넌트)에 둔다. 기준 버전을 올릴 때 가져온 파일을 통째로 바꾸고 차이만 확인하기 위해서다. 꼭 고쳐야 하면 `UPSTREAM.md`에 이유를 적는다.
+- 기능 화면(사이드바, 설정, 온보딩, 입력창)은 복사하지 않는다. 판정 로직이 섞여 있으므로 구조와 클래스를 본떠 기능의 ③·④에서 다시 쓴다.
+- 데스크톱에서 함께 확인한다: 라이트·다크(설정에서 시스템·라이트·다크), 창 크기 변화에 따른 배치, 키보드 조작과 포커스 표시. 기준 디자인에 있는 동작을 따른다.
+- 문구, 용어, 한글 표기 규칙은 Foundation이 정하고 이후 기능에서 고쳐 간다. UX Strategy는 원칙만 두므로 규칙을 바꿀 때 UX Strategy를 고치지 않는다. 원칙과 어긋나게 바꿔야 하면 UX Strategy를 먼저 고친다.
 
 ### 2.2 User Flow와 상태 목록
 
-- 대상 기능과 화면은 UX Strategy의 시나리오와 화면 구성을 따른다. 이 문서에서는 화면을 정하지 않는다.
+- 대상 기능과 화면은 [UX Strategy](06_ux_strategy.md)의 시나리오와 화면 구성을 따른다. 이 문서에서는 화면을 정하지 않는다.
 - User Flow에는 성공 경로뿐 아니라 실패·중단 갈래를 함께 그린다. ⑥에서 갈래마다 끝까지 가 볼 수 있어야 한다.
 - 상태 목록은 화면 단위가 아니라 **그 기능에서 화면에 나타날 수 있는 상태** 단위로 만든다. 빠뜨리지 않도록 아래 출처를 확인한다.
 
@@ -62,12 +68,12 @@
 
 ### 2.3 목업
 
+- 목업은 따로 그리지 않고 **SPA 샘플 모드**로 그린다. SPA의 command 래퍼를 샘플 구현으로 바꿔 끼우면, 코어 없이 `design/samples/<기능>/<상태>.json`을 받아 실제 컴포넌트로 화면을 그린다. Vite 개발 서버로 띄우므로 Rust·Tauri 빌드가 없고, 컴포넌트나 샘플을 저장하면 바로 반영된다. 구조는 [Presentation §2.4](layers/03_presentation.md#24-샘플-모드).
 - 샘플 데이터는 **ViewModel 모양의 JSON**이다. 목업이 곧 ViewModel 타입 초안이 되고, 화면이 조건 분기 없이 그려지는지 이 단계에서 확인한다(예: 배너는 `banner.kind`로 받는다).
-- **샘플 JSON은 Presenter 테스트의 기대값이다**(읽는 방법은 [Presentation §2.1](layers/03_presentation.md#21-프런트엔드-spa-내부-구조)). ③에서 목업이 이 파일을 그리고, ④에서 Presenter 테스트가 Presenter 출력과 같은 파일을 비교한다. ViewModel이 바뀌면 테스트가 실패하므로 목업과 앱이 어긋나지 않는다. 샘플을 고치면 목업과 테스트가 함께 따라온다.
-- 구조 목업(`design/wireframes/`)에서 배치를 정한 뒤, 토큰을 적용한 목업(`design/screens/`)을 만든다.
-- 토큰 원본은 `ui/src/theme/tokens.json` 하나다. `design/`에는 두지 않는다. 목업은 생성된 `tokens.css`를 상대 경로로 불러와 앱과 같은 값을 쓴다.
-- 목업에 값을 직접 적지 않는다. 새 값이 필요하면 먼저 토큰으로 추가한다.
-- 같은 스프린트 안에서 순서를 고를 수 있으면 컴포넌트를 많이 쓰는 기능부터 한다. 앞 기능에서 정한 토큰과 컴포넌트를 뒤 기능이 다시 쓰게 된다.
+- **샘플 JSON은 Presenter 테스트의 기대값이다**(읽는 방법은 [Presentation §2.1](layers/03_presentation.md#21-프런트엔드-spa-내부-구조)). ③에서 샘플 모드가 이 파일을 그리고, ④에서 Presenter 테스트가 Presenter 출력과 같은 파일을 비교한다. ViewModel이 바뀌면 테스트가 실패하므로 목업과 앱이 어긋나지 않는다.
+- 화면 구조와 배치는 T3 Code의 해당 화면을 본뜬다([UX Strategy §7](06_ux_strategy.md#7-화면-구성)). 값을 직접 적지 않고 CSS 변수와 Tailwind 유틸리티만 쓴다.
+- 샘플 모드는 브라우저에서 보므로 macOS WKWebView와 글꼴·CSS가 다를 수 있고, Tauri 전용 기능(창, OS 브라우저 열기, 파일 대화상자)은 확인할 수 없다. 이 차이는 ⑤에서 확인한다.
+- 같은 스프린트 안에서 순서를 고를 수 있으면 컴포넌트를 많이 쓰는 기능부터 한다. 앞 기능에서 만든 컴포넌트를 뒤 기능이 다시 쓰게 된다.
 
 ### 2.4 실제 앱 확인
 
@@ -96,18 +102,18 @@
 
 ```
 design/
-  foundation/          Foundation 목업
-  wireframes/          ③ 구조 목업
-  screens/             ③ 토큰을 적용한 목업
+  writing.md           Foundation의 문구·용어·한글 표기 규칙
   samples/<기능>/
     README.md          ② 상태 목록
-    <상태>.json        ViewModel 샘플 = Presenter 테스트 기대값
-ui/src/theme/
-  tokens.json          토큰 원본 (앱과 목업이 함께 쓴다)
+    <상태>.json        ViewModel 샘플 = Presenter 테스트 기대값 = ③ 샘플 모드 입력
+ui/
+  UPSTREAM.md          T3 Code 기준 버전과 가져온 파일 기록
+  src/theme/           t3code.css(가져온 원본), app.css(우리 것)
+  src/components/ui/   T3 Code에서 가져온 기본 부품
 ```
 
 ## 5. 미확인 항목
 
-- 토큰 빌드 도구와 목업에서 `tokens.css`를 갱신하는 방법(감시 빌드 등)
-- 한글 글꼴 포함 여부
-- 목업과 SPA(브라우저 실행, command 대역)를 같은 샘플로 캡처하는 도구. Tauri 창 자체의 캡처는 우선 직접 한다
+- 한글 글꼴(무엇을 쓸지, 앱에 포함할지)
+- `components/ui/`를 복사만 해서 컴파일되는지(T3 Code 내부 import·상태 관리 의존). Foundation 2단계 전에 빈 Vite + React 프로젝트에 복사해 `tsc --noEmit`으로 확인한다
+- 샘플 모드 화면을 상태별로 캡처하는 도구. Tauri 창 자체의 캡처는 우선 직접 한다

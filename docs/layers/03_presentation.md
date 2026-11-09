@@ -5,7 +5,7 @@
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
 | 근거 | [System Architecture](../02_system_architecture.md) |
 
-> **이 문서의 역할**: 화면(WebView)과 코어 사이의 View · ViewModel · Presenter · Controller 역할과 위치를 정한다. 화면 구성과 흐름은 UX Strategy·User Flow가 맡는다.
+> **이 문서의 역할**: 화면(WebView)과 코어 사이의 View · ViewModel · Presenter · Controller 역할과 위치를 정한다. 화면 구성과 기준 디자인은 [UX Strategy](../06_ux_strategy.md), 흐름은 User Flow, 디자인 절차는 [Design Process](../03_design_process.md)가 맡는다.
 
 ---
 
@@ -48,12 +48,13 @@ View(SPA) ─command─▶ Controller(tauri command) ─▶ 유스케이스
 
 ```
 ui/src/
-  theme/       디자인 토큰(tokens.json 원본)과 생성된 CSS 변수
+  theme/       CSS 변수 원본. t3code.css(T3 Code에서 가져옴, 고치지 않음), app.css(우리 것)
   components/  재사용 UI. props는 ViewModel 조각이다
+    ui/        T3 Code에서 가져온 기본 부품(Base UI 래퍼). 고치지 않는다
   screens/     컴포넌트 조립과 store 연결만 한다
   stores/      ViewModel 보관. 값을 새로 만들지 않는다
   viewmodels/  Rust에서 생성한 ViewModel·이벤트 타입. 손으로 고치지 않는다
-  commands/    Tauri command 래퍼
+  commands/    command 래퍼. 실제 구현(Tauri)과 샘플 구현(§2.4)
 ```
 
 | 폴더 | 의존할 수 있는 것 | 하지 않는 것 |
@@ -63,7 +64,7 @@ ui/src/
 | `components` | `theme`, `viewmodels` | store·command 호출, 조건 분기로 표시 판단 |
 | `screens` | `components`, `stores`, `theme` | command 직접 호출, ViewModel 가공 |
 | `stores` | `commands`, `viewmodels` | 표시 판단, 값 계산, 파생 값(selector 계산) |
-| `commands` | `viewmodels`, Tauri API | 상태 보관 |
+| `commands` | `viewmodels`, Tauri API, 샘플 구현만 `design/samples/` | 상태 보관 |
 
 - 화면 상태에 따른 표시 판단(배너 종류, 버튼 활성 여부)은 ViewModel 필드로 받는다. 컴포넌트는 필드 값을 그대로 그린다(`banner.kind`에 맞는 변형을 고르는 것까지는 View의 일이다).
 - 사용자 동작은 `screens` → store 액션 → `commands` 래퍼 순서로 코어에 간다. 응답과 코어 이벤트는 store에 들어가고 `screens`가 store를 구독해 그린다.
@@ -71,16 +72,16 @@ ui/src/
 - `commands/`는 WebView ↔ 코어의 Tauri command 경로다. `cdx` ↔ 코어의 IPC([entrypoints](04_entrypoints.md))와 다르다.
 - 구현 순서: ViewModel 타입·Presenter(Rust, 테스트 먼저. 기대값은 `design/samples/`의 샘플 JSON이다 — [Design Process §2.3](../03_design_process.md#23-목업)) → TypeScript 타입 생성(`viewmodels/`) → `theme` → `components` → `screens`. 로직을 먼저 만들고 화면은 테스트가 필요 없을 만큼 얇게 얹는다(Humble Object).
 - **Presenter 테스트가 샘플 JSON을 읽는 방법**: `include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/<저장소 루트까지의 상대 경로>/design/samples/<기능>/<상태>.json"))`로 컴파일 때 넣는다. cargo가 이 파일을 의존 정보에 기록하므로 샘플을 고치면 테스트가 다시 빌드된다. 실행 중에 파일을 읽지 않는다(cargo가 변경을 모른다). 비교는 문자열이 아니라 JSON 값으로 한다(`serde_json::Value`, 키 순서·공백 무시). `include_str!`은 파일을 하나씩 적어야 하므로 **새 상태를 더하면 테스트 케이스도 함께 더한다**(입력 DTO는 상태마다 다르므로 어차피 손으로 쓴다). 빠뜨림을 막기 위해 crate마다 테스트 하나가 샘플 폴더의 파일 목록과 등록된 케이스 목록이 같은지 확인한다. CI에서는 `design/samples/**` 변경이 `presenters/*` 테스트를 돌린다([build_ci §5.2](../cross_cutting/03_build_ci.md#52-영향-범위-계산-cargo-xtask-affected)).
-- 위 의존 방향은 `eslint-plugin-boundaries`로 검사해 편집 직후 훅과 CI에 건다.
+- 위 의존 방향은 `eslint-plugin-boundaries`로 검사해 편집 직후 훅과 CI에 건다. `ui/` 밖을 참조하는 것은 `commands/`의 샘플 구현이 `design/samples/`를 읽는 경우 하나뿐이며, 이 예외만 규칙에 둔다(§2.4).
 
 ### 2.2 디자인 토큰
 
-- 원본은 `ui/src/theme/tokens.json`(DTCG 형식) 하나다. 앱이 import하므로 앱 안에 둔다.
-- 토큰은 원시 토큰(색 단계, 간격 단계)과 이를 가리키는 의미 토큰(`surface`, `textMuted`, `warningSurface` 등) 2단으로 둔다. 컴포넌트는 의미 토큰만 쓴다.
-- 빌드 도구(Style Dictionary 등, 미정)가 원본에서 `tokens.css`(CSS 변수)를 만든다. 컴포넌트는 CSS 변수만 쓰고 값을 직접 적지 않는다.
-- `design/`의 HTML 목업도 같은 `tokens.css`를 불러온다. 목업에서 고친 값이 앱에 그대로 반영된다. 디자인 절차는 [Design Process](../03_design_process.md)에 있다.
-- 라이트·다크 모드는 의미 토큰이 가리키는 원시 토큰을 두 벌로 두고 OS 설정(`prefers-color-scheme`)을 따른다.
-- `components`는 키보드 조작·포커스·스크린 리더 지원을 갖춘 스타일 없는 컴포넌트 라이브러리 위에 만들고, 겉모습만 토큰으로 입힌다(라이브러리는 미확인).
+- 원본은 **CSS 변수**다. T3 Code 기준 버전의 `apps/web/src/index.css`(Tailwind v4 `@theme`, `:root`, `.dark` 변형)를 `ui/src/theme/t3code.css`로 그대로 가져온다. 기준 버전과 가져온 파일은 `ui/UPSTREAM.md`에 기록한다([UX Strategy §3](../06_ux_strategy.md#3-기준-디자인-t3-code), [Design Process §2.1](../03_design_process.md#21-foundation)).
+- 우리 값(한글 글꼴, 우리 앱만의 상태 색 등)은 `ui/src/theme/app.css`에서 더하거나 덮어쓴다. 가져온 파일은 고치지 않는다. 기준 버전을 올릴 때 가져온 파일을 통째로 바꾸고 차이를 확인한다.
+- 컴포넌트는 CSS 변수와 Tailwind 유틸리티만 쓰고 값을 직접 적지 않는다.
+- 테마는 시스템(기본, `prefers-color-scheme`)·라이트·다크 중에서 설정으로 고른다. 루트 요소의 `.dark` 클래스로 적용한다. 설정 값의 저장 위치는 아직 정하지 않았다([UX Strategy §12 ⑦](../06_ux_strategy.md#12-아키텍처에-올릴-것)). T3 Code의 실행 중 색 계산(`themePalette.ts` 등)은 가져오지 않고 기본 테마 값만 쓴다.
+- 기반 컴포넌트는 Base UI다. T3 Code의 `components/ui/`(Base UI 래퍼)를 그대로 가져와 `ui/src/components/ui/`에 둔다. 아이콘은 `lucide-react`를 쓴다.
+- 가져온 기본 부품 안의 상호작용 처리(열림 상태, 포커스 이동 등)는 View의 일이다. ViewModel 값에 따른 표시 판단은 여전히 Presenter가 한다.
 
 ### 2.3 신뢰하지 않는 HTML과 WebView 보안
 
@@ -94,6 +95,18 @@ ui/src/
 | capabilities | WebView가 부를 수 있는 command를 Tauri capabilities로 제한한다 |
 | 확인 화면 | `UserConfirmation`의 내용은 코어가 만든 값만 그린다. 승인 command는 요청 ID·내용 해시를 함께 보낸다([application §4.4](02_application.md)) |
 | 링크 | 외부 링크는 OS 브라우저로 연다. 앱 WebView 안에서 이동하지 않는다 |
+
+### 2.4 샘플 모드
+
+[Design Process ③](../03_design_process.md#23-목업)에서 코어 없이 화면을 그리기 위한 실행 방식이다.
+
+| 항목 | 내용 |
+|---|---|
+| 구조 | `commands/`에 실제 구현(Tauri `invoke`, 코어 이벤트 구독)과 샘플 구현을 둔다. 둘은 같은 함수 모양이고, `stores`·`screens`는 어느 쪽이 붙었는지 모른다 |
+| 고르는 방법 | 실행할 때 환경 변수로 고른다. 샘플 모드는 Vite 개발 서버로만 띄운다 |
+| 배포 빌드와의 경계 | 샘플 구현과 `design/samples/`는 별도 엔트리(또는 샘플 모드에서만 실행되는 동적 import)로만 불러, 배포용 `vite build` 결과에 들어가지 않게 한다. 배포 빌드 결과에 샘플 JSON이 없는지 CI에서 확인한다 |
+| 샘플 구현 | `design/samples/<기능>/<상태>.json`을 command 응답으로 돌려준다. 상태는 화면에서 고를 수 있게 한다. 시간에 따라 바뀌는 것(AI 스트림, 작업 진행)은 이벤트를 순서대로 흘려보내 흉내 낸다 |
+| 한계 | 브라우저에서 보므로 WKWebView와 다를 수 있고, Tauri 전용 기능은 동작하지 않는다. 실제 앱 확인은 [Design Process ⑤](../03_design_process.md#24-실제-앱-확인) |
 
 ## 3. 대화 화면의 슬래시 커맨드
 
@@ -116,5 +129,4 @@ ui/src/
 ## 5. 미확인 항목
 
 - Rust → TypeScript 타입 생성 도구
-- 토큰 빌드 도구(Style Dictionary 등)와 `tokens.css` 생성물의 커밋 여부
-- 기반 컴포넌트 라이브러리(스타일 없는 접근성 컴포넌트)
+- 샘플 모드의 환경 변수 이름과 상태를 고르는 화면의 모양

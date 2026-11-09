@@ -99,7 +99,7 @@
 | `Cargo.toml`(워크스페이스 루트), `Cargo.lock`, `rust-toolchain.toml`, `.cargo/**`, `deny.toml` | 전체 |
 | `.github/workflows/**`, `crates/xtask/**` | 전체 |
 | `.github/**`(위 행 밖: PR·이슈 템플릿 등) | 빌드 없음 |
-| `design/samples/**` | `presenters/*` 전부(Presenter 테스트의 기대값, [presentation §2.1](../layers/03_presentation.md#21-프런트엔드-spa-내부-구조)). Presenter crate는 순수 로직이라 전부 돌려도 싸다 |
+| `design/samples/**` | `presenters/*` 전부(Presenter 테스트의 기대값, [presentation §2.1](../layers/03_presentation.md#21-프런트엔드-spa-내부-구조)). Presenter crate는 순수 로직이라 전부 돌려도 싸다. 샘플 모드의 입력이기도 하므로 프런트엔드 타입 검사와 `eslint-plugin-boundaries`도 돌린다([presentation §2.4](../layers/03_presentation.md#24-샘플-모드)) |
 | `ui/**` | 프런트엔드 작업(타입 검사, `eslint-plugin-boundaries`, 테스트, **배포용 빌드** `vite build`). PR에서는 Rust crate를 돌리지 않는다. develop 푸시에서는 `bin/app` 빌드도 돌린다(앱이 `ui/dist`를 번들에 넣으므로) |
 | `crates/<crate>/**` | 그 crate |
 | `docs/**`, `design/**`(samples 밖) | 빌드 없음 |
