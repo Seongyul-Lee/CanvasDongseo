@@ -1,0 +1,53 @@
+# OS
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# 편집기
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*~
+
+# Rust (Cargo.lock은 앱이므로 커밋한다)
+target/
+
+# Tauri 생성물
+src-tauri/gen/schemas/
+
+# 프런트엔드 (lock 파일은 커밋한다)
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+.vite/
+coverage/
+
+# 로그
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 환경 변수와 비밀 (비밀은 OS 자격 증명 저장소에만 둔다)
+.env
+.env.*
+!.env.example
+
+# Apple 서명·공증 자격 증명
+*.p12
+*.p8
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+
+# 학습 부품 (설치 과정에서 받는다. 레포에 넣지 않는다)
+ggml-*.bin
+
+# 에이전트 개인 설정
+.claude/settings.local.json
