@@ -24,7 +24,7 @@
 | 단계 | 입력 | 산출물 | 위치 |
 |---|---|---|---|
 | Foundation | UX Strategy §3, [Presentation §2.2](layers/03_presentation.md#22-디자인-토큰) | T3 Code에서 가져온 토큰·기본 부품과 출처 기록, 한글 글꼴, 문구·용어·한글 표기 규칙 | `ui/src/theme/`, `ui/src/components/ui/`, `ui/UPSTREAM.md`, `design/writing.md` |
-| ① User Flow | UX Strategy의 시나리오 | 시작 → 성공까지의 흐름과 실패·중단 갈래 | User Flow 문서(작성 예정) |
+| ① User Flow | UX Strategy의 시나리오, 그 기능의 Functional Spec | 시작 → 성공까지의 흐름과 실패·중단 갈래 | 해당 [Functional Spec](specs/README.md)의 User Flow 절(`UF-NN`, Mermaid) |
 | ② 상태 목록 | User Flow, §2.2의 상태 출처 | 이 기능에서 생길 수 있는 상태와 각 상태의 ViewModel 샘플 | `design/samples/<기능>/` |
 | ③ 목업 | 상태 목록, 샘플 | SPA 샘플 모드로 그린 상태별 화면 | `ui/`(샘플 모드), 캡처는 PR |
 | ④ 구현 | 샘플, 목업 | [Presentation §2.1](layers/03_presentation.md#21-프런트엔드-spa-내부-구조) 구현 순서를 따른다 | `ui/`, `crates/presentation/*` |
@@ -53,7 +53,7 @@
 ### 2.2 User Flow와 상태 목록
 
 - 대상 기능과 화면은 [UX Strategy](06_ux_strategy.md)의 시나리오와 화면 구성을 따른다. 이 문서에서는 화면을 정하지 않는다.
-- User Flow에는 성공 경로뿐 아니라 실패·중단 갈래를 함께 그린다. ⑥에서 갈래마다 끝까지 가 볼 수 있어야 한다.
+- User Flow에는 성공 경로뿐 아니라 실패·중단 갈래를 함께 그린다. 갈래는 그 기능 Functional Spec의 예외(§3)에서 가져온다. ⑥에서 갈래마다 끝까지 가 볼 수 있어야 한다.
 - 상태 목록은 화면 단위가 아니라 **그 기능에서 화면에 나타날 수 있는 상태** 단위로 만든다. 빠뜨리지 않도록 아래 출처를 확인한다.
 
 | 출처 | 확인할 것 |

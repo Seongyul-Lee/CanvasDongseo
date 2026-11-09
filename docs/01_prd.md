@@ -157,8 +157,7 @@ PRD에서 다루지 않는 내용은 아래 문서가 맡는다.
 | 문서 | 다루는 내용 |
 |---|---|
 | [UX Strategy](06_ux_strategy.md) | 사용자 경험 원칙, 대화 중심 경험의 방향, 화면 구성 전략 |
-| Functional Spec | 기능별 상세 동작, 입력·출력, 예외 처리, 수용 기준 |
-| User Flow | 로그인, 첫 사용, 대화, 자료 다운로드 등 사용자 흐름 |
+| [Functional Spec](specs/README.md) | 기능별 상세 동작, 입력·출력, 예외 처리, 수용 기준, 기능별 User Flow |
 | [System Architecture](02_system_architecture.md) | 기술 스택, 레이어 구성, AI 제공자 연동 구조, OS별 배포 |
 | [Data Access Architecture](layers/data_access/README.md) | 데이터 접근 레이어 구조, 출처별 접근 방법·경로·인증 |
 | [Design Process](03_design_process.md) | 디자인 단계와 산출물 |
