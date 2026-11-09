@@ -10,7 +10,7 @@ use super::paths::{Effect, classify};
 pub enum Event {
     /// develop으로 가는 PR: develop과의 merge-base 대비
     PullRequest,
-    /// develop 푸시: Squash Merge라 `HEAD~1` 대비
+    /// develop 푸시: 푸시 전 커밋(`github.event.before`) 대비
     Push,
 }
 
@@ -21,14 +21,30 @@ pub enum DiffBase {
     MergeBase(String),
     /// 이 리비전과 바로 비교한다
     Rev(String),
+    /// 비교할 커밋이 없다: 전체를 돌린다
+    All,
 }
 
 /// 이벤트와 인자로 비교 기준을 정한다. `explicit`(`--base`)이 있으면 그것을 쓴다.
-pub fn diff_base(event: Event, base_ref: &str, explicit: Option<&str>) -> DiffBase {
-    match (explicit, event) {
-        (Some(rev), _) => DiffBase::Rev(rev.to_owned()),
-        (None, Event::PullRequest) => DiffBase::MergeBase(base_ref.to_owned()),
-        (None, Event::Push) => DiffBase::Rev("HEAD~1".to_owned()),
+pub fn diff_base(
+    event: Event,
+    base_ref: &str,
+    before: Option<&str>,
+    explicit: Option<&str>,
+) -> DiffBase {
+    if let Some(rev) = explicit {
+        return DiffBase::Rev(rev.to_owned());
+    }
+    match event {
+        Event::PullRequest => DiffBase::MergeBase(base_ref.to_owned()),
+        // 한 번에 여러 커밋이 푸시될 수 있으므로(rebase merge·merge commit) HEAD~1이 아니라 푸시 전 커밋과 비교한다.
+        // 새 브랜치 푸시는 before가 0000…이다
+        Event::Push => match before {
+            Some(sha) if !sha.is_empty() && !sha.bytes().all(|b| b == b'0') => {
+                DiffBase::Rev(sha.to_owned())
+            }
+            _ => DiffBase::All,
+        },
     }
 }
 
@@ -51,8 +67,22 @@ pub struct Plan {
     pub crates: BTreeSet<String>,
     /// 프런트엔드 작업(타입 검사, eslint-plugin-boundaries)을 돌린다
     pub frontend: bool,
+    /// 프런트엔드 테스트와 배포용 빌드(`vite build`)도 돌린다(`ui/**` 대응)
+    pub frontend_full: bool,
     /// 파일별 대응(출력용)
     pub files: Vec<(String, Effect)>,
+}
+
+/// 전체를 돌리는 계획(경로 표의 "전체" 행, 비교 기준을 못 구했을 때).
+pub fn full(workspace: &Workspace) -> Plan {
+    Plan {
+        all: true,
+        changed: workspace.names(),
+        crates: workspace.names(),
+        frontend: true,
+        frontend_full: true,
+        files: Vec::new(),
+    }
 }
 
 /// 바뀐 파일 목록으로 계획을 세운다(build_ci §5.2).
@@ -79,6 +109,7 @@ pub fn plan(files: &[String], workspace: &Workspace, event: Event) -> Plan {
             }
             Effect::Frontend => {
                 plan.frontend = true;
+                plan.frontend_full = true;
                 // 앱이 ui/dist를 번들에 넣으므로 develop 푸시에서는 bin/app도 빌드한다
                 if event == Event::Push
                     && let Some(app) = workspace.by_dir(APP_DIR)
@@ -94,14 +125,14 @@ pub fn plan(files: &[String], workspace: &Workspace, event: Event) -> Plan {
     }
 
     if plan.all {
-        plan.changed = workspace.names();
-        plan.crates = workspace.names();
-        plan.frontend = true;
-    } else {
-        plan.crates = workspace.reverse_closure(&seeds);
-        plan.crates.extend(direct);
-        plan.changed = seeds;
+        return Plan {
+            files: plan.files,
+            ..full(workspace)
+        };
     }
+    plan.crates = workspace.reverse_closure(&seeds);
+    plan.crates.extend(direct);
+    plan.changed = seeds;
     plan
 }
 
@@ -204,12 +235,30 @@ pub fn fmt_command(plan: &Plan) -> Option<Vec<String>> {
     Some(command)
 }
 
-/// 프런트엔드 검사(#19가 `ui/package.json`에 만드는 스크립트 이름).
-pub const FRONTEND_COMMANDS: &[&[&str]] = &[
-    &["npm", "--prefix", "ui", "ci"],
-    &["npm", "--prefix", "ui", "run", "typecheck"],
-    &["npm", "--prefix", "ui", "run", "lint"],
-];
+/// 프런트엔드 작업(`ui/package.json`의 스크립트). 돌릴 것이 없으면 빈 목록.
+pub fn frontend_commands(plan: &Plan) -> Vec<Vec<String>> {
+    let npm = |args: &[&str]| {
+        ["npm", "--prefix", "ui"]
+            .iter()
+            .chain(args)
+            .map(|s| (*s).to_owned())
+            .collect::<Vec<_>>()
+    };
+    let mut commands = Vec::new();
+    if plan.frontend {
+        commands.push(npm(&["ci"]));
+        commands.push(npm(&["run", "typecheck"]));
+        // eslint-plugin-boundaries 포함
+        commands.push(npm(&["run", "lint"]));
+    }
+    if plan.frontend_full {
+        // 폴더 의존 규칙의 위반 픽스처 테스트 포함
+        commands.push(npm(&["run", "test"]));
+        // 배포용 빌드
+        commands.push(npm(&["run", "build"]));
+    }
+    commands
+}
 
 #[cfg(test)]
 mod tests {
@@ -224,24 +273,75 @@ mod tests {
         items.iter().map(|s| (*s).into()).collect()
     }
 
+    fn joined(commands: Vec<Vec<String>>) -> Vec<String> {
+        commands.iter().map(|c| c.join(" ")).collect()
+    }
+
     fn names(members: Vec<&Member>) -> Vec<&str> {
         members.iter().map(|m| m.name.as_str()).collect()
     }
 
+    const BEFORE: &str = "1111111111111111111111111111111111111111";
+
     #[test]
-    fn pr은_merge_base_푸시는_직전_커밋과_비교한다() {
+    fn pr은_merge_base와_비교한다() {
         assert_eq!(
-            diff_base(Event::PullRequest, "origin/develop", None),
+            diff_base(Event::PullRequest, "origin/develop", None, None),
             DiffBase::MergeBase("origin/develop".into())
         );
+        // PR에서는 before를 쓰지 않는다
         assert_eq!(
-            diff_base(Event::Push, "origin/develop", None),
-            DiffBase::Rev("HEAD~1".into())
+            diff_base(Event::PullRequest, "origin/develop", Some(BEFORE), None),
+            DiffBase::MergeBase("origin/develop".into())
+        );
+    }
+
+    #[test]
+    fn 푸시는_푸시_전_커밋과_비교한다() {
+        // 한 번에 여러 커밋이 푸시돼도(rebase merge·merge commit) 모두 들어간다
+        assert_eq!(
+            diff_base(Event::Push, "origin/develop", Some(BEFORE), None),
+            DiffBase::Rev(BEFORE.into())
+        );
+    }
+
+    #[test]
+    fn 푸시_전_커밋이_없으면_전체로_폴백한다() {
+        // 새 브랜치 푸시는 before가 0000…이다
+        let zero = "0".repeat(40);
+        assert_eq!(
+            diff_base(Event::Push, "origin/develop", Some(&zero), None),
+            DiffBase::All
         );
         assert_eq!(
-            diff_base(Event::PullRequest, "origin/develop", Some("abc123")),
+            diff_base(Event::Push, "origin/develop", None, None),
+            DiffBase::All
+        );
+        assert_eq!(
+            diff_base(Event::Push, "origin/develop", Some(""), None),
+            DiffBase::All
+        );
+    }
+
+    #[test]
+    fn 명시한_기준이_우선한다() {
+        assert_eq!(
+            diff_base(Event::PullRequest, "origin/develop", None, Some("abc123")),
             DiffBase::Rev("abc123".into())
         );
+        assert_eq!(
+            diff_base(Event::Push, "origin/develop", Some(BEFORE), Some("abc123")),
+            DiffBase::Rev("abc123".into())
+        );
+    }
+
+    #[test]
+    fn 비교_기준을_못_구하면_전체_계획() {
+        // before 객체가 없을 때(force push 등) 쓰는 계획: 표의 "전체" 행과 같다
+        let ws = sample();
+        let mut expected = plan(&files(&["Cargo.lock"]), &ws, Event::Push);
+        expected.files.clear();
+        assert_eq!(full(&ws), expected);
     }
 
     #[test]
@@ -255,6 +355,8 @@ mod tests {
         assert!(p.crates.is_empty());
         assert!(p.changed.is_empty());
         assert!(!p.frontend);
+        assert!(!p.frontend_full);
+        assert!(frontend_commands(&p).is_empty());
         assert_eq!(fmt_command(&p), None);
         assert!(cargo_commands(&crates_for(&p, &sample(), Runner::Linux)).is_empty());
     }
@@ -274,7 +376,17 @@ mod tests {
         );
         assert!(!p.all);
         assert_eq!(p.crates, set(&["presenters-common", "presenters-school"]));
+        // 타입 검사와 eslint-plugin-boundaries만(테스트·vite build는 ui/** 대응)
         assert!(p.frontend);
+        assert!(!p.frontend_full);
+        assert_eq!(
+            joined(frontend_commands(&p)),
+            [
+                "npm --prefix ui ci",
+                "npm --prefix ui run typecheck",
+                "npm --prefix ui run lint"
+            ]
+        );
         // Rust 파일이 바뀌지 않았으므로 fmt 대상은 없다
         assert_eq!(fmt_command(&p), None);
         assert_eq!(
@@ -321,7 +433,7 @@ mod tests {
         );
         assert!(p.all);
         assert_eq!(p.crates, sample().names());
-        assert!(p.frontend);
+        assert!(p.frontend && p.frontend_full);
         assert_eq!(
             fmt_command(&p).unwrap(),
             ["cargo", "fmt", "--all", "--check"]
@@ -331,8 +443,19 @@ mod tests {
     #[test]
     fn ui는_pr에서_rust를_돌리지_않고_푸시에서_앱을_빌드한다() {
         let pr = plan(&files(&["ui/src/main.tsx"]), &sample(), Event::PullRequest);
-        assert!(pr.frontend);
+        assert!(pr.frontend && pr.frontend_full);
         assert!(pr.crates.is_empty());
+        // ui/** 대응: 타입 검사, eslint-plugin-boundaries, 테스트, 배포용 빌드
+        assert_eq!(
+            joined(frontend_commands(&pr)),
+            [
+                "npm --prefix ui ci",
+                "npm --prefix ui run typecheck",
+                "npm --prefix ui run lint",
+                "npm --prefix ui run test",
+                "npm --prefix ui run build"
+            ]
+        );
 
         let push = plan(&files(&["ui/src/main.tsx"]), &sample(), Event::Push);
         assert!(push.frontend);

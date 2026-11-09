@@ -16,7 +16,7 @@ use std::path::Path;
 use std::process::{Command, ExitCode};
 
 use args::Args;
-use plan::{DiffBase, FRONTEND_COMMANDS, Plan, Runner};
+use plan::{DiffBase, Plan, Runner};
 
 pub fn run(raw: &[String]) -> ExitCode {
     if raw.iter().any(|a| a == "--help" || a == "-h") {
@@ -45,9 +45,18 @@ fn execute(args: &Args) -> Result<(), String> {
         &["metadata", "--no-deps", "--format-version", "1"],
     )?)?;
 
-    let base = plan::diff_base(args.event, &args.base_ref, args.base.as_deref());
+    let base = plan::diff_base(
+        args.event,
+        &args.base_ref,
+        args.before.as_deref(),
+        args.base.as_deref(),
+    );
     let plan = match resolve_base(&base) {
-        Ok(rev) => {
+        Ok(None) => {
+            println!("affected: 비교할 커밋이 없어({base:?}) 전체를 돌린다");
+            plan::full(&workspace)
+        }
+        Ok(Some(rev)) => {
             let output = capture(
                 "git",
                 &["diff", "--name-only", "--no-renames", &rev, "HEAD"],
@@ -65,15 +74,9 @@ fn execute(args: &Args) -> Result<(), String> {
             plan::plan(&files, &workspace, args.event)
         }
         Err(err) => {
-            // 비교 기준을 못 구하면(첫 커밋, 얕은 clone 등) 안전한 쪽으로 전체를 돌린다
+            // 비교 기준을 못 구하면(force push로 before 객체가 없음, 첫 커밋, 얕은 clone 등) 안전한 쪽으로 전체를 돌린다
             println!("affected: 비교 기준({base:?})을 구하지 못해 전체를 돌린다: {err}");
-            Plan {
-                all: true,
-                changed: workspace.names(),
-                crates: workspace.names(),
-                frontend: true,
-                files: Vec::new(),
-            }
+            plan::full(&workspace)
         }
     };
 
@@ -104,18 +107,22 @@ fn execute(args: &Args) -> Result<(), String> {
     Ok(())
 }
 
-fn resolve_base(base: &DiffBase) -> Result<String, String> {
-    match base {
-        DiffBase::MergeBase(reference) => Ok(capture("git", &["merge-base", reference, "HEAD"])?
-            .trim()
-            .to_owned()),
-        DiffBase::Rev(rev) => Ok(capture(
+/// 비교할 커밋을 구한다. `Ok(None)`은 비교할 커밋이 없다는 뜻(전체를 돌린다).
+fn resolve_base(base: &DiffBase) -> Result<Option<String>, String> {
+    let rev = match base {
+        DiffBase::All => return Ok(None),
+        DiffBase::MergeBase(reference) => capture("git", &["merge-base", reference, "HEAD"])?,
+        DiffBase::Rev(rev) => capture(
             "git",
-            &["rev-parse", "--verify", &format!("{rev}^{{commit}}")],
-        )?
-        .trim()
-        .to_owned()),
-    }
+            &[
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                &format!("{rev}^{{commit}}"),
+            ],
+        )?,
+    };
+    Ok(Some(rev.trim().to_owned()))
 }
 
 fn print_plan(plan: &Plan, workspace: &graph::Workspace, runner: Runner) {
@@ -150,15 +157,16 @@ fn print_plan(plan: &Plan, workspace: &graph::Workspace, runner: Runner) {
         "affected: macOS 러너 crate = {}",
         list(plan::crates_for(plan, workspace, Runner::Macos))
     );
-    println!("affected: 프런트엔드 작업 = {}", plan.frontend);
+    println!(
+        "affected: 프런트엔드 작업 = {} (테스트·배포용 빌드 = {})",
+        plan.frontend, plan.frontend_full
+    );
     println!("affected: 계획 — {runner:?} 러너에서 돌릴 명령:");
     for command in plan::cargo_commands(&plan::crates_for(plan, workspace, runner)) {
         println!("    {}", command.join(" "));
     }
-    if plan.frontend {
-        for command in FRONTEND_COMMANDS {
-            println!("    {}", command.join(" "));
-        }
+    for command in plan::frontend_commands(plan) {
+        println!("    {}", command.join(" "));
     }
 }
 
@@ -167,10 +175,11 @@ fn write_github_output(plan: &Plan, workspace: &graph::Workspace) -> Result<(), 
     let path = std::env::var("GITHUB_OUTPUT")
         .map_err(|_| "--github-output인데 GITHUB_OUTPUT이 없다".to_owned())?;
     let lines = format!(
-        "rust_linux={}\nrust_macos={}\nfrontend={}\n",
+        "rust_linux={}\nrust_macos={}\nfrontend={}\nfrontend_full={}\n",
         !plan::crates_for(plan, workspace, Runner::Linux).is_empty(),
         !plan::crates_for(plan, workspace, Runner::Macos).is_empty(),
         plan.frontend,
+        plan.frontend_full,
     );
     std::fs::OpenOptions::new()
         .append(true)
@@ -190,8 +199,7 @@ fn run_frontend(plan: &Plan) -> Result<(), String> {
         println!("affected: ui/package.json이 없어 프런트엔드 작업을 건너뛴다(계획만 출력)");
         return Ok(());
     }
-    for command in FRONTEND_COMMANDS {
-        let command: Vec<String> = command.iter().map(|s| (*s).to_owned()).collect();
+    for command in plan::frontend_commands(plan) {
         run_command(&command)?;
     }
     Ok(())

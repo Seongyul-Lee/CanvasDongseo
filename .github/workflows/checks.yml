@@ -50,10 +50,10 @@ jobs:
     name: cargo fmt --check
     runs-on: ubuntu-latest
     steps:
-      # 바뀐 crate를 구하려면 이력이 필요하다(merge-base, HEAD~1)
+      # 바뀐 crate를 구하려면 이력이 필요하다(merge-base, 푸시 전 커밋)
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - run: rustup toolchain install
       # 바뀐 crate만 검사한다(build_ci §5.4). 전체를 돌리는 경로가 바뀌면 --all로 검사한다
-      - run: cargo xtask affected --event "${{ github.event_name == 'push' && 'push' || 'pr' }}" --base-ref "origin/${{ github.base_ref || 'develop' }}" --fmt
+      - run: cargo xtask affected --event "${{ github.event_name == 'push' && 'push' || 'pr' }}" --base-ref "origin/${{ github.base_ref || 'develop' }}" --before "${{ github.event.before }}" --fmt

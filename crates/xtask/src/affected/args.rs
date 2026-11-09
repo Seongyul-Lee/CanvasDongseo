@@ -7,8 +7,10 @@ pub const USAGE: &str = "사용법: cargo xtask affected [옵션]
 바뀐 파일을 build_ci §5.2 경로 표로 crate·작업에 대응시키고, 역의존 crate까지의 계획을 출력한다.
 
 옵션:
-  --event pr|push        pr(기본): --base-ref와의 merge-base 대비, push: HEAD~1 대비
+  --event pr|push        pr(기본): --base-ref와의 merge-base 대비, push: --before 대비
   --base-ref <ref>       pr에서 merge-base를 구할 브랜치(기본 origin/develop)
+  --before <sha>         push에서 푸시 전 커밋(github.event.before). 없거나 0000…이거나
+                         객체가 없으면(force push 등) 전체를 돌린다
   --base <rev>           이 리비전과 바로 비교한다(--event의 기준보다 우선)
   --runner linux|macos|local
                          명령을 만들 러너(기본 local: Windows 전용 crate만 뺀다)
@@ -23,6 +25,7 @@ pub struct Args {
     pub event: Event,
     pub base_ref: String,
     pub base: Option<String>,
+    pub before: Option<String>,
     pub runner: Runner,
     pub run: bool,
     pub frontend: bool,
@@ -36,6 +39,7 @@ impl Default for Args {
             event: Event::PullRequest,
             base_ref: "origin/develop".to_owned(),
             base: None,
+            before: None,
             runner: Runner::Local,
             run: false,
             frontend: true,
@@ -64,6 +68,7 @@ pub fn parse(raw: &[String]) -> Result<Args, String> {
             }
             "--base-ref" => args.base_ref = value()?,
             "--base" => args.base = Some(value()?),
+            "--before" => args.before = Some(value()?),
             "--runner" => {
                 args.runner = match value()?.as_str() {
                     "linux" => Runner::Linux,
@@ -102,6 +107,8 @@ mod tests {
         let args = p(&[
             "--event",
             "push",
+            "--before",
+            "abc",
             "--runner",
             "linux",
             "--run",
@@ -110,6 +117,7 @@ mod tests {
         ])
         .unwrap();
         assert_eq!(args.event, Event::Push);
+        assert_eq!(args.before.as_deref(), Some("abc"));
         assert_eq!(args.runner, Runner::Linux);
         assert!(args.run && !args.frontend && args.github_output && !args.fmt);
     }
@@ -126,6 +134,7 @@ mod tests {
         assert!(p(&["--event", "tag"]).is_err());
         assert!(p(&["--runner", "windows"]).is_err());
         assert!(p(&["--base"]).is_err());
+        assert!(p(&["--before"]).is_err());
         assert!(p(&["--bogus"]).is_err());
     }
 }

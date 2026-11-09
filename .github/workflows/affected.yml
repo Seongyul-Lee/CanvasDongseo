@@ -1,7 +1,9 @@
 # 영향 범위만 도는 검사(build_ci §5.1~5.3): cargo xtask affected
-# - PR은 develop과의 merge-base 대비, develop 푸시는 HEAD~1 대비로 바뀐 파일을 구한다
+# - PR은 develop과의 merge-base 대비, develop 푸시는 푸시 전 커밋(github.event.before) 대비로 바뀐 파일을 구한다
+#   (한 번에 여러 커밋이 푸시돼도 빠지지 않게. before가 없거나 0000…이거나 객체가 없으면 전체를 돌린다)
 # - 바뀐 파일을 경로 표(§5.2)로 crate·작업에 대응시키고, 역의존 crate만 check·clippy·nextest·doc test를 돌린다
 # - crate는 러너 배정(§5.3)대로 Linux·macOS 작업에 나눈다. 돌릴 것이 없는 작업은 건너뛴다(docs/**만 바뀐 PR 등)
+# - 결과는 `affected` 작업 하나로 모은다(required check는 이 작업만 걸면 된다)
 name: affected
 
 on:
@@ -13,14 +15,18 @@ on:
 permissions:
   contents: read
 
+# PR은 새 푸시가 오면 앞 실행을 취소한다. develop 푸시는 커밋마다 끝까지 검사한다.
+# 같은 그룹이면 취소하지 않아도 대기 중인 앞 실행이 밀려나므로, 푸시는 커밋(sha)마다 그룹을 나눈다
 concurrency:
-  group: affected-${{ github.ref }}
-  cancel-in-progress: true
+  group: affected-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
   AFFECTED_EVENT: ${{ github.event_name == 'push' && 'push' || 'pr' }}
   AFFECTED_BASE_REF: origin/${{ github.base_ref || 'develop' }}
+  # push 이벤트에서만 값이 있다
+  AFFECTED_BEFORE: ${{ github.event.before }}
 
 jobs:
   plan:
@@ -30,8 +36,9 @@ jobs:
       rust_linux: ${{ steps.plan.outputs.rust_linux }}
       rust_macos: ${{ steps.plan.outputs.rust_macos }}
       frontend: ${{ steps.plan.outputs.frontend }}
+      frontend_full: ${{ steps.plan.outputs.frontend_full }}
     steps:
-      # merge-base와 HEAD~1을 구하려면 이력이 필요하다
+      # merge-base와 푸시 전 커밋을 구하려면 이력이 필요하다
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -40,7 +47,7 @@ jobs:
         with:
           save-if: ${{ github.event_name == 'push' }}
       - id: plan
-        run: cargo xtask affected --event "$AFFECTED_EVENT" --base-ref "$AFFECTED_BASE_REF" --github-output
+        run: cargo xtask affected --event "$AFFECTED_EVENT" --base-ref "$AFFECTED_BASE_REF" --before "$AFFECTED_BEFORE" --github-output
 
   linux:
     name: affected (Linux)
@@ -59,7 +66,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-nextest@0.9.150
-      - run: cargo xtask affected --event "$AFFECTED_EVENT" --base-ref "$AFFECTED_BASE_REF" --runner linux --run --skip-frontend
+      - run: cargo xtask affected --event "$AFFECTED_EVENT" --base-ref "$AFFECTED_BASE_REF" --before "$AFFECTED_BEFORE" --runner linux --run --skip-frontend
 
   macos:
     name: affected (macOS)
@@ -77,8 +84,10 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-nextest@0.9.150
-      - run: cargo xtask affected --event "$AFFECTED_EVENT" --base-ref "$AFFECTED_BASE_REF" --runner macos --run --skip-frontend
+      - run: cargo xtask affected --event "$AFFECTED_EVENT" --base-ref "$AFFECTED_BASE_REF" --before "$AFFECTED_BEFORE" --runner macos --run --skip-frontend
 
+  # 프런트엔드 작업(build_ci §5.2): design/samples/**는 타입 검사·eslint-plugin-boundaries,
+  # ui/**와 전체 행은 테스트와 배포용 빌드(vite build)까지 돈다
   frontend:
     name: affected (frontend)
     needs: plan
@@ -86,19 +95,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      # ui/는 #19가 만든다. 아직 없으면 건너뛰고 로그로 알린다
-      - id: ui
-        run: |
-          if [ -f ui/package.json ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice title=frontend::ui/package.json이 없어 프런트엔드 검사(typecheck·lint)를 건너뛴다"
-            echo "present=false" >> "$GITHUB_OUTPUT"
-          fi
-      - if: steps.ui.outputs.present == 'true'
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 24
-      # 타입 검사와 eslint-plugin-boundaries(lint)
-      - if: steps.ui.outputs.present == 'true'
-        run: npm --prefix ui ci && npm --prefix ui run typecheck && npm --prefix ui run lint
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm --prefix ui ci
+      - run: npm --prefix ui run typecheck
+      # eslint-plugin-boundaries 포함
+      - run: npm --prefix ui run lint
+      # 위반 픽스처로 폴더 의존 규칙이 실제로 위반을 잡는지 확인한다
+      - if: needs.plan.outputs.frontend_full == 'true'
+        run: npm --prefix ui run test
+      - if: needs.plan.outputs.frontend_full == 'true'
+        run: npm --prefix ui run build
+
+  # 결과 모음: plan이나 하위 작업이 실패·취소되면 실패한다. 건너뛴(skipped) 작업은 정상이다
+  affected:
+    name: affected
+    needs: [plan, linux, macos, frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: plan=${{ needs.plan.result }} linux=${{ needs.linux.result }} macos=${{ needs.macos.result }} frontend=${{ needs.frontend.result }}
+        run: |
+          echo "$RESULTS"
+          for r in $RESULTS; do
+            case "${r#*=}" in
+              failure|cancelled) echo "::error title=affected::$r"; exit 1 ;;
+            esac
+          done
