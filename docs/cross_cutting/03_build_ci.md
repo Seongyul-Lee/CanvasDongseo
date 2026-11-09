@@ -41,8 +41,8 @@
 
 | 바뀐 곳 | 다시 빌드되는 crate |
 |---|---|
-| 유스케이스 하나(예: `usecases/school`) | 그 crate, 같은 묶음 `presenters`, `tauri_commands`, `ipc_server`, `bin/app` |
-| `usecases/jobs` | 그 crate, 그것을 쓰는 유스케이스 crate(현재 `usecases/learning`), 그 묶음의 `presenters`와 `presenters/jobs`, `tauri_commands`, `ipc_server`, `bin/app` |
+| 유스케이스 하나(예: `usecases/school`) | 그 crate, 같은 묶음 `presenters`, (`school`·`ai`·`jobs`이면) `presenters/shell`, `tauri_commands`, `ipc_server`, `bin/app` |
+| `usecases/jobs` | 그 crate, 그것을 쓰는 유스케이스 crate(현재 `usecases/learning`), 그 묶음의 `presenters`와 `presenters/jobs`·`presenters/shell`, `tauri_commands`, `ipc_server`, `bin/app` |
 | 출력 DTO 필드 하나 | 위와 같다(출력 DTO는 유스케이스 crate에 있다) |
 | Source 하나(예: `canvas`) | 그 crate, `bin/app` |
 | DS 계약 하나(예: `contracts/notice`) | 그 crate, 그 계약을 구현하는 Source, `repositories`, `bin/app` |
