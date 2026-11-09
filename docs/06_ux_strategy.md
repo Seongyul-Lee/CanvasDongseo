@@ -17,7 +17,7 @@
 - **이 문서의 범위는 항상 현재 아키텍처 설계 범위와 같다.** 아키텍처에 기능이 더해지면 이 문서도 그만큼 늘어난다. 아키텍처에 없는 기능을 이 문서가 새로 만들지 않는다.
 - 범위가 어긋나지 않았는지는 §11 대응표로 확인한다. 아키텍처에 기능을 더하면 대응표에 행을 더하고, 행에 시나리오와 화면을 채운다.
 - 경험상 필요하지만 아키텍처에 없는 것은 §12에 적고, 설계 변경은 해당 문서에서 따로 한다.
-- **§12에 걸린 시나리오와 화면은 반영 전까지 보류다.** 해당 시나리오와 화면에 `[보류: §12 ④]`처럼 표시한다. 보류 시나리오는 백로그에 올려도 구현 대상이 아니며, ⑥ 시나리오 점검에서도 "보류"로 적는다. §12 항목이 반영되면 표시를 지운다.
+- **§12에 걸린 시나리오와 화면은 반영 전까지 보류다.** 해당 시나리오와 화면에 `[보류: §12 ⑧]`처럼 표시한다. 보류 시나리오는 백로그에 올려도 구현 대상이 아니며, ⑥ 시나리오 점검에서도 "보류"로 적는다. §12 항목이 반영되면 표시를 지운다.
 
 ### 1.2 맡는 것과 맡지 않는 것
 
@@ -339,7 +339,7 @@ T3 Code의 설정 모달(왼쪽 내비게이션 그룹, 오른쪽 내용)을 그
 
 ## 9. AI 응답 경험 원칙
 
-이 원칙을 프롬프트로 옮기는 일은 [entrypoints `ToolGuide`](layers/04_entrypoints.md)가 맡는다(§12 ④).
+이 원칙을 프롬프트로 옮기는 일은 [entrypoints `ToolGuide`](layers/04_entrypoints.md)가 맡는다([entrypoints §6](layers/04_entrypoints.md#6-toolguide)).
 
 | # | 원칙 |
 |---|---|
@@ -395,9 +395,6 @@ T3 Code의 설정 모달(왼쪽 내비게이션 그룹, 오른쪽 내용)을 그
 
 경험상 필요하지만 아키텍처에 아직 없는 것이다. 설계 변경은 해당 문서에서 따로 한다. 반영되면 이 표에서 지우고 해당 문서를 링크한다. 번호는 다시 쓰지 않는다.
 
-반영된 것: ① 플랜 미지원·한도 해제 시각([application §4.5](layers/02_application.md#45-application-오류), [ai_adapters §2](layers/05_ai_adapters.md#2-claude-로그인)), ② 학과 1~2개와 다른 학과 공지([application §3](layers/02_application.md#3-유스케이스-후보), [06_school_site §3](layers/data_access/06_school_site.md#3-학과-공지)), ③ `cdx policy`([entrypoints §4](layers/04_entrypoints.md#4-cdx-명령)), ⑥ 학생 이름 저장([application §3](layers/02_application.md#3-유스케이스-후보)), ⑦ 테마 저장 위치([presentation §2.2](layers/03_presentation.md#22-디자인-토큰)).
+반영된 것: ① 플랜 미지원·한도 해제 시각([application §4.5](layers/02_application.md#45-application-오류), [ai_adapters §2](layers/05_ai_adapters.md#2-claude-로그인)), ② 학과 1~2개와 다른 학과 공지([application §3](layers/02_application.md#3-유스케이스-후보), [06_school_site §3](layers/data_access/06_school_site.md#3-학과-공지)), ③ `cdx policy`([entrypoints §4](layers/04_entrypoints.md#4-cdx-명령)), ④ AI 응답 원칙의 `ToolGuide` 반영([entrypoints §6](layers/04_entrypoints.md#6-toolguide)), ⑤ 연결 상태 모음과 대화별 상태의 판정 위치(`presenters/shell`, [presentation §1](layers/03_presentation.md#1-개요)), ⑥ 학생 이름 저장([application §3](layers/02_application.md#3-유스케이스-후보)), ⑦ 테마 저장 위치([presentation §2.2](layers/03_presentation.md#22-디자인-토큰)).
 
-| # | 필요한 것 | 지금 상태 | 제안 | 관련 문서 |
-|---|---|---|---|---|
-| ④ | AI 응답 경험 원칙(§9)의 프롬프트 반영 | `ToolGuide` 내용에 응답 원칙이 없다 | R1~R5를 `ToolGuide`에 넣는다 | entrypoints §6 |
-| ⑤ | 연결 상태 모음과 대화별 상태의 판정 위치 | Presenter는 유스케이스 묶음(school, ai, learning, jobs)별 crate로 나뉘어 있다. 연결 상태(학교·학생지원시스템·AI)와 대화별 상태(AI 이벤트·작업·확인 요청)는 여러 묶음에 걸친다 | 여러 묶음에 걸친 판정을 둘 Presenter와 유스케이스의 위치를 정한다 | presentation, application, build_ci §2 |
+현재 남은 항목은 없다. 새로 생기면 `| # | 필요한 것 | 지금 상태 | 제안 | 관련 문서 |` 표로 적는다. 다음 번호는 ⑧이다.

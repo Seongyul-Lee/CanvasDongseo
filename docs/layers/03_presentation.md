@@ -14,11 +14,15 @@
 | 항목 | 내용 |
 |---|---|
 | 링 | Interface Adapters (View는 Frameworks & Drivers) |
-| crate | `presentation/presenters/{common, school, ai, learning, jobs}`, `presentation/tauri_commands` (+ 프런트엔드 SPA) |
+| crate | `presentation/presenters/{common, school, ai, learning, jobs, shell}`, `presentation/tauri_commands` (+ 프런트엔드 SPA) |
 | 의존할 수 있는 것 | `presenters/common`: `application/kernel`. `presenters/<묶음>`: 같은 묶음의 `application/usecases`, `presenters/common`, `kernel`. `tauri_commands`: `usecases/*`, `presenters/*`, `ports/common`(구현), `kernel`, `tauri` |
 
 - Presenter·ViewModel은 순수 로직이고 테스트를 먼저 쓰므로 `tauri`에 의존하지 않는 `presenters/*`에 둔다. Presenter 테스트를 돌릴 때 Tauri를 컴파일하지 않는다. Tauri command는 로직 없는 `tauri_commands`에 둔다(Humble Object).
 - `presenters`는 `usecases`와 같은 묶음으로 나눈다. 한 묶음의 유스케이스를 고쳐도 다른 묶음의 Presenter는 다시 빌드되지 않는다([build_ci §2](../cross_cutting/03_build_ci.md#2-crate를-나누는-기준)).
+- **여러 묶음에 걸친 표시**는 `presenters/shell`이 판정한다. Presenter는 유스케이스를 부르지 않으므로, `tauri_commands`가 필요한 유스케이스를 각각 불러 받은 출력 DTO를 `shell`에 넘긴다.
+  - **연결 상태 모음**: 학교 계정(`GetAuthState`), 학생지원시스템 세션, AI(설치·계정 상태)의 출력 DTO를 같은 연결 행 ViewModel(상태 종류, 점, 행동)로 바꾸고, 문제 상태의 개수(사이드바 연결 알약)를 낸다. 온보딩 카드, 설정 행, 알약, 대화 안 안내가 모두 이 결과를 쓴다([UX Strategy §7.5](../06_ux_strategy.md#75-설정)).
+  - **대화별 상태**: 대화의 AI 진행(응답 중, 사용 한도, 실패, 보지 않은 완료), 그 대화에서 시작한 작업, 그 대화에 걸린 확인 요청(`UserConfirmation`, `OtpPrompt`, 권한 확인)을 받아 상태 하나를 우선순위대로 고른다([UX Strategy §7.4](../06_ux_strategy.md#74-대화별-상태)).
+  - 대화 ID는 IPC 토큰이 대화 단위이므로 코어가 안다([entrypoints §3](04_entrypoints.md#3-ipc)). 작업과 확인 요청은 시작한 대화 ID를 함께 가진다([application §4.4](02_application.md#44-사용자-상호작용과-로컬-저장), [§4.6](02_application.md#46-작업-오래-걸리는-유스케이스)).
 
 ## 2. 구조
 

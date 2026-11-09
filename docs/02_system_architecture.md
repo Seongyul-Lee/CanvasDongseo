@@ -97,6 +97,7 @@ crates/
     presenters/
       common/             application 오류 → 공통 ViewModel 조각
       school/ ai/ learning/ jobs/   Presenter·ViewModel (usecases와 같은 묶음)
+      shell/              여러 묶음에 걸친 앱 골격 표시: 연결 상태 모음, 대화별 상태
     tauri_commands/       Tauri command(Controller), UserConfirmation·OtpPrompt·ProgressSink 구현
   entrypoints/
     ipc_server/           cdx 요청 ↔ 유스케이스, AI용 Presenter
@@ -129,6 +130,7 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 | `platform/*` | 기초 crate와 OS 연동 crate만. 앱 crate를 모른다 |
 | `presentation/presenters/common` | `kernel` |
 | `presentation/presenters/<묶음>` | 같은 묶음의 `usecases`, `presenters/common`, `kernel` |
+| `presentation/presenters/shell` | `usecases/school`, `usecases/ai`, `usecases/jobs`(출력 DTO만), `presenters/common`, `kernel`. 다른 `presenters/<묶음>`에는 의존하지 않는다 |
 | `presentation/tauri_commands` | `usecases/*`, `presenters/*`, `ports/common`(구현), `kernel` |
 | `entrypoints/ipc_server` | `usecases/*`, `ipc/wire`, `kernel` |
 | `ipc/wire` | 기초 crate만(`serde`) |

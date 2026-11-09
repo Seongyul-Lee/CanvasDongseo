@@ -127,6 +127,7 @@ crate: `ports/learning`(아래 표 전부)
 - 확인 내용은 유스케이스가 **실제로 보낼 요청에서** 만든다(AI가 쓴 설명을 쓰지 않는다).
 - 확인 요청에는 요청 ID와 내용 해시를 붙이고, 승인 응답이 같은 ID·해시일 때만 그 요청을 실행한다.
 - 격리 모드 대화에서 온 쓰기 요청은 확인을 묻지 않고 거부한다(지켜보는 사람이 없다).
+- `UserConfirmation`·`OtpPrompt` 요청은 요청을 일으킨 대화 ID를 함께 가진다. 화면의 대화별 상태(확인 필요)가 이 값을 쓴다. 대화 ID는 `cdx` 요청의 IPC 토큰(대화 단위)에서 코어가 정하고, AI가 넘긴 값을 쓰지 않는다.
 
 ### 4.5 application 오류
 
@@ -155,6 +156,7 @@ crate: `ports/learning`(아래 표 전부)
 
 - application은 비동기 런타임(tokio)에 의존하지 않는다. 실행은 `JobSpawner` 뒤에 둔다(의존성 규칙, [System Architecture §3.2](../02_system_architecture.md)).
 - 취소되거나 실패하면 반쯤 만든 결과 파일은 남기지 않는다(`LearningOutputRepository`의 원자적 쓰기).
+- 작업은 시작한 대화 ID를 가진다(`cdx`로 시작했으면 IPC 토큰에서 코어가 정한다). 화면은 이것으로 대화별 상태와 대화 안 작업 카드를 그린다([presentation §1](03_presentation.md#1-개요)).
 - 화면(Tauri command)과 `cdx`(작업 ID로 상태 조회)가 같은 작업을 본다.
 
 ## 5. 이웃 레이어와의 계약
