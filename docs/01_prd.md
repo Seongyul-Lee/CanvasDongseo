@@ -91,7 +91,7 @@ CanvasDongseo는 **동서대학교 학생의 PC에서 동작하는 데스크톱 
 
 ### 7.4 개발 방식
 
-애자일 기반 스크럼으로 개발한다. 스프린트는 1주 단위이며, 스크럼 보드는 GitHub Projects로 운영한다.
+애자일 기반 스크럼으로 개발한다. 스프린트는 1주(월~일) 단위이며, 스크럼 보드는 GitHub Projects로 운영한다. 1인 개발이라 회고·회의 같은 필수 절차는 두지 않는다. 운영 규칙과 보드 구성은 [스크럼 보드](05_scrum_board.md)에 있다.
 
 ## 8. 확장 가능성
 
@@ -162,3 +162,4 @@ PRD에서 다루지 않는 내용은 아래 문서가 맡는다.
 | [System Architecture](02_system_architecture.md) | 기술 스택, 레이어 구성, AI 제공자 연동 구조, OS별 배포 |
 | [Data Access Architecture](layers/data_access/README.md) | 데이터 접근 레이어 구조, 출처별 접근 방법·경로·인증 |
 | [Design Process](03_design_process.md) | 디자인 단계와 산출물 |
+| [스크럼 보드](05_scrum_board.md) | 스프린트 운영 규칙, 보드 필드·View, 이슈 템플릿 |

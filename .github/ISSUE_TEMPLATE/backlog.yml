@@ -1,0 +1,43 @@
+name: 백로그
+description: 할 일 하나를 백로그에 올린다
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: 할 일
+      description: 무엇을 하는지 한두 문장으로 적는다.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 왜 필요한지
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 끝났다고 보는 기준
+      description: 확인할 수 있는 결과로 적는다.
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: input
+    id: scenario
+    attributes:
+      label: 관련 Actor·시나리오
+      description: UX Strategy의 번호. 없으면 비워 둔다.
+      placeholder: 예) A3-1
+  - type: checkboxes
+    id: design-steps
+    attributes:
+      label: 화면 작업 단계
+      description: 화면이 바뀌는 일이면 docs/03_design_process.md의 단계를 끝낼 때마다 체크한다. 화면이 없으면 비워 둔다.
+      options:
+        - label: ① User Flow
+        - label: ② 상태 목록
+        - label: ③ 목업
+        - label: ④ 구현
+        - label: ⑤ 실제 앱 확인
+        - label: ⑥ 시나리오 점검

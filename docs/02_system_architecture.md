@@ -144,8 +144,9 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 
 | 문서 | 주제 |
 |---|---|
-| [Design Process](03_design_process.md) | 와이어프레임부터 화면별 토큰까지 디자인 단계와 산출물 |
+| [Design Process](03_design_process.md) | Foundation과 기능 단위 디자인 단계(User Flow → 상태 목록 → 목업 → 구현 → 실제 앱 확인 → 시나리오 점검)와 산출물 |
 | [Apple Developer 계정](04_apple_developer_account.md) | 멤버십, 인증서, 프로파일, 번들 ID, 공증 자격 증명 현황 |
+| [스크럼 보드](05_scrum_board.md) | 스프린트 운영 규칙, GitHub Projects 필드·View, 이슈 템플릿 |
 
 **측정** (`measurements/`)
 
