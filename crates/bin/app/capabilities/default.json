@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "주 창의 기본 권한. 앱 command는 tauri_commands가 생기면 여기에 더한다",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

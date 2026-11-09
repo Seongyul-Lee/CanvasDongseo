@@ -98,5 +98,9 @@ ipc-server = { path = "crates/entrypoints/ipc_server" }
 ipc-wire = { path = "crates/ipc/wire" }
 ipc-cli = { path = "crates/ipc/cli" }
 
+# 외부 crate (버전은 platform §1)
+tauri = "2.12.5"
+tauri-build = "2.7.4"
+
 [workspace.lints.rust]
 unsafe_code = "forbid"

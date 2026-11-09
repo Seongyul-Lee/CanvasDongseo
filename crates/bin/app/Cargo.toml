@@ -1,6 +1,6 @@
 [package]
 name = "app"
-description = "[bin] composition root (Tauri 앱은 #16에서)"
+description = "[bin] Tauri 앱 + composition root"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -51,6 +51,10 @@ tauri-commands.workspace = true
 ipc-server.workspace = true
 ipc-wire.workspace = true
 ipc-cli.workspace = true
+tauri.workspace = true
+
+[build-dependencies]
+tauri-build.workspace = true
 
 # OS별 학습 어댑터는 해당 OS에서만 조립한다
 [target.'cfg(target_os = "macos")'.dependencies]
