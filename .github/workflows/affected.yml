@@ -25,8 +25,8 @@ env:
   CARGO_TERM_COLOR: always
   AFFECTED_EVENT: ${{ github.event_name == 'push' && 'push' || 'pr' }}
   AFFECTED_BASE_REF: origin/${{ github.base_ref || 'develop' }}
-  # push 이벤트에서만 값이 있다
-  AFFECTED_BEFORE: ${{ github.event.before }}
+  # 푸시 전 커밋. PR(synchronize)에도 github.event.before가 있지만 PR은 merge-base를 쓰므로 push에서만 넘긴다
+  AFFECTED_BEFORE: ${{ github.event_name == 'push' && github.event.before || '' }}
 
 jobs:
   plan:
