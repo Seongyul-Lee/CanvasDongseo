@@ -15,7 +15,7 @@
 - 주소: `https://im.dongseo.ac.kr` (학생 화면은 `/indexSSO2.do?locale=ko`)
 - Canvas·LearningX와 **다른 시스템이고 로그인도 따로**다. 아이디·비밀번호는 같다(SSO 로그인 화면 안내: "로그인 ID/PW는 학사행정웹서비스 계정과 동일").
 - 학적, 수업(출결·휴보강·시험시간표·수업계획서), 수강, 성적, 장학, 등록금, 채플, 국제프로그램 데이터가 있다. 메뉴 63개 중 학생 메뉴 그룹 10개.
-- **학생의 학과·전공을 여기서 얻을 수 있다**(`SELECT_USER_INFO`의 `DEPT_NM`, `MAJOR_NM`). 학과 공지 레지스트리([06_school_site §3](06_school_site.md))와 연결하는 데 쓴다.
+- **학생의 학과·전공을 여기서 얻을 수 있다**(`SELECT_USER_INFO`의 `DEPT_NM`, `MAJOR_NM`). 다만 학과 공지에 쓰는 학과는 사용자가 목록에서 고르고, 이 값으로 미리 채우지 않는다([06_school_site §3](06_school_site.md)).
 
 ## 2. 로그인과 세션
 

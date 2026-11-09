@@ -79,7 +79,7 @@ ui/src/
 - 원본은 **CSS 변수**다. T3 Code 기준 버전의 `apps/web/src/index.css`(Tailwind v4 `@theme`, `:root`, `.dark` 변형)를 `ui/src/theme/t3code.css`로 그대로 가져온다. 기준 버전과 가져온 파일은 `ui/UPSTREAM.md`에 기록한다([UX Strategy §3](../06_ux_strategy.md#3-기준-디자인-t3-code), [Design Process §2.1](../03_design_process.md#21-foundation)).
 - 우리 값(한글 글꼴, 우리 앱만의 상태 색 등)은 `ui/src/theme/app.css`에서 더하거나 덮어쓴다. 가져온 파일은 고치지 않는다. 기준 버전을 올릴 때 가져온 파일을 통째로 바꾸고 차이를 확인한다.
 - 컴포넌트는 CSS 변수와 Tailwind 유틸리티만 쓰고 값을 직접 적지 않는다.
-- 테마는 시스템(기본, `prefers-color-scheme`)·라이트·다크 중에서 설정으로 고른다. 루트 요소의 `.dark` 클래스로 적용한다. 설정 값의 저장 위치는 아직 정하지 않았다([UX Strategy §12 ⑦](../06_ux_strategy.md#12-아키텍처에-올릴-것)). T3 Code의 실행 중 색 계산(`themePalette.ts` 등)은 가져오지 않고 기본 테마 값만 쓴다.
+- 테마는 시스템(기본, `prefers-color-scheme`)·라이트·다크 중에서 설정으로 고른다. 루트 요소의 `.dark` 클래스로 적용한다. 테마는 코어의 판단이 필요 없는 화면 전용 값이므로 코어 설정(`SettingsRepository`)에 두지 않고 프런트엔드 로컬 저장(WebView `localStorage`)에 둔다. 읽고 쓰는 일은 `stores/`의 테마 store 하나만 하며, ViewModel 보관 규칙의 유일한 예외다. T3 Code의 실행 중 색 계산(`themePalette.ts` 등)은 가져오지 않고 기본 테마 값만 쓴다.
 - 기반 컴포넌트는 Base UI다. T3 Code의 `components/ui/`(Base UI 래퍼)를 그대로 가져와 `ui/src/components/ui/`에 둔다. 아이콘은 `lucide-react`를 쓴다.
 - 가져온 기본 부품 안의 상호작용 처리(열림 상태, 포커스 이동 등)는 View의 일이다. ViewModel 값에 따른 표시 판단은 여전히 Presenter가 한다.
 

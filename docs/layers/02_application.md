@@ -39,11 +39,13 @@
 
 | 묶음 | 예 | crate |
 |---|---|---|
-| 학교 로그인 | `LoginWithOtp`, `Logout`, `GetAuthState` | `usecases/school` |
-| 조회 | 이번 주 할 일, 과목·차시·과제·공지·출결·성적 조회 | `usecases/school` |
+| 학교 로그인 | `LoginWithOtp`, `Logout`, `GetAuthState`. 로그인 때 Canvas 내 프로필의 이름을 받아 설정에 저장하고, `GetAuthState`가 이름을 함께 돌려준다(화면의 계정 표시) | `usecases/school` |
+| 조회 | 이번 주 할 일, 과목·차시·과제·공지·출결·성적 조회. 학과 공지 조회는 학과(레지스트리 키)를 받으며, 없으면 설정의 학과를 쓴다. 다른 학과도 조회할 수 있다(공지는 공개다) | `usecases/school` |
+| 학과 설정 | `ListDepartments`(학과 레지스트리에서 만든 선택 목록), `SetDepartments`(1~2개, 목록에 있는 값만) | `usecases/school` |
 | 개인 데이터 쓰기 | 개인 캘린더 일정, 플래너 메모·완료 표시(사용자 확인 뒤) | `usecases/school` |
 | 자료 | 강의 자료·동영상 내려받기 | `usecases/school` |
 | AI | 설치 감지, 로그인·로그아웃, 대화 시작·전송·취소, 권한 확인 응답, 대화 기록 관리 | `usecases/ai` |
+| 정책 | `GetPolicy`: 앱의 데이터·보안 정책 원문(저장 위치, AI가 보는 범위, 하는 일과 하지 않는 일). 원문은 이 crate에 포함한 Markdown 파일 하나이고, 화면(설정 > 정책)과 `cdx policy`가 같은 원문을 쓴다. AI에게 무엇이 보이는지를 설명하는 내용이라 대화 안전과 같은 묶음에 둔다 | `usecases/ai` |
 | 대화 안전 | `Peer` 읽음 기록, hook 판정(`pass` / `warn` / `deny_once`), `Peer` 원문 격리 요약([security §4](../cross_cutting/01_security.md)) | `usecases/ai` |
 | 학습(확장) | `ExtractSlidePdf`(동영상 → 슬라이드 PDF), `Transcribe`(동영상 → 스크립트), 요약·퀴즈 생성 | `usecases/learning` |
 | 작업 | 작업 상태 조회, 취소 (§4.6) | `usecases/jobs` |
@@ -75,7 +77,7 @@ AiInstallation
   detect()            → 설치 여부, 버전, 최소 버전 충족
 
 AiAccount
-  account()           → 로그인 여부, 구독 종류 (이메일·조직 ID는 버린다)
+  account()           → 로그인 여부, 구독 종류, Claude Code를 쓸 수 있는 플랜인지 (이메일·조직 ID는 버린다)
   start_login()       → LoginChallenge { open_url? , device_code? }
   wait_login(id) / cancel_login(id)
   logout()            → { outcome, affects_terminal }
@@ -87,7 +89,7 @@ AiSession
   events()            → 중립 이벤트 스트림
 ```
 
-- **중립 이벤트**: `TextDelta`, `ToolUse`, `ToolResult`, `PermissionRequest`, `UsageLimit`, `Done`, `Error`. 화면과 유스케이스는 제공자 형식을 모른다.
+- **중립 이벤트**: `TextDelta`, `ToolUse`, `ToolResult`, `PermissionRequest`, `UsageLimit`(제공자가 알려 주면 풀리는 시각 포함), `Done`, `Error`. 화면과 유스케이스는 제공자 형식을 모른다.
 - `session_spec`: 실행 모드(대화·격리·요약), 작업 폴더, `ToolGuide`, 모델, 재개할 세션 ID.
 - 제공자 어댑터 crate 하나가 세 포트를 모두 구현하고, composition root에서 제공자 ID로 묶어 등록한다. 구현은 [ai_adapters](05_ai_adapters.md).
 
@@ -118,7 +120,7 @@ crate: `ports/learning`(아래 표 전부)
 | `UserConfirmation` | Gateway | 확인 요청을 화면에 띄우고 승인·거부를 받는다 | `ports/common` | `presentation/tauri_commands` |
 | `OtpPrompt` | Gateway | 세션이 만료됐을 때 OTP 입력을 요청한다 | `ports/common` | `presentation/tauri_commands` |
 | `ConversationRepository` | Repository | 앱 대화 기록(제공자 세션 ID 색인 포함) | `ports/ai` | `local_store/conversations` |
-| `SettingsRepository` | Repository | 앱 설정 | `ports/common` | `local_store/settings` |
+| `SettingsRepository` | Repository | 앱 설정(학과 1~2개, 학생 이름 등). 테마는 화면만 쓰는 값이라 여기 두지 않는다([presentation §2.2](03_presentation.md#22-디자인-토큰)) | `ports/common` | `local_store/settings` |
 
 **쓰기 확인 규칙** (개인 캘린더·플래너)
 
@@ -135,7 +137,7 @@ crate: `ports/learning`(아래 표 전부)
 | `SourceChanged` | 학교 쪽 형식이 바뀌었다(실패 단계 이름만) |
 | `Temporary` | 네트워크·요청 제한. 다시 시도할 수 있다 |
 | `Rejected` | 사용자가 거부했거나 정책(격리 모드 쓰기 등)으로 거부됐다 |
-| `AiUnavailable` | AI 제공자 미설치·로그아웃·한도 초과 |
+| `AiUnavailable` | AI를 쓸 수 없다. 사유를 열거형으로 준다: `NotInstalled`, `LoggedOut`, `PlanNotSupported`(Claude Code를 쓸 수 없는 플랜, 예: Free), `UsageLimit`(풀리는 시각을 알면 함께). 화면은 사유만 보고 안내를 고른다 |
 | `ComponentMissing` | 학습 부품(ffmpeg, 전사 모델, OCR 언어 등)이 없거나 해시·서명 확인에 실패했다. 어떤 부품인지와 **복구 방법**(`Installer`: 설치 프로그램 다시 실행, `OsSettings`: OS 설정에서 설치)을 열거형으로 함께 준다. 화면은 복구 방법만 보고 안내를 고른다 |
 
 - data_access의 공통 오류([data_access §2.4](data_access/README.md))는 출력 포트 구현이 위 오류로 바꾼다.
