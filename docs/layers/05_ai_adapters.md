@@ -15,7 +15,7 @@
 |---|---|
 | 링 | Interface Adapters(이벤트 변환) + Frameworks & Drivers(AI CLI 프로세스) |
 | crate | `ai/claude_code` (추가 제공자는 `ai/<제공자>`) |
-| 의존할 수 있는 것 | `application`, `domain` |
+| 의존할 수 있는 것 | `application/ports/ai`, `application/kernel`, `domain/core` (유스케이스 crate는 모른다) |
 
 - 새 제공자 = crate 하나 추가 + composition root 등록. 기존 crate는 고치지 않는다.
 - 제공자 형식(stream-json, app-server JSON 등)은 어댑터 안에서 중립 이벤트로 바꾼다.

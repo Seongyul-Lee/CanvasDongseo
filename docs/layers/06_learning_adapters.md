@@ -15,11 +15,12 @@
 |---|---|
 | 링 | Frameworks & Drivers |
 | crate | `learning/media`, `learning/transcribe`, `learning/pdf`(두 OS 공통), `learning/macos`, `learning/windows`(OCR만) |
-| 의존할 수 있는 것 | `application`, `domain` |
+| 의존할 수 있는 것 | `application/ports/learning`, `application/kernel`, `domain/*` (유스케이스 crate는 모른다) |
 
 - **OS별로 나누는 것은 OCR뿐이다**(S9). 디코딩·전사·PDF는 두 OS가 같은 crate를 쓰고, 빌드 기능 플래그(가속)만 다르다.
 - 슬라이드 판정 규칙(구간·묶음·점수)은 어댑터가 아니라 [domain §4.1](01_domain.md)에 있다. 앱이 신뢰하는 것은 앱의 로직뿐이므로, 판정은 외부 도구에 맡기지 않는다.
 - composition root에서 `#[cfg(target_os)]`로 OCR 구현을 고른다. 구현이 없는 OS에서는 `NotAvailable`을 돌려준다.
+- `bin/app`의 `learning` cargo feature(기본 켬)가 이 레이어의 crate 전부를 묶는다. 개발 중에는 꺼서 whisper.cpp·OS OCR 빌드를 건너뛸 수 있고, 배포 빌드는 항상 켠다([build_ci §3](../cross_cutting/03_build_ci.md#3-로컬-개발)).
 
 ## 2. 처리 흐름
 
@@ -32,11 +33,11 @@
  │   ④ domain         후보 점수(완전성, 펜 색 = 채도 기반 원본성) → 자동 확정
  │   ⑤ TextRecognizer 확정 장면마다 OCR(한국어·영어)               learning/macos | windows
  │   ⑥ SlidePdfWriter 장면 + 타임스탬프 띠 + 보이지 않는 OCR 글자 층 + 책갈피   learning/pdf
- │   ⑦ LearningOutputRepository  domain 이름 규칙의 키로 원자적 저장        local_store
+ │   ⑦ LearningOutputRepository  domain 이름 규칙의 키로 원자적 저장        local_store/learning
  └─ 스크립트 (Transcribe)
      ① AudioDecoder   Transcriber가 알린 형식(whisper.cpp는 16kHz 모노)   learning/media
      ② Transcriber    whisper.cpp + VAD → [mm:ss] 문장 줄          learning/transcribe
-     ③ LearningOutputRepository  스크립트 저장                       local_store
+     ③ LearningOutputRepository  스크립트 저장                       local_store/learning
 ```
 
 - 원본성 점수는 채도(펜 색)를 보므로 회색조 스트림으로는 매길 수 없다. 점수와 확정은 반드시 ③의 컬러 후보로 한다. 후보는 묶음당 최대 12장이다([domain §4.1](01_domain.md)).
@@ -53,7 +54,7 @@
 | `Transcriber` | `learning/transcribe`: `whisper-rs`(whisper.cpp) | Metal | CPU (Vulkan은 착수 때 측정) |
 | `TextRecognizer` | OS API | `learning/macos`: `objc2-vision`(Vision) | `learning/windows`: `windows` crate(Windows.Media.Ocr) |
 | `SlidePdfWriter` | `learning/pdf`: Rust PDF crate(착수 때 선정, 한글 글꼴 포함·보이지 않는 글자 층 지원 필수). PDF 바이트만 만들고 경로는 정하지 않는다 | 같음 | 같음 |
-| `LearningOutputRepository`, `ComponentStore` | `local_store`(앱 로컬 파일) | 같음 | 같음 |
+| `LearningOutputRepository`, `ComponentStore` | `local_store/learning`(앱 로컬 파일) | 같음 | 같음 |
 
 ### 3.1 디코딩
 

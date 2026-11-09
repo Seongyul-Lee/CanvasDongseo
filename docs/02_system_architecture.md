@@ -6,7 +6,7 @@
 | 근거 | [PRD](01_prd.md), 레이어별 문서(§5) |
 
 > **이 문서의 역할**: 여러 레이어에 걸치는 것만 정한다. 결정 요약, 프로세스 구조, 레이어 지도와 의존 규칙, 용어, 문서 색인.
-> 레이어 안의 상세는 [레이어별 문서](#5-문서-색인)에, 레이어를 가로지르는 주제(보안, 플랫폼)는 공통 문서에 둔다. 한 가지 사실은 한 문서에만 적고 나머지는 링크한다.
+> 레이어 안의 상세는 [레이어별 문서](#5-문서-색인)에, 레이어를 가로지르는 주제(보안, 플랫폼, 빌드·CI)는 공통 문서에 둔다. 한 가지 사실은 한 문서에만 적고 나머지는 링크한다.
 
 ---
 
@@ -24,6 +24,7 @@
 | S8 | **학교 데이터·비밀·쓰기의 경계는 코어에 둔다.** AI의 도구 사용은 막지 않고, 다른 사람이 쓴 글을 읽은 대화에만 격리 요약과 시점 경고를 더한다. 비밀은 Data Protection 키체인(앱 접근 그룹)에 둔다 | S7로 대화 중 AI가 임의 명령을 실행할 수 있다. 제공자마다 권한 제어가 다르다. 책임 범위는 외부 탈취, 다른 학생 데이터 접근, 주입에 의한 위험 행동 | [security](cross_cutting/01_security.md) |
 | S9 | 학습 기능은 **OCR만 OS별 crate**로 나누고, 디코딩(ffmpeg)·전사(whisper.cpp)·PDF는 공통 crate로 둔다. 슬라이드 판정은 domain 규칙으로 자동 확정한다(AI 검토 없음). macOS를 먼저 구현한다 | OS 고유 API가 필요한 것은 OCR뿐이다. 2026-11-09 실측으로 디코딩·전사 방식을 정했다 | [learning_adapters](layers/06_learning_adapters.md) |
 | S10 | 유스케이스는 domain 엔티티가 아니라 **유스케이스 출력 DTO**를 돌려준다. Presenter가 이를 화면용 ViewModel·AI용 출력으로 바꾼다 | 소비자(화면, AI)가 둘이라 엔티티 변경이 바깥으로 번지지 않게 한다(Clean Architecture의 Response Model) | [application](layers/02_application.md), [presentation](layers/03_presentation.md) |
+| S11 | crate는 **Actor(바뀌는 이유)와 변경 빈도**로 나눈다. 포트(안정)와 유스케이스(자주 바뀜)를 다른 crate에 두고, 어댑터는 포트에만 의존한다. CI는 바뀐 crate와 그 역의존 crate만 빌드·테스트한다 | 한 crate가 바뀌면 의존하는 crate가 모두 다시 빌드된다. 자주 바뀌는 코드가 많이 의존받는 crate에 있으면 작은 변경이 전체 빌드가 된다 | [build_ci](cross_cutting/03_build_ci.md) |
 
 ## 2. 프로세스 구조
 
@@ -53,30 +54,59 @@
 
 ### 3.1 crate 구성
 
+나누는 기준(Actor, 변경 빈도)과 변경별 재빌드 범위는 [build_ci §2](cross_cutting/03_build_ci.md#2-crate를-나누는-기준)에 있다.
+
 ```
 crates/
-  domain/                 엔티티, 업무 규칙
-  application/            유스케이스, 출력 DTO, 출력 포트 <I>
+  domain/
+    core/                 엔티티, 학교 업무 규칙, 학습 결과물 이름 규칙
+    slides/               슬라이드 판정 규칙 (domain §4.1)
+  application/
+    kernel/               application 오류, CancelToken, JobRegistry, 공통 값 타입. 안정된 것만 둔다
+    ports/
+      school/             학교 데이터 Repository·Gateway, AuthGateway, OtpPrompt
+      ai/                 AiInstallation·AiAccount·AiSession, 중립 이벤트, ConversationRepository
+      learning/           FrameDecoder·AudioDecoder·Transcriber·TextRecognizer·SlidePdfWriter, LearningOutputRepository, ComponentStore
+      common/             UserConfirmation, ProgressSink, JobSpawner, SettingsRepository
+    usecases/
+      school/ ai/ learning/   유스케이스와 출력 DTO (Actor별)
+      jobs/               작업 상태 조회·취소
   data_access/
-    repositories/         출력 포트 구현, DS <I>와 계약, 공통 오류
-    shared/               인증·세션·HTTP 정책
+    ds_core/              data_access 공통 오류
+    contracts/<묶음>/      DS <I>와 DS DTO, 리소스 묶음별 (예: 과목·차시, 과제, 출결, 공지, 학적·성적, 자료)
+    repositories/         ports/school 구현
+    http/                 HTTP 정책, RequestAuthenticator <I>
+    auth/                 인증 구현(로그인·갱신·세션 갱신 정책), AuthGateway 구현, SessionStore
     canvas/ learningx/ smart_attendance/ commons/ school_site/ student_portal/   (Source)
   ai/
-    claude_code/          AI 포트 구현 (MVP)
+    claude_code/          ports/ai 구현 (MVP)
     (codex/ gemini/ …)    추가 제공자
   learning/
     media/                FrameDecoder·AudioDecoder (ffmpeg 사이드카, 공통)
     transcribe/           Transcriber (whisper.cpp, 공통)
     pdf/                  SlidePdfWriter (공통)
     macos/  (windows/)    TextRecognizer (OS OCR)
-  local_store/            앱 로컬 저장(대화 기록, 설정, 학습 결과물, 부품) 포트 구현
-  presentation/           Tauri command(Controller), 화면용 Presenter·ViewModel
+  local_store/
+    conversations/        ConversationRepository 구현
+    learning/             LearningOutputRepository·ComponentStore 구현
+    settings/             SettingsRepository 구현
+  platform/
+    keychain/             비밀 저장(Data Protection 키체인). OS 의존을 여기에 가둔다
+    fs/                   원자적 쓰기, 앱 데이터 경로
+  presentation/
+    presenters/
+      common/             application 오류 → 공통 ViewModel 조각
+      school/ ai/ learning/   Presenter·ViewModel (usecases와 같은 묶음)
+    tauri_commands/       Tauri command(Controller), UserConfirmation·OtpPrompt·ProgressSink 구현
   entrypoints/
     ipc_server/           cdx 요청 ↔ 유스케이스, AI용 Presenter
-  ipc_protocol/           cdx ↔ ipc_server 요청·응답 타입 (비밀 필드 없음)
+  ipc/
+    wire/                 cdx ↔ ipc_server 요청·응답 타입 (serde, 비밀 필드 없음)
+    cli/                  cdx 명령 정의 (clap, ToolGuide 원본)
   bin/
-    app/                  Tauri 앱 + composition root
+    app/                  Tauri 앱 + composition root. tauri.conf.json·capabilities·아이콘도 여기에 둔다
     cdx/                  CLI
+  xtask/                  의존 그래프 검사, 영향 범위 계산 (build_ci §5)
 ui/                       프런트엔드 SPA(React). View와 ViewModel 보관 (presentation §2.1)
 design/                   디자인 목업·샘플 JSON (Design Process)
 ```
@@ -85,26 +115,39 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 
 | crate | 의존할 수 있는 것 |
 |---|---|
-| `domain` | 기초 crate만. 외부 crate는 `jiff`만 |
-| `application` | `domain` |
-| `data_access/*`, `ai/*`, `learning/*`, `local_store` | `application`, `domain`. data_access 내부(`repositories`, `shared`, Source) 규칙은 [data_access §2.6](layers/data_access/README.md) |
-| `presentation` | `application` |
-| `entrypoints/*` | `application`, `ipc_protocol` |
-| `ipc_protocol` | 기초 crate만(`serde`, `clap`) |
+| `domain/core` | 기초 crate만. 외부 crate는 `jiff`만 |
+| `domain/slides` | 기초 crate만. 외부 crate 없음. `domain/core`도 모른다 |
+| `application/kernel` | 기초 crate만 |
+| `application/ports/*` | `kernel`, `domain/*`. 포트 crate끼리 서로 의존하지 않는다 |
+| `application/usecases/*` | `kernel`, `domain/*`, 필요한 `ports/*`. 유스케이스 crate끼리 서로 의존하지 않는다(`usecases/jobs`만 예외로 다른 유스케이스가 쓸 수 있다) |
+| `data_access/*` | 포트와 `kernel`·`domain/core`. 유스케이스는 모른다. 내부 규칙은 [data_access §2.6](layers/data_access/README.md#26-의존-규칙) |
+| `ai/*` | `ports/ai`, `kernel`, `domain/core` |
+| `learning/*` | `ports/learning`, `kernel`, `domain/*` |
+| `local_store/*` | 구현하는 포트 crate, `kernel`, `domain/core`, `platform/*` |
+| `platform/*` | 기초 crate와 OS 연동 crate만. 앱 crate를 모른다 |
+| `presentation/presenters/common` | `kernel` |
+| `presentation/presenters/<묶음>` | 같은 묶음의 `usecases`, `presenters/common`, `kernel` |
+| `presentation/tauri_commands` | `usecases/*`, `presenters/*`, `ports/common`·`ports/school`(구현), `kernel` |
+| `entrypoints/ipc_server` | `usecases/*`, `ipc/wire`, `kernel` |
+| `ipc/wire` | 기초 crate만(`serde`) |
+| `ipc/cli` | `ipc/wire`, `clap` |
 | `bin/app` | 전부 (composition root) |
-| `bin/cdx` | `ipc_protocol`만. 코어 로직·세션·학교 서버 접근이 없다 |
+| `bin/cdx` | `ipc/wire`, `ipc/cli`만. 코어 로직·세션·학교 서버 접근이 없다 |
+| `xtask` | 앱 crate에 의존하지 않는다. 앱 crate도 `xtask`에 의존하지 않는다 |
 
-- 의존 그래프(`cargo metadata`)를 위 표와 대조하는 검사를 편집 직후 훅과 CI에 둔다. `cargo deny`도 함께 돌린다.
+- 어댑터(`data_access`, `ai`, `learning`, `local_store`)는 **포트에만** 의존한다. 유스케이스를 고쳐도 어댑터는 다시 빌드되지 않는다.
+- 포트는 `Arc<dyn Port>`로 주입한다. 유스케이스를 포트 타입의 제네릭으로 쓰지 않는다([build_ci §4](cross_cutting/03_build_ci.md#4-제네릭과-동적-디스패치)).
+- 의존 그래프(`cargo metadata`)를 위 표와 대조하는 검사(`cargo xtask deps-check`)를 편집 직후 훅과 CI에 둔다. `cargo deny`도 함께 돌린다([build_ci §5.4](cross_cutting/03_build_ci.md#54-항상-도는-검사)).
 - 확장 근거: AI 제공자·데이터 출처·학습 기능이 늘어날 계획이 PRD에 있으므로, 처음부터 crate 경계를 둔다.
 
 ### 3.3 Clean Architecture 링 대응
 
 | 링 | 이 프로젝트 |
 |---|---|
-| Entities | `domain` |
-| Use Cases | `application` (유스케이스, 출력 DTO, 출력 포트) |
-| Interface Adapters | `presentation`(Controller·Presenter·ViewModel), `entrypoints/ipc_server`(AI용 Presenter), `data_access/repositories`(출력 포트 구현), AI 어댑터의 이벤트 변환 |
-| Frameworks & Drivers | Tauri, WebView SPA(View), `data_access`의 Source와 `shared`(HTTP·키체인), AI CLI 프로세스, OS 학습 API, `local_store` |
+| Entities | `domain/core`, `domain/slides` |
+| Use Cases | `application/kernel`, `application/ports/*`(출력 포트), `application/usecases/*`(유스케이스, 출력 DTO) |
+| Interface Adapters | `presentation/presenters/*`(Presenter·ViewModel), `presentation/tauri_commands`(Controller), `entrypoints/ipc_server`(AI용 Presenter), `data_access/repositories`(출력 포트 구현), `data_access/contracts/*`(DS 계약), AI 어댑터의 이벤트 변환 |
+| Frameworks & Drivers | Tauri, WebView SPA(View), `data_access`의 Source와 `http`·`auth`, `platform/*`(키체인·파일), AI CLI 프로세스, OS 학습 API, `local_store/*` |
 | Main | `bin/app` (composition root) |
 
 ## 4. 용어
@@ -114,7 +157,7 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 | 출력 포트 | 유스케이스가 바깥을 부르는 인터페이스. 엔티티 컬렉션은 **Repository**, 그 밖의 외부 동작은 **Gateway** |
 | 출력 DTO | 유스케이스가 돌려주는 값. 엔티티를 그대로 내보내지 않는다 |
 | Source | data_access의 접근 구역별 출처 어댑터(`canvas`, `learningx` …). DS 구현을 담는다 |
-| DS (DataSource) | Source가 구현하는 리소스 묶음 단위 인터페이스. 소유는 `data_access/repositories` |
+| DS (DataSource) | Source가 구현하는 리소스 묶음 단위 인터페이스. 소유는 `data_access/contracts/<묶음>` |
 | Presenter | 출력 DTO를 소비자(화면, AI)에 맞는 형태로 바꾸는 구성 |
 | `ToolGuide` | AI에게 주입하는 `cdx` 사용법 텍스트 |
 | `<I>` | 인터페이스(Rust trait) |
@@ -139,6 +182,7 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 |---|---|
 | [01_security](cross_cutting/01_security.md) | 보안 경계와 남는 위험 |
 | [02_platform](cross_cutting/02_platform.md) | 기술 스택, OS별 구성, 설치·배포 |
+| [03_build_ci](cross_cutting/03_build_ci.md) | crate 분할 기준, 로컬 빌드 설정, 제네릭 정책, 바뀐 crate만 도는 CI |
 
 **절차**
 
