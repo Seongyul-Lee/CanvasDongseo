@@ -27,7 +27,7 @@
 | ① User Flow | UX Strategy의 시나리오 | 시작 → 성공까지의 흐름과 실패·중단 갈래 | User Flow 문서(작성 예정) |
 | ② 상태 목록 | User Flow, §2.2의 상태 출처 | 이 기능에서 생길 수 있는 상태와 각 상태의 ViewModel 샘플 | `design/samples/<기능>/` |
 | ③ 목업 | 상태 목록, 샘플 | 구조 목업 → 토큰을 적용한 목업 | `design/wireframes/`, `design/screens/` |
-| ④ 구현 | 샘플, 목업 | [Presentation §2.1](layers/03_presentation.md#21-프런트엔드-spa-내부-구조) 구현 순서를 따른다 | `ui/`, `crates/presentation` |
+| ④ 구현 | 샘플, 목업 | [Presentation §2.1](layers/03_presentation.md#21-프런트엔드-spa-내부-구조) 구현 순서를 따른다 | `ui/`, `crates/presentation/*` |
 | ⑤ 실제 앱 확인 | 상태 목록 | 상태별 캡처, PR의 before/after | PR(레포에 커밋하지 않는다) |
 | ⑥ 시나리오 점검 | 시나리오, User Flow | 시나리오별 통과·막힘 기록 | PR 본문 |
 
@@ -63,7 +63,7 @@
 ### 2.3 목업
 
 - 샘플 데이터는 **ViewModel 모양의 JSON**이다. 목업이 곧 ViewModel 타입 초안이 되고, 화면이 조건 분기 없이 그려지는지 이 단계에서 확인한다(예: 배너는 `banner.kind`로 받는다).
-- **샘플 JSON은 Presenter 테스트의 기대값이다.** ③에서 목업이 이 파일을 그리고, ④에서 Presenter 테스트가 Presenter 출력과 같은 파일을 비교한다. ViewModel이 바뀌면 테스트가 실패하므로 목업과 앱이 어긋나지 않는다. 샘플을 고치면 목업과 테스트가 함께 따라온다.
+- **샘플 JSON은 Presenter 테스트의 기대값이다**(읽는 방법은 [Presentation §2.1](layers/03_presentation.md#21-프런트엔드-spa-내부-구조)). ③에서 목업이 이 파일을 그리고, ④에서 Presenter 테스트가 Presenter 출력과 같은 파일을 비교한다. ViewModel이 바뀌면 테스트가 실패하므로 목업과 앱이 어긋나지 않는다. 샘플을 고치면 목업과 테스트가 함께 따라온다.
 - 구조 목업(`design/wireframes/`)에서 배치를 정한 뒤, 토큰을 적용한 목업(`design/screens/`)을 만든다.
 - 토큰 원본은 `ui/src/theme/tokens.json` 하나다. `design/`에는 두지 않는다. 목업은 생성된 `tokens.css`를 상대 경로로 불러와 앱과 같은 값을 쓴다.
 - 목업에 값을 직접 적지 않는다. 새 값이 필요하면 먼저 토큰으로 추가한다.
@@ -110,5 +110,4 @@ ui/src/theme/
 
 - 토큰 빌드 도구와 목업에서 `tokens.css`를 갱신하는 방법(감시 빌드 등)
 - 한글 글꼴 포함 여부
-- Presenter 테스트(Rust)가 `design/samples/`의 JSON을 읽어 비교하는 방법(경로, 비교 방식)
 - 목업과 SPA(브라우저 실행, command 대역)를 같은 샘플로 캡처하는 도구. Tauri 창 자체의 캡처는 우선 직접 한다

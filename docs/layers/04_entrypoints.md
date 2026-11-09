@@ -14,8 +14,10 @@
 | 항목 | 내용 |
 |---|---|
 | 링 | Interface Adapters |
-| crate | `entrypoints/ipc_server`, `ipc_protocol`, `bin/cdx` |
-| 의존할 수 있는 것 | `ipc_server`: `application`, `ipc_protocol`. `ipc_protocol`: 없음(기초 crate만). `cdx`: `ipc_protocol`만 |
+| crate | `entrypoints/ipc_server`, `ipc/wire`, `ipc/cli`, `bin/cdx` |
+| 의존할 수 있는 것 | `ipc_server`: `application/usecases/*`, `application/kernel`, `ipc/wire`. `ipc/wire`: 기초 crate만(`serde`). `ipc/cli`: `ipc/wire`, `clap`. `cdx`: 워크스페이스 crate는 `ipc/wire`, `ipc/cli`만(외부 crate는 `interprocess` 등, [platform §1](../cross_cutting/02_platform.md#1-기술-스택)) |
+
+- 요청·응답 타입(`ipc/wire`)과 명령 정의(`ipc/cli`)는 바뀌는 이유가 다르다. 명령 설명·`ToolGuide` 문구를 고쳐도 `ipc_server`는 다시 빌드되지 않는다.
 
 ## 2. 흐름
 
@@ -34,14 +36,14 @@ AI CLI ─hook─▶ cdx hook pre|post ─IPC─▶ ipc_server ─▶ 대화 안
 | 이름 선점 방지 | 코어가 시작할 때 소켓·파이프를 새로 만들고, 이미 있으면 소유자·권한을 확인한 뒤 지우고 다시 만든다. 다른 프로세스가 먼저 만든 경로를 쓰지 않는다 |
 | 인증 ① 토큰 | 코어가 AI 프로세스를 띄울 때마다 **대화 단위 토큰**을 만들어 환경 변수로 넘긴다. 대화가 끝나면 폐기한다. 토큰은 AI 프로세스의 하위 프로세스(사용자 MCP 서버, Bash 명령 포함)에 상속된다 |
 | 인증 ② 호출자 계보 | 코어는 접속한 피어 PID의 부모 체인을 따라가 **코어가 띄운 AI 프로세스의 자손**인지 확인한다. 토큰을 훔친 외부 프로세스는 자손이 아니므로 거부된다(R1) |
-| 타입 | `ipc_protocol`에 요청·응답 타입을 둔다. **비밀 필드(쿠키·토큰·비밀번호)를 두지 않는 것**으로 유출을 막는다 |
-| 명령 허용 목록 | IPC 서버는 `cdx` 명령과 같은 목록만 받는다. 토큰으로 IPC를 직접 불러도 `cdx` 이상을 할 수 없다 |
+| 타입 | `ipc/wire`에 요청·응답 타입을 둔다. **비밀 필드(쿠키·토큰·비밀번호)를 두지 않는 것**으로 유출을 막는다 |
+| 명령 허용 목록 | IPC 서버는 `cdx` 명령과 같은 목록만 받는다. 목록은 `ipc/wire`의 요청 열거형 하나이고, `ipc/cli`의 명령이 이 열거형으로 바뀐다. 토큰으로 IPC를 직접 불러도 `cdx` 이상을 할 수 없다 |
 
 ## 4. `cdx` 명령
 
 | 항목 | 규칙 |
 |---|---|
-| 정의 위치 | 명령 정의(`clap`)는 `ipc_protocol`에 둔다. `bin/cdx`와 composition root(`ToolGuide` 생성)가 함께 쓴다 |
+| 정의 위치 | 명령 정의(`clap`)는 `ipc/cli`에 둔다. `bin/cdx`와 composition root(`ToolGuide` 생성)가 함께 쓴다 |
 | 조회 | 명령 하나가 유스케이스 하나에 대응한다 |
 | 쓰기 | 개인 캘린더·플래너만. 코어가 **실제 요청 내용으로 만든** 확인 화면에서 사용자가 승인한 요청만 실행한다([application §4.4](02_application.md)). 격리 모드 대화에서는 거부한다 |
 | 인자 | 학번·이름 인자가 없다(IDOR 방어, [07_student_portal §3.5](data_access/07_student_portal.md)). 파일 경로 인자는 앱이 정한 학습 자료 폴더 아래만 받는다 |
@@ -78,7 +80,7 @@ AI 제공자의 도구 hook이 부르는 명령이다. 판정은 코어가 하�
 
 | 이웃 | 계약 |
 |---|---|
-| application | 유스케이스만 호출한다. 출력 DTO·application 오류를 받는다 |
+| application | `usecases/*`의 유스케이스만 호출한다. 출력 DTO·application 오류를 받는다 |
 | AI 제공자 CLI | `cdx` 명령·출력 JSON 형식, `ToolGuide`, `cdx hook` 입출력이 계약이다 |
 
 ## 9. 미확인 항목

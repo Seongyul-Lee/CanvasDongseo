@@ -53,22 +53,29 @@
 ### 2.1 레이어와 의존 방향
 
 ```
-domain          엔티티(과목·차시·과제·공지…), 업무 규칙
-application     유스케이스, 출력 포트 <I>(Repository·Gateway, 유스케이스 단위), 유스케이스 출력 DTO
+domain/core          엔티티(과목·차시·과제·공지…), 업무 규칙
+application/
+  ports/school       출력 포트 <I>(Repository·Gateway, 유스케이스 단위)
+  usecases/school    유스케이스, 출력 DTO          ← data_access는 이 crate를 모른다
                       ▲ 구현
 data_access/
-  repositories/ 출력 포트 구현(Repository·Gateway), DS <I>와 계약, 공통 오류 타입
+  repositories/      출력 포트 구현(Repository·Gateway)
+                      │ 사용
+  contracts/<묶음>/   DS <I>와 DS DTO (리소스 묶음별), 계약 테스트 묶음
+  ds_core/           공통 오류 타입
                       ▲ 구현
-  shared/       RequestAuthenticator <I> + (B)/(A) 구현,
-                AuthGateway 구현(WebSessionLogin·SessionRefresher·SessionStore),
-                세션 갱신 정책(순수 모듈), HTTP 정책
   canvas/  learningx/  smart_attendance/  commons/  school_site/  student_portal/
-                DS 구현 (Source = 접근 구역별 출처 어댑터)
-presentation    Tauri command(Controller), Presenter, ViewModel — 유스케이스만 호출한다
-entrypoints     IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케이스만 호출한다
+                     DS 구현 (Source = 접근 구역별 출처 어댑터)
+                      │ 사용
+  http/              HTTP 정책, RequestAuthenticator <I>
+  auth/              RequestAuthenticator (B)/(A) 구현, AuthGateway 구현(WebSessionLogin·SessionRefresher),
+                     SessionStore, 세션 갱신 정책(순수 모듈)
+platform/keychain    비밀 저장(OS 키체인). auth의 SessionStore가 쓴다
+presentation         Tauri command(Controller), Presenter, ViewModel — 유스케이스만 호출한다
+entrypoints          IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케이스만 호출한다
 ```
 
-- 인터페이스는 **쓰는 쪽이 소유**한다. 출력 포트 `<I>`는 유스케이스가 쓰므로 application에, DS `<I>`는 출력 포트 구현이 쓰므로 `repositories/`에 둔다.
+- 인터페이스는 **쓰는 쪽이 소유**한다. 출력 포트 `<I>`는 유스케이스가 쓰므로 `application/ports/school`에, DS `<I>`는 출력 포트 구현이 쓰므로 data_access 안의 `contracts/<묶음>`에 둔다. 계약을 `repositories`와 다른 crate로 둔 것은 Source가 출력 포트 구현을 모르게 하고, 계약 하나를 고쳐도 그 계약을 구현하는 Source만 다시 빌드되게 하기 위해서다([build_ci §2.3](../../cross_cutting/03_build_ci.md#23-변경-하나가-다시-빌드시키는-범위-목표)).
 - 출력 포트 구현은 Source를 모른다. 어떤 DS 구현을 쓸지는 composition root(조립하는 곳)에서 정한다.
 - domain은 data_access를 모른다. application은 data_access의 구체 클래스를 모른다.
 
@@ -83,7 +90,9 @@ entrypoints     IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케이스�
 - 하는 일: DS를 조합하고, DS 결과(DTO)를 domain 모델로 바꾸고, 공통 오류를 application 오류로 바꾼다.
 - 여러 출처를 합치는 Repository(예: "이번 주 할 일" = Canvas planner + LearningX 미완료 차시)는 DS 목록을 주입받아 합친다. 예: `TodoRepositoryImpl { sources: Vec<Box<dyn TodoDataSource>> }`. 출처가 늘어도 이 클래스는 고치지 않는다(개방-폐쇄).
 
-### 2.4 DataSource `<I>`와 계약 (data_access/repositories)
+### 2.4 DataSource `<I>`와 계약 (data_access/contracts)
+
+- 리소스 묶음 하나가 `contracts/<묶음>` crate 하나다(예: 과목·차시, 과제, 출결, 공지, 학적·성적, 자료). 확정 목록은 DS를 정의할 때 정한다. 공통 오류는 모든 계약이 함께 쓰므로 `ds_core`에 둔다.
 
 - **리소스 묶음마다 인터페이스 하나, 접근 경로마다 메서드 하나**를 둔다. 예: `CourseModulesDataSource.list_modules(course_id)`, `.list_items(course_id, module_id)`
 - 같은 `<I>`의 구현(예: REST 구현과 GraphQL 구현)은 서로 바꿔 끼울 수 있어야 한다(리스코프 치환). 이를 위해 계약을 `<I>`에 명시한다.
@@ -106,26 +115,26 @@ entrypoints     IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케이스�
 | `Network` | 연결 실패, 시간 초과, 5xx | — |
 | `RateLimited` | 요청 제한에 걸림 | Canvas 403 throttled, 429 |
 
-- 계약 준수는 **계약 테스트**로 확인한다. 같은 테스트 묶음을 `<I>`의 모든 구현에 돌린다.
+- 계약 준수는 **계약 테스트**로 확인한다. 같은 테스트 묶음을 `<I>`의 모든 구현에 돌린다. 테스트 묶음은 `contracts/<묶음>`의 `test-support` feature로 두고, 각 Source가 `[dev-dependencies]`로 켠다. 계약 테스트를 고치면 그 계약을 구현하는 Source의 테스트가 함께 돈다.
 
-### 2.5 shared — 인증과 HTTP 정책
+### 2.5 http · auth — 인증과 HTTP 정책
 
-책임을 나눠 둔다(단일 책임). 로그인·LTI 실행·토큰 교환·로그아웃·쿠키 저장을 한 클래스에 모으지 않는다.
+책임을 나눠 둔다(단일 책임). 로그인·LTI 실행·토큰 교환·로그아웃·쿠키 저장을 한 클래스에 모으지 않는다. crate도 바뀌는 이유에 따라 나눈다: HTTP 정책과 요청 인증 계약은 `http`, 인증 흐름은 `auth`, OS 키체인 연동은 `platform/keychain`이다. 키체인을 떼어 두면 그 위의 crate는 테스트에서 메모리 구현을 쓰므로 Linux CI에서 돈다([build_ci §5.3](../../cross_cutting/03_build_ci.md#53-러너)).
 
 | 구성 | 종류 | 책임 |
 |---|---|---|
-| `RequestAuthenticator` | `<I>` (shared 소유, Source가 사용. 여러 Source가 함께 쓰는 공통 계약이라 "쓰는 쪽이 소유"의 예외로 공용 crate에 둔다) | 요청에 인증을 붙인다. 인증이 거부되면 한 번 갱신하고 다시 시도한다 |
-| `WebSessionAuthenticator` | 구현 (B) | 쿠키 + `X-CSRF-Token`(쓰기 요청), LearningX에는 `Authorization: Bearer <xn_api_token>` |
-| `OAuthAuthenticator` | 구현 (A, 배포 전) | `Authorization: Bearer <access_token>`, 1시간 만료 시 refresh token으로 갱신 |
-| `AuthGateway` | `<I>` (application 소유) | 로그인·로그아웃·상태 조회. `LoginWithOtp` 같은 유스케이스가 쓴다 |
+| `RequestAuthenticator` | `<I>` (`http` 소유, Source가 사용. 여러 Source가 함께 쓰는 공통 계약이라 "쓰는 쪽이 소유"의 예외로 공용 crate에 둔다) | 요청에 인증을 붙인다. 인증이 거부되면 한 번 갱신하고 다시 시도한다 |
+| `WebSessionAuthenticator` | 구현 (B), `auth` | 쿠키 + `X-CSRF-Token`(쓰기 요청), LearningX에는 `Authorization: Bearer <xn_api_token>` |
+| `OAuthAuthenticator` | 구현 (A, 배포 전), `auth` | `Authorization: Bearer <access_token>`, 1시간 만료 시 refresh token으로 갱신 |
+| `AuthGateway` | `<I>` (`application/ports/school` 소유, `auth`가 구현) | 로그인·로그아웃·상태 조회. `LoginWithOtp` 같은 유스케이스가 쓴다 |
 | `WebSessionLogin` | `AuthGateway` 구현의 일부 | 학번·비밀번호·OTP → 세션 ([01_auth §2](01_auth.md)) |
 | `SessionRefresher` | 내부 | 쿠키 → LTI → 새 `xn_api_token` ([01_auth §3](01_auth.md)) |
-| `SessionStore` | `<I>` + 키체인 구현 | 쿠키·토큰·학번·비밀번호 저장. 바뀐 쿠키는 받는 즉시 저장한다. macOS는 **Data Protection 키체인(앱 접근 그룹)**에 저장한다. 로그인 키체인은 같은 사용자의 다른 프로세스가 허용 창 없이 읽을 수 있다([security §5.2](../../cross_cutting/01_security.md)). 저장소는 `access-group`을 명시하고 `cloud-sync`는 끈다. 항목은 `AfterFirstUnlockThisDeviceOnly`로 만든다(화면 잠금 중 갱신이 읽을 수 있게). 정책은 만들 때만 붙으므로, 정책이 다른 기존 항목은 지우고 다시 만든다. 실패는 `Locked`(-25308, 잠시 뒤 재시도), `Misconfigured`(-34018, 서명·entitlement 오류), `NotFound`(-25300)로 나눠 돌려주고 앞의 둘을 로그아웃으로 다루지 않는다. 시작 때 한 번 읽어 메모리에 두고, 값이 실제로 바뀔 때만 쓴다. 개발 빌드는 서비스 이름에 접미사를 붙여 배포본과 항목을 나눈다(같은 접근 그룹이라 서로 읽힌다)([키체인 측정](../../measurements/2026-11_keychain_prompts.md)) |
-| 세션 갱신 정책 | shared 안의 순수 모듈 | 만료 임박, 유휴, 깨어남, 로그아웃 상태를 보고 갱신·대기·안내를 정한다 |
-| HTTP 정책 | 공통 클라이언트 | 아래 표 |
+| `SessionStore` | `<I>`와 구현은 `auth`. 키체인 읽기·쓰기는 `platform/keychain`의 `SecretStore`를 주입받는다(테스트는 메모리 구현) | 쿠키·토큰·학번·비밀번호 저장. 바뀐 쿠키는 받는 즉시 저장한다. macOS는 **Data Protection 키체인(앱 접근 그룹)**에 저장한다. 로그인 키체인은 같은 사용자의 다른 프로세스가 허용 창 없이 읽을 수 있다([security §5.2](../../cross_cutting/01_security.md)). 저장소는 `access-group`을 명시하고 `cloud-sync`는 끈다. 항목은 `AfterFirstUnlockThisDeviceOnly`로 만든다(화면 잠금 중 갱신이 읽을 수 있게). 정책은 만들 때만 붙으므로, 정책이 다른 기존 항목은 지우고 다시 만든다. 실패는 `Locked`(-25308, 잠시 뒤 재시도), `Misconfigured`(-34018, 서명·entitlement 오류), `NotFound`(-25300)로 나눠 돌려주고 앞의 둘을 로그아웃으로 다루지 않는다. 시작 때 한 번 읽어 메모리에 두고, 값이 실제로 바뀔 때만 쓴다. 개발 빌드는 서비스 이름에 접미사를 붙여 배포본과 항목을 나눈다(같은 접근 그룹이라 서로 읽힌다)([키체인 측정](../../measurements/2026-11_keychain_prompts.md)) |
+| 세션 갱신 정책 | `auth` 안의 순수 모듈 | 만료 임박, 유휴, 깨어남, 로그아웃 상태를 보고 갱신·대기·안내를 정한다 |
+| HTTP 정책 | 공통 클라이언트, `http` | 아래 표 |
 
 - Commons는 인증이 필요 없으므로 `RequestAuthenticator`에 의존하지 않는다.
-- OTP 입력은 사용자와 주고받는 흐름이므로 유스케이스(application)가 조율한다. shared는 한 번의 로그인 시도만 수행한다.
+- OTP 입력은 사용자와 주고받는 흐름이므로 유스케이스(application)가 조율한다. `auth`는 한 번의 로그인 시도만 수행한다.
 - 위 표는 Canvas·LearningX 세션(쿠키·`xn_api_token`) 기준이다. **학사행정웹서비스(별도 SSO `dsso`)와 스마트출결은 세션이 따로**다. 각각 `RequestAuthenticator`·`SessionStore` 구현을 하나씩 더 두고, 로그인 학번도 함께 보관한다(IDOR 방어에 쓴다, [07 §3.5](07_student_portal.md)). 포털은 2차 인증이 없고 60분 세션을 `sessionExtend.do`로 연장한다. 세션 만료 시 재로그인, 로그인 실패 잠김 처리는 그 구현에 둔다. 상세·미확인은 [07_student_portal](07_student_portal.md).
 
 **HTTP 정책**
@@ -142,14 +151,18 @@ entrypoints     IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케이스�
 
 ### 2.6 의존 규칙
 
-각 항목을 Cargo crate로 나누고 `[dependencies]`로 강제한다. 의존 그래프 검사는 편집 직후 훅과 CI에서 돌린다([System Architecture §3.2](../../02_system_architecture.md)).
+각 항목을 Cargo crate로 나누고 `[dependencies]`로 강제한다. 의존 그래프 검사는 편집 직후 훅과 CI에서 돌린다([System Architecture §3.2](../../02_system_architecture.md#32-의존-규칙-cargo-dependencies로-강제)).
 
 | 규칙 | 내용 |
 |---|---|
-| 레이어 | `presentation`·`entrypoints` → `application` → `domain`. data_access는 application·domain에 의존할 수 있고, 반대 방향은 금지 |
-| 출력 포트 구현 | `data_access.repositories`는 Source(`canvas`, `learningx`, …)에 의존하지 않는다 |
+| 레이어 | data_access는 `application/ports/*`, `application/kernel`, `domain/core`에 의존할 수 있다. `application/usecases/*`와 presentation·entrypoints에는 의존하지 않고, 반대 방향도 금지 |
+| `ds_core` | 기초 crate만 |
+| `contracts/<묶음>` | `ds_core`, 기초 crate. 계약 crate끼리 서로 의존하지 않는다 |
+| `repositories` | `ports/school`, `kernel`, `domain/core`, `ds_core`, `contracts/*`. Source(`canvas`, `learningx`, …)·`http`·`auth`에 의존하지 않는다 |
+| `http` | `ds_core`, 기초 crate(HTTP 클라이언트 등) |
+| `auth` | `http`, `ds_core`, `ports/school`, `kernel`, `platform/keychain` |
 | Source 독립 | Source끼리 서로 의존하지 않는다 |
-| Source 의존 | Source는 `data_access.repositories`의 계약(DS `<I>`, DTO, 공통 오류)과 `data_access.shared`에만 의존한다 |
+| Source 의존 | Source는 `ds_core`, **자기가 구현하는** `contracts/<묶음>`, `http`에만 의존한다. 인증 구현(`auth`)은 `RequestAuthenticator`로 주입받는다 |
 | 조립 | 구체 클래스를 조립하는 곳(composition root)만 모든 data_access crate에 의존할 수 있다 |
 
 ---
@@ -160,7 +173,7 @@ Source(접근 구역) 하나에 문서 하나를 둔다. 경로, 인증, 응답 
 
 | 문서 | Source | 내용 |
 |---|---|---|
-| [01_auth](01_auth.md) | `shared` (인증) | SSO 로그인, OTP, Canvas 웹 세션, LearningX 토큰 갱신, 방식 A 전환 |
+| [01_auth](01_auth.md) | `auth` (인증) | SSO 로그인, OTP, Canvas 웹 세션, LearningX 토큰 갱신, 방식 A 전환 |
 | [02_canvas](02_canvas.md) | `canvas` | REST 경로, GraphQL, LTI 도구 번호 찾기 |
 | [03_learningx](03_learningx.md) | `learningx` | 주차학습, 출결, 수업자료실, 게시판, 도구별 학생 권한 |
 | [04_smart_attendance](04_smart_attendance.md) | `smart_attendance` | 전자출결 |

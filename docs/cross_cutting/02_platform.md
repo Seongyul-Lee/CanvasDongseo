@@ -15,19 +15,19 @@
 
 | 영역 | 선택 | 버전(최근 갱신일) | 쓰는 레이어 | 비고 |
 |---|---|---|---|---|
-| 셸 | `tauri` | 2.12.5 (2026-11-06) | presentation, bin/app | capabilities로 command 제한 |
-| 비동기 | `tokio` | — | 전체(domain 제외) | 갱신 스케줄러, 스트리밍 다운로드, 자식 프로세스 |
+| 셸 | `tauri` | 2.12.5 (2026-11-06) | presentation/tauri_commands, bin/app | capabilities로 command 제한 |
+| 비동기 | `tokio` | — | 어댑터(`data_access`, `ai`, `learning`, `local_store`), `entrypoints/ipc_server`, `presentation/tauri_commands`, `bin/app`. `domain`·`application`·`presenters`·`ipc`는 쓰지 않는다 | 갱신 스케줄러, 스트리밍 다운로드, 자식 프로세스 |
 | HTTP | `reqwest` (rustls) | 0.13.5 (2026-09-08) | data_access | 리디렉션 정책은 끄고 직접 따른다. 쿠키 저장소는 직접 관리 |
-| 인증 보조 | `rsa` | 0.9.10 (2026-11-07) | data_access/shared | LearningX 로그인의 PKCS#1 v1.5 복호화 |
-| 비밀 저장 | `keyring` + `apple-native-keyring-store`(`protected` 기능) | 4.2.0 (2026-08-29), 1.0.2 (2026-08-06) | data_access/shared | macOS는 Data Protection 키체인(앱 접근 그룹). 로그인 키체인은 쓰지 않는다([security §5.2](01_security.md)). `keychain` 기능은 켜지 않는다(로그인 키체인으로 돌아가지 않게). 접근 그룹은 저장소 설정 키 `access-group`으로 지정한다([키체인 측정](../measurements/2026-11_keychain_prompts.md)) |
+| 인증 보조 | `rsa` | 0.9.10 (2026-11-07) | data_access/auth | LearningX 로그인의 PKCS#1 v1.5 복호화 |
+| 비밀 저장 | `keyring` + `apple-native-keyring-store`(`protected` 기능) | 4.2.0 (2026-08-29), 1.0.2 (2026-08-06) | platform/keychain | macOS는 Data Protection 키체인(앱 접근 그룹). 로그인 키체인은 쓰지 않는다([security §5.2](01_security.md)). `keychain` 기능은 켜지 않는다(로그인 키체인으로 돌아가지 않게). 접근 그룹은 저장소 설정 키 `access-group`으로 지정한다([키체인 측정](../measurements/2026-11_keychain_prompts.md)) |
 | JSON | `serde`, `serde_json` | — | DTO·ViewModel·IPC 타입 | domain에는 쓰지 않는다 |
 | HTML | `scraper` | 0.29.0 (2026-10-21) | data_access | 공지, SSO·포털 화면 |
 | XML | `quick-xml` | 0.42.0 (2026-08-22) | data_access/commons | 엔티티를 펼치지 않음. 크기 상한·`DOCTYPE` 거부는 직접 검사 |
 | 시간 | `jiff` | 0.2.40 (2026-11-07) | domain 포함 전체(domain의 유일한 외부 crate) | 시간대 있는 값으로 통일 |
 | 오류·기록 | `thiserror`, `tracing` | — | domain 제외 전체 | 실패 단계 이름만 기록 |
-| IPC | `interprocess` | 2.4.7 (2026-10-23) | entrypoints, bin/cdx | Unix 소켓·named pipe |
-| CLI | `clap` | 4.6.7 (2026-09-14) | bin/cdx | `ToolGuide` 생성 |
-| 테스트 | `cargo test`, `wiremock` | 0.6.5 (2025-08-24) | 전체 | DS 계약 테스트, 실측 응답 픽스처 |
+| IPC | `interprocess` | 2.4.7 (2026-10-23) | entrypoints/ipc_server, bin/cdx | Unix 소켓·named pipe |
+| CLI | `clap` | 4.6.7 (2026-09-14) | ipc/cli (bin/cdx, bin/app의 `ToolGuide` 생성) | `ToolGuide` 생성 |
+| 테스트 | `cargo-nextest`, `wiremock` | — , 0.6.5 (2025-08-24) | 전체 | DS 계약 테스트, 실측 응답 픽스처. 바뀐 crate만 돌리는 방법은 [build_ci §5](03_build_ci.md#5-ci) |
 | 의존성 검사 | `cargo-deny` | — | CI | 라이선스·취약점·금지 crate |
 | 프런트엔드 | `react` + Vite (SPA) | 19.3.1 (2026-10-14) | presentation | 대화 UI 라이브러리가 풍부하고 AI 에이전트의 코드 정확도가 높다 |
 | 학습 | `whisper-rs`(whisper.cpp 1.9.5로 실측), ffmpeg 9.0.2(LGPL 정적 빌드 사이드카), `objc2-vision`, `windows`(OCR) | [learning_adapters](../layers/06_learning_adapters.md) | learning | 확장 단계. 전사 모델 `large-v3-turbo-q5_0` + Silero VAD |

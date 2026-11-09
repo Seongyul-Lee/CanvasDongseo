@@ -38,7 +38,7 @@
 
 | 지킬 것 | 범위 | 강제하는 곳 |
 |---|---|---|
-| 비밀(비밀번호·쿠키·토큰)은 코어 밖으로 나가지 않는다. 앱·`cdx`에 비밀을 출력하는 경로가 없다 | R1 | [data_access §2.5](../layers/data_access/README.md), [entrypoints §3](../layers/04_entrypoints.md) `ipc_protocol` 타입 |
+| 비밀(비밀번호·쿠키·토큰)은 코어 밖으로 나가지 않는다. 앱·`cdx`에 비밀을 출력하는 경로가 없다 | R1 | [data_access §2.5](../layers/data_access/README.md), [entrypoints §3](../layers/04_entrypoints.md) `ipc/wire` 타입 |
 | 비밀은 Data Protection 키체인(앱 접근 그룹)에만 저장한다. 배포 빌드는 Hardened Runtime을 켜고 `get-task-allow`를 넣지 않는다 | R1, B | [data_access §2.5](../layers/data_access/README.md), [platform §3](02_platform.md) |
 | IPC는 대화 단위 토큰 + 호출자 계보 확인으로 받는다 | R1, E | [entrypoints §3](../layers/04_entrypoints.md) |
 | 본인 데이터만 조회한다(세션 학번만) | R2 | [07_student_portal §3.5](../layers/data_access/07_student_portal.md), [04_smart_attendance](../layers/data_access/04_smart_attendance.md), [entrypoints §4](../layers/04_entrypoints.md) |

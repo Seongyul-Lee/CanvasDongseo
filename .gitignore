@@ -15,8 +15,8 @@ Desktop.ini
 # Rust (Cargo.lock은 앱이므로 커밋한다)
 target/
 
-# Tauri 생성물
-src-tauri/gen/schemas/
+# Tauri 생성물 (Tauri 앱은 crates/bin/app에 둔다, System Architecture §3.1)
+crates/bin/app/gen/schemas/
 
 # 프런트엔드 (lock 파일은 커밋한다)
 node_modules/

@@ -14,8 +14,11 @@
 | 항목 | 내용 |
 |---|---|
 | 링 | Interface Adapters (View는 Frameworks & Drivers) |
-| crate | `presentation` (+ 프런트엔드 SPA) |
-| 의존할 수 있는 것 | `application` |
+| crate | `presentation/presenters/{common, school, ai, learning, jobs}`, `presentation/tauri_commands` (+ 프런트엔드 SPA) |
+| 의존할 수 있는 것 | `presenters/common`: `application/kernel`. `presenters/<묶음>`: 같은 묶음의 `application/usecases`, `presenters/common`, `kernel`. `tauri_commands`: `usecases/*`, `presenters/*`, `ports/common`(구현), `kernel`, `tauri` |
+
+- Presenter·ViewModel은 순수 로직이고 테스트를 먼저 쓰므로 `tauri`에 의존하지 않는 `presenters/*`에 둔다. Presenter 테스트를 돌릴 때 Tauri를 컴파일하지 않는다. Tauri command는 로직 없는 `tauri_commands`에 둔다(Humble Object).
+- `presenters`는 `usecases`와 같은 묶음으로 나눈다. 한 묶음의 유스케이스를 고쳐도 다른 묶음의 Presenter는 다시 빌드되지 않는다([build_ci §2](../cross_cutting/03_build_ci.md#2-crate를-나누는-기준)).
 
 ## 2. 구조
 
@@ -29,9 +32,9 @@ View(SPA) ─command─▶ Controller(tauri command) ─▶ 유스케이스
 |---|---|---|
 | View | 프런트엔드 SPA 컴포넌트 | ViewModel을 그리고 입력을 command로 보낸다. 조건 분기·계산·변환을 하지 않는다 |
 | ViewModel 상태 보관 | 프런트엔드의 얇은 store | 받은 ViewModel·이벤트를 보관하고 View에 연결한다. 값을 새로 만들지 않는다 |
-| ViewModel 타입 | `presentation` | 화면용 DTO(과목 카드, 배너 종류, 버튼 활성 여부, 표시용 마감 문구 등) |
-| Presenter | `presentation` | 출력 DTO·오류를 ViewModel로 바꾼다. 어떤 배너·안내 행동을 줄지 같은 판단을 한다 |
-| Controller | `presentation`의 tauri command | 입력을 받아 유스케이스를 부르고 Presenter에 넘긴다. 로직 없음 |
+| ViewModel 타입 | `presentation/presenters/*` | 화면용 DTO(과목 카드, 배너 종류, 버튼 활성 여부, 표시용 마감 문구 등) |
+| Presenter | `presentation/presenters/*` | 출력 DTO·오류를 ViewModel로 바꾼다. 어떤 배너·안내 행동을 줄지 같은 판단을 한다 |
+| Controller | `presentation/tauri_commands` | 입력을 받아 유스케이스를 부르고 Presenter에 넘긴다. 로직 없음 |
 
 - ViewModel은 Clean Architecture의 뜻으로, Presenter가 만든 동작 없는 데이터다. MVVM(Android·iOS)의 ViewModel처럼 상태 변경이나 동작을 담지 않는다.
 - 판단이 들어간 표시 문구는 Presenter에서, 순수 서식(로캘 숫자·날짜 포맷)은 View에서 만든다.
@@ -67,6 +70,7 @@ ui/src/
 - `viewmodels/`는 화면과 코어 사이의 계약이다. command 응답뿐 아니라 이벤트(AI 스트림, 진행률)의 타입도 여기에 있다.
 - `commands/`는 WebView ↔ 코어의 Tauri command 경로다. `cdx` ↔ 코어의 IPC([entrypoints](04_entrypoints.md))와 다르다.
 - 구현 순서: ViewModel 타입·Presenter(Rust, 테스트 먼저. 기대값은 `design/samples/`의 샘플 JSON이다 — [Design Process §2.3](../03_design_process.md#23-목업)) → TypeScript 타입 생성(`viewmodels/`) → `theme` → `components` → `screens`. 로직을 먼저 만들고 화면은 테스트가 필요 없을 만큼 얇게 얹는다(Humble Object).
+- **Presenter 테스트가 샘플 JSON을 읽는 방법**: `include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/<저장소 루트까지의 상대 경로>/design/samples/<기능>/<상태>.json"))`로 컴파일 때 넣는다. cargo가 이 파일을 의존 정보에 기록하므로 샘플을 고치면 테스트가 다시 빌드된다. 실행 중에 파일을 읽지 않는다(cargo가 변경을 모른다). 비교는 문자열이 아니라 JSON 값으로 한다(`serde_json::Value`, 키 순서·공백 무시). `include_str!`은 파일을 하나씩 적어야 하므로 **새 상태를 더하면 테스트 케이스도 함께 더한다**(입력 DTO는 상태마다 다르므로 어차피 손으로 쓴다). 빠뜨림을 막기 위해 crate마다 테스트 하나가 샘플 폴더의 파일 목록과 등록된 케이스 목록이 같은지 확인한다. CI에서는 `design/samples/**` 변경이 `presenters/*` 테스트를 돌린다([build_ci §5.2](../cross_cutting/03_build_ci.md#52-영향-범위-계산-cargo-xtask-affected)).
 - 위 의존 방향은 `eslint-plugin-boundaries`로 검사해 편집 직후 훅과 CI에 건다.
 
 ### 2.2 디자인 토큰
@@ -106,7 +110,7 @@ ui/src/
 
 | 이웃 | 계약 |
 |---|---|
-| application | 유스케이스만 호출한다. 출력 DTO를 받는다. `UserConfirmation`·`OtpPrompt` 포트를 구현한다 |
+| application | `usecases/*`의 유스케이스만 호출한다. 출력 DTO를 받는다. `tauri_commands`가 `UserConfirmation`·`OtpPrompt`·`ProgressSink` 포트를 구현한다 |
 | 프런트엔드 | command 이름과 ViewModel 타입(생성된 TypeScript)이 계약이다 |
 
 ## 5. 미확인 항목

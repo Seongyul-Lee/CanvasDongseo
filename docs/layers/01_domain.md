@@ -14,14 +14,16 @@
 | 항목 | 내용 |
 |---|---|
 | 링 | Entities |
-| crate | `domain` |
-| 의존할 수 있는 것 | 기초 crate만. 외부 crate는 `jiff`(시각 값 타입)만 쓴다 |
+| crate | `domain/core`(엔티티, 학교 업무 규칙, §4.2 이름 규칙), `domain/slides`(§4.1 슬라이드 판정) |
+| 의존할 수 있는 것 | 기초 crate만. `domain/core`의 외부 crate는 `jiff`(시각 값 타입)만, `domain/slides`는 외부 crate가 없고 `domain/core`도 모른다 |
+
+- `domain/core`는 거의 모든 crate가 의존하므로 자주 바뀌는 규칙을 두지 않는다. 기준값을 자주 조정하는 영상 처리 정책은 `domain/slides`로 떼고 `usecases/learning`만 이를 쓰게 해, 조정해도 학습 유스케이스와 그 위만 다시 빌드되게 한다([build_ci §2](../cross_cutting/03_build_ci.md#2-crate를-나누는-기준)).
 
 ## 2. 원칙
 
 - UI·프레임워크·HTTP·키체인·AI·OS API를 모른다.
 - **직렬화를 하지 않는다.** `serde`를 쓰지 않는다. 직렬화는 DS DTO, 출력 DTO, ViewModel, IPC 타입이 맡는다.
-- 학교·학습에 관한 업무 규칙만 둔다. 학교 세션 갱신 시점 같은 인프라 정책은 [data_access/shared](data_access/README.md)에 둔다.
+- 학교·학습에 관한 업무 규칙만 둔다. 학교 세션 갱신 시점 같은 인프라 정책은 [data_access/auth](data_access/README.md)에 둔다.
 - 순수 함수와 값 타입으로 쓰고, 단위 테스트로 고정한다.
 
 ## 3. 엔티티 (후보)
@@ -43,7 +45,7 @@
 
 ### 4.1 슬라이드 판정 (강의 동영상 → 슬라이드 PDF)
 
-앱이 신뢰하는 판정 로직이라 안쪽 링에 둔다. 학교 업무 규칙(과제·출결)과 성격이 다른 영상 처리 정책이므로 **`domain::slides` 모듈로 분리**하고, 다른 모듈과 서로 참조하지 않는다. 입력은 회색조·컬러 프레임 버퍼(바이트 배열과 크기)뿐이고, 디코딩·OCR·파일은 모른다. 외부 crate 없이 순수 함수로 쓴다. 처리 흐름은 [learning_adapters §2](06_learning_adapters.md).
+앱이 신뢰하는 판정 로직이라 안쪽 링에 둔다. 학교 업무 규칙(과제·출결)과 성격이 다른 영상 처리 정책이므로 **`domain/slides` crate로 분리**하고, `domain/core`와 서로 참조하지 않는다. 입력은 회색조·컬러 프레임 버퍼(바이트 배열과 크기)뿐이고, 디코딩·OCR·파일은 모른다. 외부 crate 없이 순수 함수로 쓴다. 처리 흐름은 [learning_adapters §2](06_learning_adapters.md).
 
 | 규칙 | 내용 (기준값은 2026-10-26 운영체제 강의 실측) |
 |---|---|
