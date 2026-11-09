@@ -39,7 +39,7 @@
 
 | 순서 | 할 일 | 산출물 |
 |---|---|---|
-| 1 | 기준 버전과 가져온 파일 목록을 기록한다 | `ui/UPSTREAM.md`: 기준 버전·커밋, 가져온 파일마다 원본 경로, 고친 파일과 이유 |
+| 1 | 기준 버전과 가져온 파일 목록을 기록한다. 가져온 파일에 브랜드 자산(T3 Code·다른 회사 로고)이 섞였는지 점검해 기록한다 | `ui/UPSTREAM.md`: 기준 버전·커밋, 가져온 파일마다 원본 경로, 고친 파일과 이유, 브랜드 자산 점검 결과 |
 | 2 | 그대로 가져올 것을 복사한다: `apps/web/src/index.css`, `apps/web/src/components/ui/`(Base UI 래퍼), lucide 아이콘 | `ui/src/theme/t3code.css`, `ui/src/components/ui/` |
 | 3 | 기본 테마 값만 쓴다. 실행 중에 색을 계산해 변수를 덮어쓰는 코드(`themePalette.ts`, `appearanceContrast.ts` 등)는 가져오지 않는다 | |
 | 4 | 한글 글꼴을 고르고 `--font-sans` 앞에 넣는다. 크기와 색은 그대로 둔다. 화면이 깨질 때만 줄 간격을 고친다 | `ui/src/theme/app.css`, 글꼴 파일과 라이선스 |
@@ -115,4 +115,5 @@ ui/
 ## 5. 미확인 항목
 
 - 한글 글꼴(무엇을 쓸지, 앱에 포함할지)
+- `components/ui/`를 복사만 해서 컴파일되는지(T3 Code 내부 import·상태 관리 의존). Foundation 2단계 전에 빈 Vite + React 프로젝트에 복사해 `tsc --noEmit`으로 확인한다
 - 샘플 모드 화면을 상태별로 캡처하는 도구. Tauri 창 자체의 캡처는 우선 직접 한다

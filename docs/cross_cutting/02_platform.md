@@ -33,7 +33,7 @@
 | 프런트엔드 UI | `tailwindcss` 4, `@base-ui/react`, `lucide-react` | T3 Code 기준 버전의 lock 파일을 따른다 | presentation | 기준 디자인 T3 Code와 같은 부품([UX Strategy §3](../06_ux_strategy.md#3-기준-디자인-t3-code)) |
 | 학습 | `whisper-rs`(whisper.cpp 1.9.5로 실측), ffmpeg 9.0.2(LGPL 정적 빌드 사이드카), `objc2-vision`, `windows`(OCR) | [learning_adapters](../layers/06_learning_adapters.md) | learning | 확장 단계. 전사 모델 `large-v3-turbo-q5_0` + Silero VAD |
 
-- 프런트엔드 UI는 T3 Code(MIT)에서 가져온다. 가져온 코드에는 저작권·라이선스 문구를 남기고, 가져온 파일은 `ui/UPSTREAM.md`에 기록한다. 가져온 코드와 서드파티 패키지(npm, Rust crate)의 라이선스는 앱의 설정 > 앱 정보 > 오픈소스 라이선스에 고지하고, 목록은 빌드 때 생성한다(도구 미정). T3 Code의 이름·워드마크·앱 아이콘은 쓰지 않는다.
+- 프런트엔드 UI는 T3 Code(MIT)에서 가져온다. 가져온 코드에는 저작권·라이선스 문구를 남기고, 가져온 파일은 `ui/UPSTREAM.md`에 기록한다. 가져온 코드와 서드파티 패키지(npm, Rust crate)의 라이선스는 앱의 설정 > 앱 정보 > 오픈소스 라이선스에 고지하고, 배포물에 라이선스 전문을 함께 넣는다. 목록은 빌드 때 생성한다(도구는 §4). T3 Code의 이름·워드마크·앱 아이콘은 쓰지 않는다.
 - GraphQL은 전용 클라이언트 없이 JSON POST로 보낸다([02_canvas §4](../layers/data_access/02_canvas.md)).
 - 레지스트리(학과 게시판 코드, 포털 조회 허용 목록·학번 매개변수)는 앱에 포함하는 데이터 파일(TOML)로 두고, 읽을 때 타입으로 검증한다.
 
@@ -84,6 +84,7 @@
 
 ## 4. 미확인 항목
 
+- 오픈소스 라이선스 목록 생성 도구(npm·Rust crate 모두)와 배포물에 넣는 형식
 - Windows 비밀 저장: Credential Manager는 같은 사용자 프로세스가 읽을 수 있을 것으로 예상한다. 대안(DPAPI 범위, 앱 전용 보호) 검토 필요
 - Windows에서 Claude Code 공식 설치 스크립트의 실행 정책 처리
 - macOS 서명·공증, 자동 업데이트 방식
