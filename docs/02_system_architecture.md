@@ -75,8 +75,8 @@ crates/
     ds_core/              data_access 공통 오류
     contracts/<묶음>/      DS <I>와 DS DTO, 리소스 묶음별 (예: 과목·차시, 과제, 출결, 공지, 학적·성적, 자료)
     repositories/         ports/school 구현
-    http/                 HTTP 정책, RequestAuthenticator <I>
-    auth/                 인증 구현(로그인·갱신·세션 갱신 정책), AuthGateway 구현, SessionStore
+    http/                 HTTP 정책, RequestAuthenticator <I>, SessionPrincipal <I>(세션 학번)
+    auth/                 인증 구현(로그인·갱신·세션 갱신 정책), SessionPrincipal 구현, AuthGateway 구현, SessionStore
     canvas/ learningx/ smart_attendance/ commons/ school_site/ student_portal/   (Source)
   ai/
     claude_code/          ports/ai 구현 (MVP)

@@ -67,9 +67,9 @@ data_access/
   canvas/  learningx/  smart_attendance/  commons/  school_site/  student_portal/
                      DS 구현 (Source = 접근 구역별 출처 어댑터)
                       │ 사용
-  http/              HTTP 정책, RequestAuthenticator <I>
-  auth/              RequestAuthenticator (B)/(A) 구현, AuthGateway 구현(WebSessionLogin·SessionRefresher),
-                     SessionStore, 세션 갱신 정책(순수 모듈)
+  http/              HTTP 정책, RequestAuthenticator <I>, SessionPrincipal <I>, StudentId
+  auth/              RequestAuthenticator (B)/(A) 구현, SessionPrincipal 구현(포털·스마트출결 세션),
+                     AuthGateway 구현(WebSessionLogin·SessionRefresher), SessionStore, 세션 갱신 정책(순수 모듈)
 platform/keychain    비밀 저장(OS 키체인). auth의 SessionStore가 쓴다
 presentation         Tauri command(Controller), Presenter, ViewModel — 유스케이스만 호출한다
 entrypoints          IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케이스만 호출한다
@@ -111,7 +111,7 @@ entrypoints          IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케�
 | `Unauthorized` | 인증이 거부됨(세션·토큰 만료 또는 삭제) | Canvas 401 + `WWW-Authenticate` 헤더 |
 | `SessionExpired` | 갱신할 수 없음. 다시 로그인(OTP)해야 함 | 갱신 중 로그인 화면으로 이동 |
 | `NotAvailable` | 권한이 없거나 그 과목에서 쓰지 않는 기능 | Canvas 401(헤더 없음), 404 "사용 안 함" |
-| `SourceChanged` | 학교 쪽 형식이 예상과 다름. 실패한 단계 이름만 담는다 | 폼·필드·XML 요소를 찾지 못함 |
+| `SourceChanged` | 학교 쪽 형식이 예상과 다름. 실패한 단계 이름만 담는다 | 폼·필드·XML 요소를 찾지 못함, 응답 학번이 세션 학번과 다름([07 §3.5](07_student_portal.md#35-앱이-지킬-것)) |
 | `Network` | 연결 실패, 시간 초과, 5xx | — |
 | `RateLimited` | 요청 제한에 걸림 | Canvas 403 throttled, 429 |
 
@@ -124,6 +124,8 @@ entrypoints          IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케�
 | 구성 | 종류 | 책임 |
 |---|---|---|
 | `RequestAuthenticator` | `<I>` (`http` 소유, Source가 사용. 여러 Source가 함께 쓰는 공통 계약이라 "쓰는 쪽이 소유"의 예외로 공용 crate에 둔다) | 요청에 인증을 붙인다. 인증이 거부되면 한 번 갱신하고 다시 시도한다 |
+| `SessionPrincipal` | `<I>` (`http` 소유, `student_portal`·`smart_attendance`가 사용, `auth`가 세션마다 구현) | 그 세션의 로그인 주체를 돌려준다: 학번(`StudentId`)과, 세션이 아는 경우 이름. 로그인 상태가 아니면 `SessionExpired`. 그 세션의 `RequestAuthenticator` 구현과 같은 객체가 구현한다. 학번이 필요한 Source만 쓰므로 `RequestAuthenticator`와 나눈다(인터페이스 분리) |
+| `StudentId` | 값 타입, `http` | 학번. `Debug`·`Display`는 가린 값만 내고 `Serialize`를 구현하지 않는다(로그·오류·IPC로 새지 않게). 값은 요청 매개변수를 채울 때만 꺼내고(`expose`), 응답 대조는 값을 꺼내지 않고 `matches(&str)`로 한다 |
 | `WebSessionAuthenticator` | 구현 (B), `auth` | 쿠키 + `X-CSRF-Token`(쓰기 요청), LearningX에는 `Authorization: Bearer <xn_api_token>` |
 | `OAuthAuthenticator` | 구현 (A, 배포 전), `auth` | `Authorization: Bearer <access_token>`, 1시간 만료 시 refresh token으로 갱신 |
 | `AuthGateway` | `<I>` (`application/ports/school` 소유, `auth`가 구현) | 로그인·로그아웃·상태 조회. `LoginWithOtp` 같은 유스케이스가 쓴다 |
@@ -135,7 +137,15 @@ entrypoints          IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케�
 
 - Commons는 인증이 필요 없으므로 `RequestAuthenticator`에 의존하지 않는다.
 - OTP 입력은 사용자와 주고받는 흐름이므로 유스케이스(application)가 조율한다. `auth`는 한 번의 로그인 시도만 수행한다.
-- 위 표는 Canvas·LearningX 세션(쿠키·`xn_api_token`) 기준이다. **학사행정웹서비스(별도 SSO `dsso`)와 스마트출결은 세션이 따로**다. 각각 `RequestAuthenticator`·`SessionStore` 구현을 하나씩 더 두고, 로그인 학번도 함께 보관한다(IDOR 방어에 쓴다, [07 §3.5](07_student_portal.md)). 포털은 2차 인증이 없고 60분 세션을 `sessionExtend.do`로 연장한다. 세션 만료 시 재로그인, 로그인 실패 잠김 처리는 그 구현에 둔다. 상세·미확인은 [07_student_portal](07_student_portal.md).
+- 위 표는 Canvas·LearningX 세션(쿠키·`xn_api_token`) 기준이다. **학사행정웹서비스(별도 SSO `dsso`)와 스마트출결은 세션이 따로**다. 각각 `RequestAuthenticator`·`SessionPrincipal`·`SessionStore` 구현을 하나씩 더 두고, 로그인 학번도 함께 보관해 `SessionPrincipal`로 내준다(IDOR 방어에 쓴다, 아래 "세션 학번 주입"). 포털은 2차 인증이 없고 60분 세션을 `sessionExtend.do`로 연장한다. 세션 만료 시 재로그인, 로그인 실패 잠김 처리는 그 구현에 둔다. 상세·미확인은 [07_student_portal](07_student_portal.md).
+
+**세션 학번 주입** (IDOR 방어, 규칙은 [07 §3.5](07_student_portal.md#35-앱이-지킬-것))
+
+- `student_portal`·`smart_attendance`는 학번을 공개 인터페이스로 받지 않는다. 요청을 만들 때마다 `SessionPrincipal`에서 읽어 학번 자리를 채운다. 생성 때 값을 저장해 두지 않으므로 다시 로그인하면 바로 따른다.
+- 조립: composition root는 세션 하나의 구현 객체를 그 세션을 쓰는 Source에 `RequestAuthenticator`와 `SessionPrincipal`로 **함께** 넣는다. 포털 Source에는 포털 세션을, 스마트출결 Source에는 스마트출결 세션을 넣는다. 요청을 인증한 세션과 학번을 준 세션이 늘 같다.
+- **응답 학번 대조는 각 Source가 한다.** 어느 응답 필드가 학번인지는 출처마다(포털은 서비스마다) 다르기 때문이다. 다르면 응답 전체를 버리고 `SourceChanged`(단계 이름만)를 돌려준다. 공통으로 두는 것은 `StudentId::matches`뿐이다.
+- 고르지 않은 안: `RequestAuthenticator`에 학번 접근자를 더하면 학번이 필요 없는 Canvas·LearningX·`school_site` 구현과 배포 전 `OAuthAuthenticator`까지 학번을 내놓아야 한다. 공통 모듈이 학번 자리 채우기와 응답 검증을 맡으면, 서비스별 학번 매개변수 레지스트리와 응답 형식이라는 Source 지식이 공통 모듈로 옮겨 가고 두 Source가 그 코드로 묶인다.
+- 의존 규칙은 그대로다. Source → `http`, `auth` → `http`는 이미 있던 의존이다(§2.6).
 
 **HTTP 정책**
 
@@ -162,7 +172,7 @@ entrypoints          IPC 서버(`cdx` 요청)와 AI용 Presenter — 유스케�
 | `http` | `ds_core`, 기초 crate(HTTP 클라이언트 등) |
 | `auth` | `http`, `ds_core`, `ports/school`, `kernel`, `platform/keychain` |
 | Source 독립 | Source끼리 서로 의존하지 않는다 |
-| Source 의존 | Source는 `ds_core`, **자기가 구현하는** `contracts/<묶음>`, `http`에만 의존한다. 인증 구현(`auth`)은 `RequestAuthenticator`로 주입받는다 |
+| Source 의존 | Source는 `ds_core`, **자기가 구현하는** `contracts/<묶음>`, `http`에만 의존한다. 인증 구현(`auth`)은 `RequestAuthenticator`로, 세션 학번은 `SessionPrincipal`로 주입받는다(§2.5) |
 | 조립 | 구체 클래스를 조립하는 곳(composition root)만 모든 data_access crate에 의존할 수 있다 |
 
 ---
@@ -195,7 +205,7 @@ Source(접근 구역) 하나에 문서 하나를 둔다. 경로, 인증, 응답 
 |---|---|
 | 방식 B의 Canvas API Policy 문제(D1·D2) | 배포 전 (A) 검토. 인증은 `RequestAuthenticator`로 교체 가능하게 둔다 |
 | LearningX·SSO·Commons·학교 홈페이지는 공개 API가 아님 | 단계별 형식 검사와 `SourceChanged`. 실패 단계 이름으로 어디가 바뀌었는지 알 수 있게 한다 |
-| 학생지원시스템·스마트출결이 요청 매개변수의 학번을 세션과 대조하지 않음(IDOR, 학교 측 결함, [07 §3.4](07_student_portal.md)) | 앱은 학번을 입력받지 않고 **세션 학번으로만** 요청을 만든다. 외부 학번은 덮어쓰고, 응답의 학번이 다르면 폐기한다. 학교에 별도 보고(사용자 진행) |
+| 학생지원시스템·스마트출결이 요청 매개변수의 학번을 세션과 대조하지 않음(IDOR, 학교 측 결함, [07 §3.4](07_student_portal.md)) | 앱은 학번을 입력받지 않고 세션 학번으로만 요청을 만든다([07 §3.5](07_student_portal.md#35-앱이-지킬-것), 주입 방식은 §2.5). 학교에 별도 보고(사용자 진행) |
 
 ### 4.2 미확인 항목
 
