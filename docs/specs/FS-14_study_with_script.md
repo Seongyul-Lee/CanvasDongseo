@@ -72,7 +72,7 @@
 | 학습 자료 폴더 밖의 경로 인자 | 경로 확인 실패 | 미정(§6) | 거절된 이유 |
 | HMAC 키를 읽지 못함(키체인 잠김 등) | `SecretStore` 실패 | 미정(§6) | 미정(§6) |
 | AI를 쓸 수 없음 | — | `AiUnavailable(NotInstalled)`·`AiUnavailable(LoggedOut)`·`AiUnavailable(PlanNotSupported)`·`AiUnavailable(UsageLimit)` | 원인별 안내(FS-02) |
-| 격리 요약 세션을 띄울 수 없음 | `AiUnavailable` 또는 시간 초과 | 없음. 원문을 넘기지 않고 "요약하지 못함"으로 돌려준다([FS-09](FS-09_notices_and_peer_safety.md) F5, 추론) | 스크립트 파일은 학생이 파일로 직접 연다(우측 패널 원문 보기 대상이 아니다, §6) |
+| 격리 요약 세션을 띄울 수 없음 | `AiUnavailable` 또는 시간 초과 | 없음. 원문을 넘기지 않고 "요약하지 못함"으로 돌려준다([FS-09](FS-09_notices_and_peer_safety.md) F5, 추론) | 원문 보기 방법은 미정(§6) |
 
 ## 4. 수용 기준
 
