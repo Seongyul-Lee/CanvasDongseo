@@ -165,6 +165,7 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 | Presenter | 출력 DTO를 소비자(화면, AI)에 맞는 형태로 바꾸는 구성 |
 | `ToolGuide` | AI에게 주입하는 `cdx` 사용법 텍스트 |
 | `<I>` | 인터페이스(Rust trait) |
+| Actor | 두 가지 뜻으로 쓴다. **변경 Actor**: 코드가 바뀌는 이유, crate를 나누는 기준([build_ci §2.1](cross_cutting/03_build_ci.md#21-actor)). **사용자 Actor**: 같은 목적을 가진 사용자 집단, 시나리오의 기준([UX Strategy §4](06_ux_strategy.md#4-actor와-시나리오)). 둘이 함께 나오는 곳에서는 앞말을 붙인다 |
 
 ## 5. 문서 색인
 
@@ -192,6 +193,7 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 
 | 문서 | 주제 |
 |---|---|
+| [UX Strategy](06_ux_strategy.md) | Actor·시나리오, 경험 원칙, 기준 디자인(T3 Code), 화면 구성, 문구 원칙 |
 | [Design Process](03_design_process.md) | Foundation과 기능 단위 디자인 단계(User Flow → 상태 목록 → 목업 → 구현 → 실제 앱 확인 → 시나리오 점검)와 산출물 |
 | [Apple Developer 계정](04_apple_developer_account.md) | 멤버십, 인증서, 프로파일, 번들 ID, 공증 자격 증명 현황 |
 | [스크럼 보드](05_scrum_board.md) | 스프린트 운영 규칙, GitHub Projects 필드·View, 이슈 템플릿 |
