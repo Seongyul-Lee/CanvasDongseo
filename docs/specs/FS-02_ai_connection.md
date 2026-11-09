@@ -57,6 +57,7 @@
 - `account()`의 구독 종류가 Claude Code를 쓸 수 없는 플랜이면 `AiUnavailable(PlanNotSupported)`이다. 판정 기준은 [ai_adapters §2](../layers/05_ai_adapters.md#2-claude-로그인)가 정한다.
 - 이 상태에서는 대화를 시작하지 않는다. 연결 행은 "사용할 수 없음 / 플랜 미지원"이고, 행동은 유료 플랜 안내 하나다(P5).
 - 안내는 로그아웃(`LoggedOut`)·사용 한도(`UsageLimit`) 안내와 문구와 행동이 다르다(S1-2 점검 방법).
+- 쓸 수 있는 플랜이면 연결 행은 "연결됨"이고 headline에 구독 종류를 보인다(예: "Claude Pro로 연결됨"). 이메일·조직 ID는 읽지도 보이지도 않는다([application §4.2](../layers/02_application.md#42-ai)).
 - 판정하는 때: 로그인이 끝난 직후, 앱 시작, 대화를 시작하기 전. 판정이 로그인 단계에서 가능한지, 첫 메시지 오류로만 알 수 있는지는 미확인이다(§6).
 
 ### F5 로그아웃 (S10-3)
@@ -125,6 +126,7 @@
 | AC11 | `claude` 시작 구간이 동시에 둘 이상 돌지 않는다(상태 확인, 대화 시작, 격리 요약 세션 포함) | 가짜 `claude`(시작 시각 기록)로 여러 대화를 동시에 시작하는 테스트 | S2-5 |
 | AC12 | 시작 구간이 시간 초과되면 "항상 허용"과 키체인 잠금 해제 안내가 보이고, "항상 허용"을 고른 뒤 다시 실행하면 허용 창이 뜨지 않는다 | 응답하지 않는 가짜 `claude`로 안내 표시 테스트 + 허용이 풀린 상태 실측(§6) | S2-5 ★ |
 | AC13 | 앱 데이터 파일, 로그, 앱 키체인 항목 어디에도 AI 자격 증명·이메일·조직 ID가 없다 | 로그인·로그아웃 뒤 해당 위치에서 값 검색 | — |
+| AC14 | AI가 연결되면 AI 연결 행에 구독 종류가 "Claude Pro로 연결됨"처럼 보이고 이메일은 보이지 않는다. 모르는 `subscriptionType` 값이면 "Claude로 연결됨"이다(추론, §6) | `account()` 결과를 고정한 Presenter 테스트 + 실제 계정 | S1-1 ★ |
 
 ★ 유료 Claude 계정이 있어야 확인할 수 있다. AC7은 Free 계정, AC12는 허용이 풀린 실제 키체인 상태가 필요하다.
 
@@ -134,11 +136,11 @@
 
 ## 6. 미확인 항목
 
+- **구독 종류의 표시 이름**: 연결됨 행은 `subscriptionType`으로 "Claude Pro로 연결됨"처럼 보인다([UX Strategy §7.5](../06_ux_strategy.md#75-설정)). `subscriptionType`이 플랜마다 어떤 값을 주는지(Pro, Max, Team 등)는 Free 값과 함께 실측하고([ai_adapters §8](../layers/05_ai_adapters.md#8-미확인-항목)), 모르는 값이 오면 플랜 이름 없이 "Claude로 연결됨"으로 보인다(추론)
 - **사용 한도를 연결 행에 올리는 입력**: F6 표는 `UsageLimit`이면 AI 연결 행을 "사용할 수 없음 / 사용 한도"로 둔다. 그런데 한도는 대화 중 중립 이벤트 `UsageLimit`으로만 오고 `AiAccount.account()`에는 없어서, `presenters/shell`이 연결 행을 그렇게 판정할 입력이 없다([FS-06](FS-06_connection_status.md) §6과 같은 항목). 정해지기 전에는 대화별 상태 "Limited"만 확실하다
 - **설치를 실행하는 포트 동작이 아키텍처에 없음 → UX Strategy §12 후보.** [ai_adapters §2](../layers/05_ai_adapters.md#2-claude-로그인)는 "공식 설치 스크립트를 사용자 동의 뒤 실행한다"고 하지만, [application §4.2](../layers/02_application.md#42-ai)의 `AiInstallation`에는 `detect()`만 있다. `install()`(진행·실패 결과 포함)을 더할지 정한다
 - **설치 실패에 대응하는 application 오류가 없다.** `Temporary`로 볼지, 사유를 더할지 정한다. 위 항목과 함께 §12 후보
 - **최소 버전 미충족일 때의 사유와 행동이 없다.** `detect()`는 "최소 버전 충족"을 돌려주지만 `AiUnavailable`의 사유 열거형에는 버전 항목이 없고, [UX Strategy §7.5](../06_ux_strategy.md#75-설정) 연결 행 상태에도 "업데이트"가 없다. `NotInstalled`로 다루고 설치 스크립트를 다시 실행할지(추론), 사유를 더할지 정한다. 더하면 §12 후보
-- **연결 행 headline과 AI 계정 정보가 맞지 않는다.** [UX Strategy §7.5](../06_ux_strategy.md#75-설정)는 연결됨 상태를 "이름 또는 이메일로 연결됨"이라 하고, [application §4.2](../layers/02_application.md#42-ai)는 `account()`에 대해 "이메일·조직 ID는 버린다", [ai_adapters §2](../layers/05_ai_adapters.md#2-claude-로그인)는 `loggedIn`, `authMethod`, `subscriptionType`만 읽는다고 한다. AI 행에 무엇을 보일지(예: 구독 종류) 정한다
 - **"앱에서만 끄기" 설정이 UX Strategy에 없다.** [ai_adapters §2](../layers/05_ai_adapters.md#2-claude-로그인)는 로그아웃 행에 "앱에서만 끄기는 설정으로 따로 둔다"고 하지만, [UX Strategy §7.5](../06_ux_strategy.md#75-설정) 설정 항목과 [application §4.4](../layers/02_application.md#44-사용자-상호작용과-로컬-저장) `SettingsRepository`에는 없다. 이 문서는 넣지 않았다. 둘 중 어느 쪽을 고칠지 정한다
 - **키체인 거부와 실제 로그아웃의 구별.** [ai_adapters §3](../layers/05_ai_adapters.md#3-실행-모드)은 시작 구간이 "로그아웃으로 나오면" 키체인 안내를 보이라 하고, S2-4는 로그아웃이면 로그인 버튼을 보이라 한다. 허용 창을 거부했을 때 `claude auth status`가 무엇을 내는지 실측해, 두 경우를 구별할 수 있으면 나누고 없으면 한 안내에 둘을 함께 둘지 정한다(P5는 행동 하나)
 - 시작 구간의 시간 초과 값. 학생이 허용 창을 읽고 누르는 시간보다 길어야 한다

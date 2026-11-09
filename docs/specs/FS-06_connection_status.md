@@ -36,7 +36,7 @@
 |---|---|---|---|---|---|---|---|
 | 학교 계정 | `GetAuthState`([FS-03 F7](FS-03_school_account.md)) | 확인 중(키체인 `Locked` 포함) | 해당 없음 | 로그아웃, 세션 끊김(자동 갱신 실패 등, [FS-03 F7](FS-03_school_account.md#f7-연결-상태-조회)). 두 경우 모두 "로그인" 버튼이지만 행동이 다르다(로그아웃: 학번·비밀번호부터, 세션 끊김: OTP만). 행 ViewModel이 이 구별 값을 갖는다 | 로그인 유지 쿠키 만료가 2일 안 | 학교 계정 출처(Canvas·LearningX·스마트출결)의 장애(F5, §6) | 연결됨. 학생 이름 |
 | 학생지원시스템 | 세션 상태([FS-04 F7](FS-04_student_portal_login.md)) | 확인 중 | 해당 없음 | 로그인하지 않은 상태의 표시는 미정(§6) | 쓰지 않는다(추론, §6) | 학생지원시스템 장애(추론, §6) | 연결됨 |
-| AI | 설치·계정 상태(FS-02) | 확인 중 | `NotInstalled` | `LoggedOut` | 해당 없음 | `PlanNotSupported`, `UsageLimit`(입력 경로는 §6) | 연결됨 |
+| AI | 설치·계정 상태(FS-02) | 확인 중 | `NotInstalled` | `LoggedOut` | 해당 없음 | `PlanNotSupported`, `UsageLimit`(입력 경로는 §6) | 연결됨. 구독 종류(`subscriptionType`, 예: "Claude Pro로 연결됨") |
 
 - 판정은 출력 DTO의 값만 본다. 같은 입력이면 항상 같은 ViewModel이 나온다(순수 함수, 샘플 JSON으로 테스트, [presentation §2.1](../layers/03_presentation.md#21-프런트엔드-spa-내부-구조)).
 - 입력 하나를 얻지 못해도(예: AI 설치 감지가 끝나지 않음) 그 행만 "확인 중"이 된다. 다른 행의 판정에는 영향이 없다(추론).
@@ -116,7 +116,6 @@
 - **학생지원시스템 행의 "로그인 안 됨" 표시.** 학생지원시스템은 필요할 때만 로그인하므로([UX Strategy §7.2](../06_ux_strategy.md#72-mvp-화면)) 대부분의 시간에 로그인되지 않은 상태다. 이를 [§7.5](../06_ux_strategy.md#75-설정)의 "로그인 필요"(빨강 점)로 두면 알약이 거의 늘 보인다. 점 없는 상태를 새로 둘지(§7.5 표 변경), "로그인 필요"로 두되 알약 개수에서 뺄지 정한다
 - 학생지원시스템 행에서 "곧 만료"를 쓸지. 60분 세션이라 쓰지 않는 것으로 추론했다
 - 학생지원시스템 장애를 어느 행에 보일지. [UX Strategy §7.5](../06_ux_strategy.md#75-설정)는 학교 계정 행만 말한다. 학생지원시스템 행으로 보이는 것은 추론이다. 로그인이 없는 출처(학교·학과 공지, Commons)의 장애는 어느 행에도 속하지 않는다
-- **AI 행의 "연결됨" headline.** [UX Strategy §7.5](../06_ux_strategy.md#75-설정)는 "이름 또는 이메일로 연결됨"이라 쓰고, [application §4.2](../layers/02_application.md#42-ai)의 `AiAccount.account()`는 "이메일·조직 ID는 버린다". AI 행에 무엇을 보일지 정한다
 - **AI 사용 한도를 행에 올리는 경로 → [UX Strategy §12](../06_ux_strategy.md#12-아키텍처에-올릴-것) 후보.** 한도는 대화 중 `UsageLimit` 이벤트로만 온다([application §4.2](../layers/02_application.md#42-ai)). `AiAccount.account()`에는 한도가 없어, `shell`이 AI 행을 "사용할 수 없음(사용 한도)"으로 판정할 입력이 없다
 - 상태가 바뀔 때 화면에 알리는 방식(코어 이벤트를 보낼지, 화면이 다시 조회할지). [presentation §2.1](../layers/03_presentation.md#21-프런트엔드-spa-내부-구조)은 "코어 이벤트는 store에 들어간다"고만 쓴다
 - 키체인 `Misconfigured`일 때 학교 계정 행의 상태([FS-03 §6](FS-03_school_account.md#6-미확인-항목)과 같은 항목)
