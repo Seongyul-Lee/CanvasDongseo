@@ -1,0 +1,3 @@
+# `cargo xtask <서브커맨드>`로 워크스페이스 도구를 실행한다(build_ci §5)
+[alias]
+xtask = "run --quiet --package xtask --"
