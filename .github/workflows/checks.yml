@@ -1,0 +1,56 @@
+# 항상 도는 검사(build_ci §5.4): 의존 그래프(cargo xtask deps-check), cargo deny, cargo fmt --check
+# 영향 범위와 관계없이 develop으로 가는 PR과 develop 푸시마다 돈다(build_ci §5.1)
+name: checks
+
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  deps-check:
+    name: deps-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # rust-toolchain.toml의 툴체인을 설치한다
+      - run: rustup toolchain install
+      # target/은 Cargo.lock 해시별로 캐시하고, develop 푸시에서만 저장한다(build_ci §5.5)
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.event_name == 'push' }}
+      - run: cargo xtask deps-check
+      # 허용 표 대조 로직의 단위 테스트(위반을 일부러 넣은 경우 포함)
+      - run: cargo test -p xtask
+
+  cargo-deny:
+    name: cargo deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+      - run: cargo deny check
+
+  fmt:
+    name: cargo fmt --check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install
+      # build_ci §5.4는 "바뀐 crate만"이지만, 바뀐 crate 계산(cargo xtask affected)은 #18에서 만든다.
+      # 그때까지는 워크스페이스 전체를 검사한다(바뀐 crate를 포함하는 상위 집합)
+      - run: cargo fmt --all --check

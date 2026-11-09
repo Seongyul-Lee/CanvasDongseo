@@ -1,0 +1,45 @@
+# cargo deny 설정 — 라이선스·취약점·금지 crate·출처 검사(build_ci §5.4)
+# 실행: cargo deny check
+
+[graph]
+# 배포 대상 OS(macOS, Windows)의 의존만 본다. Linux는 CI 러너일 뿐 배포하지 않으므로
+# Tauri의 Linux 전용 의존(gtk 등)은 배포물에 들어가지 않는다(build_ci §5.3, platform §3)
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
+all-features = true
+
+[advisories]
+# RustSec 권고(취약점·유지보수 중단·yanked)를 오류로 본다. 예외는 사유와 함께 ignore에 적는다
+ignore = []
+
+[licenses]
+# 허용 라이선스. 새 라이선스가 필요하면 사유를 PR에 적고 더한다
+# 모두 배포물에 고지하면 쓸 수 있는 라이선스다(고지 절차는 platform §1).
+# MPL-2.0은 파일 단위 약한 copyleft로, 수정 없이 쓰면 고지만 필요하다(Tauri의 cssparser·selectors 등)
+allow = [
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "MIT",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Zlib",
+]
+confidence-threshold = 0.9
+
+[licenses.private]
+# 워크스페이스 crate는 배포하지 않으므로(publish = false) 라이선스 검사에서 뺀다
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+# 워크스페이스 내부 경로 의존(publish = false)은 버전 없이 쓴다
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
