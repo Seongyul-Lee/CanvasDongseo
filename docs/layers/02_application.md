@@ -101,8 +101,8 @@ crate: `ports/learning`(아래 표 전부)
 | `AudioDecoder` | Gateway | 동영상에서 **호출자가 정한** 샘플레이트·채널의 PCM | `learning/media` |
 | `Transcriber` | Gateway | `required_audio_format()`으로 필요한 음성 형식을 알리고, 음성 → 시각이 붙은 문장 목록을 낸다. 진행률·`CancelToken`을 받는다 | `learning/transcribe` |
 | `TextRecognizer` | Gateway | `supports(languages)`로 지원 언어를 알리고, 이미지 → 글자와 글자 상자 위치를 낸다 | `learning/macos`, `learning/windows` |
-| `SlidePdfWriter` | Gateway | 확정 장면·쪽 표기·OCR 결과 → PDF 바이트(임시 파일). 경로를 정하지 않는다 | `learning/pdf` |
-| `LearningOutputRepository` | Repository | 슬라이드 PDF·스크립트의 저장(원자적 쓰기)·조회·존재 확인. 위치는 domain의 이름 규칙으로 정한 키로만 받는다. 저장 직후 해시를 앱 데이터에 기록하되 기록마다 **HMAC**을 붙이고(키는 Data Protection 키체인), 조회 때 HMAC과 해시가 맞는지와 그에 따른 신뢰 등급(`Official`/`Peer`, [security §4.1](../cross_cutting/01_security.md))을 함께 돌려준다 | `local_store/learning` |
+| `SlidePdfWriter` | Gateway | 확정 장면·쪽 표기·OCR 결과 → PDF 바이트(임시 파일). 경로를 정하지 않는다. 입력 타입(장면 이미지 바이트·크기, 시각, 쪽 표기 문자열, OCR 글자와 상자)은 `ports/learning`이 직접 정의하고 `domain/slides`의 타입을 쓰지 않는다. `usecases/learning`이 판정 결과를 이 타입으로 바꿔 넘긴다(포트가 `domain/slides`를 모르게 해 [§3.2](../02_system_architecture.md#32-의존-규칙-cargo-dependencies로-강제)를 지킨다) | `learning/pdf` |
+| `LearningOutputRepository` | Repository | 슬라이드 PDF·스크립트의 저장(원자적 쓰기)·조회·존재 확인. 위치는 domain의 이름 규칙으로 정한 키로만 받는다. 저장 직후 해시를 앱 데이터에 기록하되 기록마다 **HMAC**을 붙이고(키는 Data Protection 키체인에 두고, 생성자로 주입받은 `Arc<dyn SecretStore>`(`platform/keychain`)로만 읽는다. 테스트는 메모리 구현을 쓴다), 조회 때 HMAC과 해시가 맞는지와 그에 따른 신뢰 등급(`Official`/`Peer`, [security §4.1](../cross_cutting/01_security.md))을 함께 돌려준다 | `local_store/learning` |
 | `ComponentStore` | Gateway | 부품(ffmpeg, 전사 모델, VAD 모델)의 위치 찾기와 SHA-256 확인. 없거나 다르면 `ComponentMissing` | `local_store/learning` |
 
 - 슬라이드 판정(구간·묶음·점수·자동 확정)은 포트 뒤에 두지 않는다. `ExtractSlidePdf`가 [domain §4.1](01_domain.md) 규칙으로 직접 판정한다. AI 검토 단계는 없다.
