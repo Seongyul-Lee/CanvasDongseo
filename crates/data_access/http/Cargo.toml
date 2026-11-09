@@ -1,0 +1,13 @@
+[package]
+name = "data-access-http"
+description = "[data_access] HTTP 정책, RequestAuthenticator <I>"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+data-access-ds-core.workspace = true
+
+[lints]
+workspace = true

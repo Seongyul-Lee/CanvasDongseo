@@ -1,0 +1,14 @@
+[package]
+name = "ports-learning"
+description = "[application/ports] FrameDecoder·AudioDecoder·Transcriber·TextRecognizer·SlidePdfWriter, LearningOutputRepository, ComponentStore"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+app-kernel.workspace = true
+domain-core.workspace = true
+
+[lints]
+workspace = true

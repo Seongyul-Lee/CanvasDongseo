@@ -1,0 +1,15 @@
+[package]
+name = "ai-claude-code"
+description = "[ai 어댑터] ports/ai 구현 (Claude Code, MVP)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+ports-ai.workspace = true
+app-kernel.workspace = true
+domain-core.workspace = true
+
+[lints]
+workspace = true

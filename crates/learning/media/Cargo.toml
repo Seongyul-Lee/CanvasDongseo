@@ -1,0 +1,15 @@
+[package]
+name = "learning-media"
+description = "[learning 어댑터] FrameDecoder·AudioDecoder (ffmpeg 사이드카)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+ports-learning.workspace = true
+app-kernel.workspace = true
+domain-core.workspace = true
+
+[lints]
+workspace = true

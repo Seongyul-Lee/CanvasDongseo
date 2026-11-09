@@ -1,0 +1,12 @@
+[package]
+name = "app-kernel"
+description = "[application] application 오류, CancelToken, 공통 값 타입, BoxFuture"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

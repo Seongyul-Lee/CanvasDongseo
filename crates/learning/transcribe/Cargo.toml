@@ -1,0 +1,15 @@
+[package]
+name = "learning-transcribe"
+description = "[learning 어댑터] Transcriber (whisper.cpp)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+ports-learning.workspace = true
+app-kernel.workspace = true
+domain-core.workspace = true
+
+[lints]
+workspace = true

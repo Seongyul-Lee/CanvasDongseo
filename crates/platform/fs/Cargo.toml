@@ -1,0 +1,12 @@
+[package]
+name = "platform-fs"
+description = "[platform] 원자적 쓰기, 앱 데이터 경로"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

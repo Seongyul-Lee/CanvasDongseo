@@ -1,0 +1,18 @@
+[package]
+name = "cdx"
+description = "[bin] AI용 CLI"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "cdx"
+path = "src/main.rs"
+
+[dependencies]
+ipc-wire.workspace = true
+ipc-cli.workspace = true
+
+[lints]
+workspace = true

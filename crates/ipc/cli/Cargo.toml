@@ -1,0 +1,13 @@
+[package]
+name = "ipc-cli"
+description = "[ipc] cdx 명령 정의 (ToolGuide 원본)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+ipc-wire.workspace = true
+
+[lints]
+workspace = true

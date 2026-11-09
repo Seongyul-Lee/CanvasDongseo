@@ -1,0 +1,102 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/domain/core",
+    "crates/domain/slides",
+    "crates/application/kernel",
+    "crates/application/ports/school",
+    "crates/application/ports/ai",
+    "crates/application/ports/learning",
+    "crates/application/ports/common",
+    "crates/application/usecases/school",
+    "crates/application/usecases/ai",
+    "crates/application/usecases/learning",
+    "crates/application/usecases/jobs",
+    "crates/data_access/ds_core",
+    "crates/data_access/repositories",
+    "crates/data_access/http",
+    "crates/data_access/auth",
+    "crates/data_access/canvas",
+    "crates/data_access/learningx",
+    "crates/data_access/smart_attendance",
+    "crates/data_access/commons",
+    "crates/data_access/school_site",
+    "crates/data_access/student_portal",
+    "crates/ai/claude_code",
+    "crates/learning/media",
+    "crates/learning/transcribe",
+    "crates/learning/pdf",
+    "crates/learning/macos",
+    "crates/learning/windows",
+    "crates/local_store/conversations",
+    "crates/local_store/learning",
+    "crates/local_store/settings",
+    "crates/platform/keychain",
+    "crates/platform/fs",
+    "crates/presentation/presenters/common",
+    "crates/presentation/presenters/school",
+    "crates/presentation/presenters/ai",
+    "crates/presentation/presenters/learning",
+    "crates/presentation/presenters/jobs",
+    "crates/presentation/presenters/shell",
+    "crates/presentation/tauri_commands",
+    "crates/entrypoints/ipc_server",
+    "crates/ipc/wire",
+    "crates/ipc/cli",
+    "crates/bin/app",
+    "crates/bin/cdx",
+    "crates/xtask",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99.1"
+
+# 워크스페이스 crate 사이의 의존. 각 crate는 `<이름>.workspace = true`로 쓴다(build_ci §3)
+[workspace.dependencies]
+domain-core = { path = "crates/domain/core" }
+domain-slides = { path = "crates/domain/slides" }
+app-kernel = { path = "crates/application/kernel" }
+ports-school = { path = "crates/application/ports/school" }
+ports-ai = { path = "crates/application/ports/ai" }
+ports-learning = { path = "crates/application/ports/learning" }
+ports-common = { path = "crates/application/ports/common" }
+usecases-school = { path = "crates/application/usecases/school" }
+usecases-ai = { path = "crates/application/usecases/ai" }
+usecases-learning = { path = "crates/application/usecases/learning" }
+usecases-jobs = { path = "crates/application/usecases/jobs" }
+data-access-ds-core = { path = "crates/data_access/ds_core" }
+data-access-repositories = { path = "crates/data_access/repositories" }
+data-access-http = { path = "crates/data_access/http" }
+data-access-auth = { path = "crates/data_access/auth" }
+data-access-canvas = { path = "crates/data_access/canvas" }
+data-access-learningx = { path = "crates/data_access/learningx" }
+data-access-smart-attendance = { path = "crates/data_access/smart_attendance" }
+data-access-commons = { path = "crates/data_access/commons" }
+data-access-school-site = { path = "crates/data_access/school_site" }
+data-access-student-portal = { path = "crates/data_access/student_portal" }
+ai-claude-code = { path = "crates/ai/claude_code" }
+learning-media = { path = "crates/learning/media" }
+learning-transcribe = { path = "crates/learning/transcribe" }
+learning-pdf = { path = "crates/learning/pdf" }
+learning-macos = { path = "crates/learning/macos" }
+learning-windows = { path = "crates/learning/windows" }
+local-store-conversations = { path = "crates/local_store/conversations" }
+local-store-learning = { path = "crates/local_store/learning" }
+local-store-settings = { path = "crates/local_store/settings" }
+platform-keychain = { path = "crates/platform/keychain" }
+platform-fs = { path = "crates/platform/fs" }
+presenters-common = { path = "crates/presentation/presenters/common" }
+presenters-school = { path = "crates/presentation/presenters/school" }
+presenters-ai = { path = "crates/presentation/presenters/ai" }
+presenters-learning = { path = "crates/presentation/presenters/learning" }
+presenters-jobs = { path = "crates/presentation/presenters/jobs" }
+presenters-shell = { path = "crates/presentation/presenters/shell" }
+tauri-commands = { path = "crates/presentation/tauri_commands" }
+ipc-server = { path = "crates/entrypoints/ipc_server" }
+ipc-wire = { path = "crates/ipc/wire" }
+ipc-cli = { path = "crates/ipc/cli" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"

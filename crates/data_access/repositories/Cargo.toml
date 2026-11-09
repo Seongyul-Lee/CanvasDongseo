@@ -1,0 +1,16 @@
+[package]
+name = "data-access-repositories"
+description = "[data_access] ports/school 출력 포트 구현"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+ports-school.workspace = true
+app-kernel.workspace = true
+domain-core.workspace = true
+data-access-ds-core.workspace = true
+
+[lints]
+workspace = true

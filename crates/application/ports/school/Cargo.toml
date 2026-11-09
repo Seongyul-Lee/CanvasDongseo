@@ -1,0 +1,14 @@
+[package]
+name = "ports-school"
+description = "[application/ports] 학교 데이터 Repository·Gateway, AuthGateway"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+app-kernel.workspace = true
+domain-core.workspace = true
+
+[lints]
+workspace = true

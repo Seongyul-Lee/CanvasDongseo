@@ -1,0 +1,16 @@
+[package]
+name = "local-store-conversations"
+description = "[local_store] ConversationRepository 구현"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+ports-ai.workspace = true
+app-kernel.workspace = true
+domain-core.workspace = true
+platform-fs.workspace = true
+
+[lints]
+workspace = true

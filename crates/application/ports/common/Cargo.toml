@@ -1,0 +1,14 @@
+[package]
+name = "ports-common"
+description = "[application/ports] UserConfirmation, OtpPrompt, ProgressSink, JobSpawner, SettingsRepository"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+app-kernel.workspace = true
+domain-core.workspace = true
+
+[lints]
+workspace = true

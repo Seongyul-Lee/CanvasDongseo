@@ -1,0 +1,14 @@
+[package]
+name = "data-access-school-site"
+description = "[data_access/Source] school_site Source"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+data-access-ds-core.workspace = true
+data-access-http.workspace = true
+
+[lints]
+workspace = true

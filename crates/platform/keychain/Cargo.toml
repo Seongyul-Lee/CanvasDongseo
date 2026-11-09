@@ -1,0 +1,12 @@
+[package]
+name = "platform-keychain"
+description = "[platform] SecretStore <I>, OS 키체인 구현(cfg로 OS별), 메모리 구현"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

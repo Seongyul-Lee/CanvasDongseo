@@ -1,0 +1,16 @@
+[package]
+name = "usecases-school"
+description = "[application/usecases] 학교 데이터 유스케이스와 출력 DTO"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+app-kernel.workspace = true
+domain-core.workspace = true
+ports-school.workspace = true
+ports-common.workspace = true
+
+[lints]
+workspace = true

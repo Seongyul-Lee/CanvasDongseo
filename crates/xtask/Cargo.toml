@@ -1,0 +1,16 @@
+[package]
+name = "xtask"
+description = "[tool] 의존 그래프 검사, 영향 범위 계산. 앱 crate에 의존하지 않는다"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "xtask"
+path = "src/main.rs"
+
+[dependencies]
+
+[lints]
+workspace = true
