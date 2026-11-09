@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- 임시 아이콘 원본. 앱 아이콘 디자인이 정해지면 이 파일을 바꾸고 cargo tauri icon으로 다시 만든다 -->
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="#1f3a5f"/>
+  <rect x="232" y="272" width="560" height="400" rx="40" fill="#f4f1ea"/>
+  <rect x="312" y="352" width="400" height="40" rx="20" fill="#1f3a5f"/>
+  <rect x="312" y="440" width="300" height="40" rx="20" fill="#1f3a5f"/>
+  <rect x="312" y="528" width="350" height="40" rx="20" fill="#1f3a5f"/>
+  <rect x="432" y="672" width="160" height="80" fill="#f4f1ea"/>
+  <rect x="352" y="740" width="320" height="36" rx="18" fill="#f4f1ea"/>
+</svg>

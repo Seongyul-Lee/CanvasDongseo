@@ -144,4 +144,4 @@
 - 배포 빌드 흐름(태그·브랜치, 서명·공증 단계를 CI에서 할지)
 - macOS 러너 비용과 실행 빈도
 - `tauri_commands`를 Linux 러너에서 돌릴지(웹뷰 개발 패키지 설치 비용)
-- `crates/bin/app` 위치에서 `cargo tauri dev`·`build`가 동작하는지 최소 앱으로 확인. 수용 기준: §3의 환경 변수로 개발 실행과 배포 빌드가 모두 된다
+- ~~`crates/bin/app` 위치에서 `cargo tauri dev`·`build`가 동작하는지~~ **확인함(2026-11-09, tauri 2.12.5, tauri-cli 2.12.4, macOS arm64)**. 저장소 루트에서 §3의 환경 변수(`TAURI_APP_PATH=crates/bin/app TAURI_FRONTEND_PATH=ui`)로 `cargo tauri dev`가 창을 띄우고, `cargo tauri build`가 `target/release/bundle/macos/CanvasDongseo.app`을 만든다(워크스페이스 `target/`을 쓴다). `ui/`가 아직 없어 `TAURI_FRONTEND_PATH`는 지금 효과가 없다(경로를 찾지 못하면 CLI가 `crates/bin`을 프런트엔드 폴더로 쓰고, `beforeDevCommand`가 없어 동작에 영향이 없다). 그동안 `tauri.conf.json`의 `build.frontendDist`는 `crates/bin/app/frontend`의 정적 HTML을 가리킨다. 프런트엔드 SPA를 붙일 때(#19) `frontendDist`를 `../../../ui/dist`로 바꾸고 `devUrl`·`beforeDevCommand`·`beforeBuildCommand`를 더한 뒤 `frontend/`를 지운다. 번들 대상은 `app`만 둔다(DMG는 쓰지 않는다, [platform §3](02_platform.md#3-설치배포)). 서명·공증과 `.pkg`는 확인 범위 밖이다
