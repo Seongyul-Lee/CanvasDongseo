@@ -1,0 +1,104 @@
+# 영향 범위만 도는 검사(build_ci §5.1~5.3): cargo xtask affected
+# - PR은 develop과의 merge-base 대비, develop 푸시는 HEAD~1 대비로 바뀐 파일을 구한다
+# - 바뀐 파일을 경로 표(§5.2)로 crate·작업에 대응시키고, 역의존 crate만 check·clippy·nextest·doc test를 돌린다
+# - crate는 러너 배정(§5.3)대로 Linux·macOS 작업에 나눈다. 돌릴 것이 없는 작업은 건너뛴다(docs/**만 바뀐 PR 등)
+name: affected
+
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: affected-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  AFFECTED_EVENT: ${{ github.event_name == 'push' && 'push' || 'pr' }}
+  AFFECTED_BASE_REF: origin/${{ github.base_ref || 'develop' }}
+
+jobs:
+  plan:
+    name: affected plan
+    runs-on: ubuntu-latest
+    outputs:
+      rust_linux: ${{ steps.plan.outputs.rust_linux }}
+      rust_macos: ${{ steps.plan.outputs.rust_macos }}
+      frontend: ${{ steps.plan.outputs.frontend }}
+    steps:
+      # merge-base와 HEAD~1을 구하려면 이력이 필요하다
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.event_name == 'push' }}
+      - id: plan
+        run: cargo xtask affected --event "$AFFECTED_EVENT" --base-ref "$AFFECTED_BASE_REF" --github-output
+
+  linux:
+    name: affected (Linux)
+    needs: plan
+    if: needs.plan.outputs.rust_linux == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - run: rustup toolchain install
+      # target/은 러너별·Cargo.lock 해시별로 캐시하고, develop 푸시에서만 저장한다(build_ci §5.5)
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.event_name == 'push' }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest@0.9.150
+      - run: cargo xtask affected --event "$AFFECTED_EVENT" --base-ref "$AFFECTED_BASE_REF" --runner linux --run --skip-frontend
+
+  macos:
+    name: affected (macOS)
+    needs: plan
+    if: needs.plan.outputs.rust_macos == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.event_name == 'push' }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest@0.9.150
+      - run: cargo xtask affected --event "$AFFECTED_EVENT" --base-ref "$AFFECTED_BASE_REF" --runner macos --run --skip-frontend
+
+  frontend:
+    name: affected (frontend)
+    needs: plan
+    if: needs.plan.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # ui/는 #19가 만든다. 아직 없으면 건너뛰고 로그로 알린다
+      - id: ui
+        run: |
+          if [ -f ui/package.json ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=frontend::ui/package.json이 없어 프런트엔드 검사(typecheck·lint)를 건너뛴다"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.ui.outputs.present == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      # 타입 검사와 eslint-plugin-boundaries(lint)
+      - if: steps.ui.outputs.present == 'true'
+        run: npm --prefix ui ci && npm --prefix ui run typecheck && npm --prefix ui run lint
