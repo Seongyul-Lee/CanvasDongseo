@@ -25,7 +25,7 @@
 | 항목 | 방식 |
 |---|---|
 | 설치 | 공식 설치 스크립트를 사용자 동의 뒤 실행한다. 앱이 CLI를 재배포하지 않는다 |
-| 상태 | `claude auth status` → `loggedIn`, `authMethod`, `subscriptionType`만 읽는다 |
+| 상태 | `claude auth status` → `loggedIn`, `authMethod`, `subscriptionType`만 읽는다. `subscriptionType`이 Claude Code를 쓸 수 없는 플랜(Free)이면 `PlanNotSupported`로 판정한다 |
 | 로그인 | `claude auth login`을 자식 프로세스로 실행. CLI가 OS 브라우저를 열고 localhost 콜백으로 끝낸다. 완료 = 종료 코드 0 + `loggedIn: true` |
 | 브라우저가 안 열림 | stdout에서 수동 주소를 뽑아(이스케이프 제거, `https://claude.com/` 접두사 검사) 버튼으로 준다. **코드 붙여 넣기는 앱이 받지 않고** 터미널 실행을 안내한다 |
 | 계정 폴더 | 기본 `~/.claude` 그대로. 터미널에서 로그인돼 있으면 바로 완료 |
@@ -119,5 +119,7 @@
 
 ## 8. 미확인 항목
 
+- Free 계정의 `subscriptionType` 값, 그리고 Free 계정이 막히는 지점(로그인 단계인지, 첫 메시지의 오류인지). 실측해 `PlanNotSupported` 판정 기준을 정한다
+- 사용 한도에 걸렸을 때 CLI가 풀리는 시각을 주는지와 그 형식
 - 대화 모드에서 권한 확인 요청을 stream-json으로 중계하는 메시지 형식(`--permission-prompts host`, CLI 제어 메시지로 예상)
 - `/clear`·`/compact`를 stream-json 입력으로 보냈을 때의 정확한 동작
