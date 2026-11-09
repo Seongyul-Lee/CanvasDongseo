@@ -25,8 +25,8 @@
 |---|---|
 | 왜 만들고, 누구를 위해, 어디까지 만드는가 | [PRD](01_prd.md) |
 | 어떤 경험을 지향하고, 판단이 갈릴 때 무엇을 고르는가. 무엇이 화면이고 각 화면은 왜 있는가 | **이 문서** |
-| 어떤 순서와 분기로 움직이는가 | User Flow(작성 예정, [Design Process](03_design_process.md) ①) |
-| 정확히 무엇을 하고, 입출력·예외는 무엇이며, 언제 성공으로 보는가 | Functional Spec(작성 예정) |
+| 어떤 순서와 분기로 움직이는가 | User Flow(각 [Functional Spec](specs/README.md)의 `UF-NN`, [Design Process](03_design_process.md) ①에서 그린다) |
+| 정확히 무엇을 하고, 입출력·예외는 무엇이며, 언제 성공으로 보는가 | [Functional Spec](specs/README.md) |
 | 어떻게 보이는가, 정확한 문구·용어·한글 표기 | [Design Process](03_design_process.md)의 Foundation과 기능별 산출물 |
 | 코드에서 어디에 두는가 | [Presentation](layers/03_presentation.md) |
 | 무엇을 막아야 하는가 | [Security](cross_cutting/01_security.md) |

@@ -196,6 +196,7 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 | 문서 | 주제 |
 |---|---|
 | [UX Strategy](06_ux_strategy.md) | Actor·시나리오, 경험 원칙, 기준 디자인(T3 Code), 화면 구성, 문구 원칙 |
+| [Functional Spec](specs/README.md) | 기능별 동작, 입력·출력, 예외, 수용 기준, User Flow(`specs/FS-NN_<기능>.md`) |
 | [Design Process](03_design_process.md) | Foundation과 기능 단위 디자인 단계(User Flow → 상태 목록 → 목업 → 구현 → 실제 앱 확인 → 시나리오 점검)와 산출물 |
 | [Apple Developer 계정](04_apple_developer_account.md) | 멤버십, 인증서, 프로파일, 번들 ID, 공증 자격 증명 현황 |
 | [스크럼 보드](05_scrum_board.md) | 스프린트 운영 규칙, GitHub Projects 필드·View, 이슈 템플릿 |

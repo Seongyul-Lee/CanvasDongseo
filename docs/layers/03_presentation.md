@@ -5,7 +5,7 @@
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
 | 근거 | [System Architecture](../02_system_architecture.md) |
 
-> **이 문서의 역할**: 화면(WebView)과 코어 사이의 View · ViewModel · Presenter · Controller 역할과 위치를 정한다. 화면 구성과 기준 디자인은 [UX Strategy](../06_ux_strategy.md), 흐름은 User Flow, 디자인 절차는 [Design Process](../03_design_process.md)가 맡는다.
+> **이 문서의 역할**: 화면(WebView)과 코어 사이의 View · ViewModel · Presenter · Controller 역할과 위치를 정한다. 화면 구성과 기준 디자인은 [UX Strategy](../06_ux_strategy.md), 흐름은 [Functional Spec](../specs/README.md)의 User Flow, 디자인 절차는 [Design Process](../03_design_process.md)가 맡는다.
 
 ---
 

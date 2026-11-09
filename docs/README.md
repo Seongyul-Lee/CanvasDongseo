@@ -18,6 +18,7 @@
 | 폴더 | 내용 |
 |---|---|
 | [layers/](layers/) | 레이어별 문서(domain, application, presentation, entrypoints, data_access, ai_adapters, learning_adapters) |
+| [specs/](specs/README.md) | 기능별 Functional Spec과 User Flow(`FS-NN_<기능>.md`) |
 | [cross_cutting/](cross_cutting/) | 레이어를 가로지르는 주제(security, platform) |
 | [measurements/](measurements/) | 설계 결정의 근거가 된 실측 보고서 |
 
