@@ -15,7 +15,7 @@
 | # | 결정 | 근거 | 상세 |
 |---|---|---|---|
 | S1 | 데스크톱 셸은 **Tauri 2**, 코어는 **Rust**로 한다 | 크로스플랫폼(macOS·Windows), OS 웹뷰라 메모리·설치 용량이 작다. 코어가 Rust 그대로라 연결층이 없다. 타입으로 오류 계약을 강제하기 쉽다 | [platform](cross_cutting/02_platform.md) |
-| S2 | 레이어마다 **Cargo crate**를 나눠 의존 방향을 컴파일러가 강제한다 | 금지된 의존은 빌드가 되지 않는다 | §3 |
+| S2 | 레이어와 그 안의 책임 단위를 **Cargo crate**로 나눠 의존 방향을 컴파일러가 강제한다. 나누는 기준은 S11 | 금지된 의존은 빌드가 되지 않는다 | §3 |
 | S3 | **MCP 서버를 두지 않는다.** AI는 앱이 제공하는 CLI `cdx`를 Bash 도구로 호출하고, `cdx`는 실행 중인 코어에 로컬 IPC로 요청한다 | 학교 세션(쿠키가 쓸 때마다 바뀜)은 코어 하나만 가져야 한다. `cdx`는 세션을 갖지 않는다 | [entrypoints](layers/04_entrypoints.md) |
 | S4 | `cdx` 사용법은 **시스템 프롬프트**로 알려 준다(스킬 문서가 아님) | 제공자와 무관하게 같은 텍스트(`ToolGuide`)를 주입할 수 있다 | [entrypoints](layers/04_entrypoints.md) |
 | S5 | AI 제공자는 **역할별 포트(`AiInstallation`·`AiAccount`·`AiSession`) + 제공자별 어댑터 crate**로 둔다. MVP는 Claude Code | 다른 AI 구독을 기존 코드 수정 없이 추가한다([PRD §8.1](01_prd.md)) | [application](layers/02_application.md), [ai_adapters](layers/05_ai_adapters.md) |
@@ -62,15 +62,15 @@ crates/
     core/                 엔티티, 학교 업무 규칙, 학습 결과물 이름 규칙
     slides/               슬라이드 판정 규칙 (domain §4.1)
   application/
-    kernel/               application 오류, CancelToken, JobRegistry, 공통 값 타입. 안정된 것만 둔다
+    kernel/               application 오류, CancelToken, 공통 값 타입. 안정된 것만 둔다
     ports/
-      school/             학교 데이터 Repository·Gateway, AuthGateway, OtpPrompt
+      school/             학교 데이터 Repository·Gateway, AuthGateway
       ai/                 AiInstallation·AiAccount·AiSession, 중립 이벤트, ConversationRepository
       learning/           FrameDecoder·AudioDecoder·Transcriber·TextRecognizer·SlidePdfWriter, LearningOutputRepository, ComponentStore
-      common/             UserConfirmation, ProgressSink, JobSpawner, SettingsRepository
+      common/             UserConfirmation, OtpPrompt, ProgressSink, JobSpawner, SettingsRepository
     usecases/
       school/ ai/ learning/   유스케이스와 출력 DTO (Actor별)
-      jobs/               작업 상태 조회·취소
+      jobs/               JobRegistry, 작업 상태 조회·취소
   data_access/
     ds_core/              data_access 공통 오류
     contracts/<묶음>/      DS <I>와 DS DTO, 리소스 묶음별 (예: 과목·차시, 과제, 출결, 공지, 학적·성적, 자료)
@@ -91,12 +91,12 @@ crates/
     learning/             LearningOutputRepository·ComponentStore 구현
     settings/             SettingsRepository 구현
   platform/
-    keychain/             비밀 저장(Data Protection 키체인). OS 의존을 여기에 가둔다
+    keychain/             SecretStore <I>, OS 키체인 구현(cfg로 OS별), 메모리 구현. OS 의존을 여기에 가둔다
     fs/                   원자적 쓰기, 앱 데이터 경로
   presentation/
     presenters/
       common/             application 오류 → 공통 ViewModel 조각
-      school/ ai/ learning/   Presenter·ViewModel (usecases와 같은 묶음)
+      school/ ai/ learning/ jobs/   Presenter·ViewModel (usecases와 같은 묶음)
     tauri_commands/       Tauri command(Controller), UserConfirmation·OtpPrompt·ProgressSink 구현
   entrypoints/
     ipc_server/           cdx 요청 ↔ 유스케이스, AI용 Presenter
@@ -118,24 +118,28 @@ design/                   디자인 목업·샘플 JSON (Design Process)
 | `domain/core` | 기초 crate만. 외부 crate는 `jiff`만 |
 | `domain/slides` | 기초 crate만. 외부 crate 없음. `domain/core`도 모른다 |
 | `application/kernel` | 기초 crate만 |
-| `application/ports/*` | `kernel`, `domain/*`. 포트 crate끼리 서로 의존하지 않는다 |
-| `application/usecases/*` | `kernel`, `domain/*`, 필요한 `ports/*`. 유스케이스 crate끼리 서로 의존하지 않는다(`usecases/jobs`만 예외로 다른 유스케이스가 쓸 수 있다) |
-| `data_access/*` | 포트와 `kernel`·`domain/core`. 유스케이스는 모른다. 내부 규칙은 [data_access §2.6](layers/data_access/README.md#26-의존-규칙) |
+| `application/ports/*` | `kernel`, `domain/core`. 포트 crate끼리 서로 의존하지 않는다 |
+| `application/usecases/learning` | `kernel`, `domain/core`, `domain/slides`, 필요한 `ports/*`, `usecases/jobs` |
+| `application/usecases/jobs` | `kernel`, `domain/core`, `ports/common` |
+| 그 밖의 `application/usecases/*` | `kernel`, `domain/core`, 필요한 `ports/*`. 유스케이스 crate끼리 서로 의존하지 않는다. `usecases/jobs`는 오래 걸리는 작업이 있는 묶음(현재 `usecases/learning`)만 쓴다 |
+| `data_access/*` | `ports/school`, `kernel`, `domain/core`. `auth`만 `platform/keychain`도 쓴다. 유스케이스는 모른다. 내부 규칙은 [data_access §2.6](layers/data_access/README.md#26-의존-규칙) |
 | `ai/*` | `ports/ai`, `kernel`, `domain/core` |
-| `learning/*` | `ports/learning`, `kernel`, `domain/*` |
+| `learning/*` | `ports/learning`, `kernel`, `domain/core` |
 | `local_store/*` | 구현하는 포트 crate, `kernel`, `domain/core`, `platform/*` |
 | `platform/*` | 기초 crate와 OS 연동 crate만. 앱 crate를 모른다 |
 | `presentation/presenters/common` | `kernel` |
 | `presentation/presenters/<묶음>` | 같은 묶음의 `usecases`, `presenters/common`, `kernel` |
-| `presentation/tauri_commands` | `usecases/*`, `presenters/*`, `ports/common`·`ports/school`(구현), `kernel` |
+| `presentation/tauri_commands` | `usecases/*`, `presenters/*`, `ports/common`(구현), `kernel` |
 | `entrypoints/ipc_server` | `usecases/*`, `ipc/wire`, `kernel` |
 | `ipc/wire` | 기초 crate만(`serde`) |
 | `ipc/cli` | `ipc/wire`, `clap` |
 | `bin/app` | 전부 (composition root) |
-| `bin/cdx` | `ipc/wire`, `ipc/cli`만. 코어 로직·세션·학교 서버 접근이 없다 |
+| `bin/cdx` | 워크스페이스 crate는 `ipc/wire`, `ipc/cli`만. 코어 로직·세션·학교 서버 접근이 없다 |
 | `xtask` | 앱 crate에 의존하지 않는다. 앱 crate도 `xtask`에 의존하지 않는다 |
 
+- 이 표는 **워크스페이스 crate 사이의** 의존을 정한다. 외부 crate(`tokio`, `interprocess` 등)를 어느 crate가 쓰는지는 [platform §1](cross_cutting/02_platform.md#1-기술-스택)에 있다. `domain/*`의 외부 crate 제한만 이 표에 둔다.
 - 어댑터(`data_access`, `ai`, `learning`, `local_store`)는 **포트에만** 의존한다. 유스케이스를 고쳐도 어댑터는 다시 빌드되지 않는다.
+- `domain/slides`는 `usecases/learning`만 쓴다. 포트와 어댑터는 `domain/core`까지만 안다. 그래서 슬라이드 판정 기준을 바꿔도 학습 유스케이스와 그 위만 다시 빌드된다.
 - 포트는 `Arc<dyn Port>`로 주입한다. 유스케이스를 포트 타입의 제네릭으로 쓰지 않는다([build_ci §4](cross_cutting/03_build_ci.md#4-제네릭과-동적-디스패치)).
 - 의존 그래프(`cargo metadata`)를 위 표와 대조하는 검사(`cargo xtask deps-check`)를 편집 직후 훅과 CI에 둔다. `cargo deny`도 함께 돌린다([build_ci §5.4](cross_cutting/03_build_ci.md#54-항상-도는-검사)).
 - 확장 근거: AI 제공자·데이터 출처·학습 기능이 늘어날 계획이 PRD에 있으므로, 처음부터 crate 경계를 둔다.

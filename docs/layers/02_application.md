@@ -15,16 +15,16 @@
 |---|---|
 | 링 | Use Cases |
 | crate | `application/kernel`, `application/ports/{school, ai, learning, common}`, `application/usecases/{school, ai, learning, jobs}` |
-| 의존할 수 있는 것 | `kernel`: 기초 crate만. `ports/*`: `kernel`, `domain/*`. `usecases/*`: `kernel`, `domain/*`, 필요한 `ports/*` |
+| 의존할 수 있는 것 | `kernel`: 기초 crate만. `ports/*`: `kernel`, `domain/core`. `usecases/*`: `kernel`, `domain/core`, 필요한 `ports/*`(`usecases/learning`만 `domain/slides`와 `usecases/jobs`도). 상세는 [System Architecture §3.2](../02_system_architecture.md#32-의존-규칙-cargo-dependencies로-강제) |
 
 | crate | 담는 것 | 바뀌는 때 |
 |---|---|---|
-| `kernel` | application 오류(§4.5), `CancelToken`·`JobRegistry`(§4.6), 공통 값 타입(ID 등) | 드물다. 거의 모든 crate가 의존하므로 안정된 것만 둔다 |
+| `kernel` | application 오류(§4.5), `CancelToken`(§4.6), 공통 값 타입(ID 등) | 드물다. 거의 모든 crate가 의존하므로 안정된 것만 둔다 |
 | `ports/<묶음>` | 출력 포트(§4.1~4.4). 어느 crate에 두는지는 각 표의 "crate" 열 | 어댑터와의 계약이 바뀔 때 |
-| `usecases/<묶음>` | 유스케이스와 그 출력 DTO | 기능을 만들 때마다. 가장 자주 바뀐다 |
+| `usecases/<묶음>` | 유스케이스와 그 출력 DTO. `usecases/jobs`는 `JobRegistry`(§4.6)도 둔다 | 기능을 만들 때마다. 가장 자주 바뀐다 |
 
 - 어댑터는 `ports/*`에만 의존하고, presentation·entrypoints는 `usecases/*`에 의존한다. 유스케이스와 출력 DTO를 고쳐도 어댑터는 다시 빌드되지 않는다(S11, [build_ci §2](../cross_cutting/03_build_ci.md#2-crate를-나누는-기준)).
-- 포트 crate끼리, 유스케이스 crate끼리 서로 의존하지 않는다. `usecases/jobs`만 다른 유스케이스 crate가 쓸 수 있다.
+- 포트 crate끼리, 유스케이스 crate끼리 서로 의존하지 않는다. 예외는 `usecases/jobs`로, 오래 걸리는 작업이 있는 묶음만 쓴다. 지금은 `usecases/learning`뿐이다(§4.6). 다른 묶음에 작업이 생기면 그 묶음을 [System Architecture §3.2](../02_system_architecture.md#32-의존-규칙-cargo-dependencies로-강제)에 더하고 [build_ci §2.3](../cross_cutting/03_build_ci.md#23-변경-하나가-다시-빌드시키는-범위-목표) 표를 고친다.
 - 유스케이스는 포트를 `Arc<dyn Port>`로 받는다. 포트 타입의 제네릭으로 쓰지 않는다([build_ci §4](../cross_cutting/03_build_ci.md#4-제네릭과-동적-디스패치)).
 
 ## 2. 원칙
@@ -116,7 +116,7 @@ crate: `ports/learning`(아래 표 전부)
 | 포트 | 종류 | 하는 일 | crate | 구현 |
 |---|---|---|---|---|
 | `UserConfirmation` | Gateway | 확인 요청을 화면에 띄우고 승인·거부를 받는다 | `ports/common` | `presentation/tauri_commands` |
-| `OtpPrompt` | Gateway | 세션이 만료됐을 때 OTP 입력을 요청한다 | `ports/school` | `presentation/tauri_commands` |
+| `OtpPrompt` | Gateway | 세션이 만료됐을 때 OTP 입력을 요청한다 | `ports/common` | `presentation/tauri_commands` |
 | `ConversationRepository` | Repository | 앱 대화 기록(제공자 세션 ID 색인 포함) | `ports/ai` | `local_store/conversations` |
 | `SettingsRepository` | Repository | 앱 설정 | `ports/common` | `local_store/settings` |
 
@@ -146,7 +146,7 @@ crate: `ports/learning`(아래 표 전부)
 
 | 구성 | 종류 | 내용 | 위치 | 구현 |
 |---|---|---|---|---|
-| `JobRegistry` | application 내부 | 작업 ID 발급, 상태 전이(`queued`→`running`→`done`·`failed`·`cancelled`) 규칙, 진행률·결과 보관. **실행하지 않는다** | `kernel` | `kernel` |
+| `JobRegistry` | application 내부 | 작업 ID 발급, 상태 전이(`queued`→`running`→`done`·`failed`·`cancelled`) 규칙, 진행률·결과 보관. **실행하지 않는다** | `usecases/jobs` | `usecases/jobs` |
 | `JobSpawner` | 출력 포트 | 작업 본문(유스케이스 호출)을 백그라운드에서 실행한다 | `ports/common` | `bin/app`(tokio) |
 | `CancelToken` | 값 타입 | 런타임과 무관한 취소 신호. 유스케이스가 단계 사이에서 확인하고 `Transcriber`에 넘긴다 | `kernel` | `kernel` |
 | `ProgressSink` | 출력 포트 | 진행률 이벤트를 화면에 보낸다 | `ports/common` | `presentation/tauri_commands` |
@@ -166,4 +166,5 @@ crate: `ports/learning`(아래 표 전부)
 ## 6. 미확인 항목
 
 - 유스케이스·출력 DTO의 확정 목록(Functional Spec 이후)
+- `ConversationRepository`의 제공자 세션 ID 표현. 수용 기준: 포트에는 불투명한 문자열 ID만 있고 제공자별 형식이 드러나지 않는다(중립 이벤트 원칙, §4.2)
 - 포트의 비동기 표현(trait `async fn`을 dyn으로 쓸 수 있는지). 판단 기준은 [build_ci §4](../cross_cutting/03_build_ci.md#4-제네릭과-동적-디스패치)

@@ -14,8 +14,8 @@
 | 항목 | 내용 |
 |---|---|
 | 링 | Interface Adapters (View는 Frameworks & Drivers) |
-| crate | `presentation/presenters/{common, school, ai, learning}`, `presentation/tauri_commands` (+ 프런트엔드 SPA) |
-| 의존할 수 있는 것 | `presenters/common`: `application/kernel`. `presenters/<묶음>`: 같은 묶음의 `application/usecases`, `presenters/common`, `kernel`. `tauri_commands`: `usecases/*`, `presenters/*`, `ports/common`·`ports/school`(구현), `kernel`, `tauri` |
+| crate | `presentation/presenters/{common, school, ai, learning, jobs}`, `presentation/tauri_commands` (+ 프런트엔드 SPA) |
+| 의존할 수 있는 것 | `presenters/common`: `application/kernel`. `presenters/<묶음>`: 같은 묶음의 `application/usecases`, `presenters/common`, `kernel`. `tauri_commands`: `usecases/*`, `presenters/*`, `ports/common`(구현), `kernel`, `tauri` |
 
 - Presenter·ViewModel은 순수 로직이고 테스트를 먼저 쓰므로 `tauri`에 의존하지 않는 `presenters/*`에 둔다. Presenter 테스트를 돌릴 때 Tauri를 컴파일하지 않는다. Tauri command는 로직 없는 `tauri_commands`에 둔다(Humble Object).
 - `presenters`는 `usecases`와 같은 묶음으로 나눈다. 한 묶음의 유스케이스를 고쳐도 다른 묶음의 Presenter는 다시 빌드되지 않는다([build_ci §2](../cross_cutting/03_build_ci.md#2-crate를-나누는-기준)).
@@ -70,7 +70,7 @@ ui/src/
 - `viewmodels/`는 화면과 코어 사이의 계약이다. command 응답뿐 아니라 이벤트(AI 스트림, 진행률)의 타입도 여기에 있다.
 - `commands/`는 WebView ↔ 코어의 Tauri command 경로다. `cdx` ↔ 코어의 IPC([entrypoints](04_entrypoints.md))와 다르다.
 - 구현 순서: ViewModel 타입·Presenter(Rust, 테스트 먼저. 기대값은 `design/samples/`의 샘플 JSON이다 — [Design Process §2.3](../03_design_process.md#23-목업)) → TypeScript 타입 생성(`viewmodels/`) → `theme` → `components` → `screens`. 로직을 먼저 만들고 화면은 테스트가 필요 없을 만큼 얇게 얹는다(Humble Object).
-- **Presenter 테스트가 샘플 JSON을 읽는 방법**: `include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/<저장소 루트까지의 상대 경로>/design/samples/<기능>/<상태>.json"))`로 컴파일 때 넣는다. cargo가 이 파일을 의존 정보에 기록하므로 샘플을 고치면 테스트가 다시 빌드된다. 실행 중에 파일을 읽지 않는다(cargo가 변경을 모른다). 비교는 문자열이 아니라 JSON 값으로 한다(`serde_json::Value`, 키 순서·공백 무시). CI에서는 `design/samples/**` 변경이 `presenters/*` 테스트를 돌린다([build_ci §5.2](../cross_cutting/03_build_ci.md#52-영향-범위-계산-cargo-xtask-affected)).
+- **Presenter 테스트가 샘플 JSON을 읽는 방법**: `include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/<저장소 루트까지의 상대 경로>/design/samples/<기능>/<상태>.json"))`로 컴파일 때 넣는다. cargo가 이 파일을 의존 정보에 기록하므로 샘플을 고치면 테스트가 다시 빌드된다. 실행 중에 파일을 읽지 않는다(cargo가 변경을 모른다). 비교는 문자열이 아니라 JSON 값으로 한다(`serde_json::Value`, 키 순서·공백 무시). `include_str!`은 파일을 하나씩 적어야 하므로 **새 상태를 더하면 테스트 케이스도 함께 더한다**(입력 DTO는 상태마다 다르므로 어차피 손으로 쓴다). 빠뜨림을 막기 위해 crate마다 테스트 하나가 샘플 폴더의 파일 목록과 등록된 케이스 목록이 같은지 확인한다. CI에서는 `design/samples/**` 변경이 `presenters/*` 테스트를 돌린다([build_ci §5.2](../cross_cutting/03_build_ci.md#52-영향-범위-계산-cargo-xtask-affected)).
 - 위 의존 방향은 `eslint-plugin-boundaries`로 검사해 편집 직후 훅과 CI에 건다.
 
 ### 2.2 디자인 토큰

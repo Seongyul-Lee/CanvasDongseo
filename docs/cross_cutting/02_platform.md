@@ -16,7 +16,7 @@
 | 영역 | 선택 | 버전(최근 갱신일) | 쓰는 레이어 | 비고 |
 |---|---|---|---|---|
 | 셸 | `tauri` | 2.12.5 (2026-11-06) | presentation/tauri_commands, bin/app | capabilities로 command 제한 |
-| 비동기 | `tokio` | — | 전체(domain 제외) | 갱신 스케줄러, 스트리밍 다운로드, 자식 프로세스 |
+| 비동기 | `tokio` | — | 어댑터(`data_access`, `ai`, `learning`, `local_store`), `entrypoints/ipc_server`, `presentation/tauri_commands`, `bin/app`. `domain`·`application`·`presenters`·`ipc`는 쓰지 않는다 | 갱신 스케줄러, 스트리밍 다운로드, 자식 프로세스 |
 | HTTP | `reqwest` (rustls) | 0.13.5 (2026-09-08) | data_access | 리디렉션 정책은 끄고 직접 따른다. 쿠키 저장소는 직접 관리 |
 | 인증 보조 | `rsa` | 0.9.10 (2026-11-07) | data_access/auth | LearningX 로그인의 PKCS#1 v1.5 복호화 |
 | 비밀 저장 | `keyring` + `apple-native-keyring-store`(`protected` 기능) | 4.2.0 (2026-08-29), 1.0.2 (2026-08-06) | platform/keychain | macOS는 Data Protection 키체인(앱 접근 그룹). 로그인 키체인은 쓰지 않는다([security §5.2](01_security.md)). `keychain` 기능은 켜지 않는다(로그인 키체인으로 돌아가지 않게). 접근 그룹은 저장소 설정 키 `access-group`으로 지정한다([키체인 측정](../measurements/2026-11_keychain_prompts.md)) |

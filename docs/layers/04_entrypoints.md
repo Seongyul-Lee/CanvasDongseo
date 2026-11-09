@@ -15,7 +15,7 @@
 |---|---|
 | 링 | Interface Adapters |
 | crate | `entrypoints/ipc_server`, `ipc/wire`, `ipc/cli`, `bin/cdx` |
-| 의존할 수 있는 것 | `ipc_server`: `application/usecases/*`, `application/kernel`, `ipc/wire`. `ipc/wire`: 기초 crate만(`serde`). `ipc/cli`: `ipc/wire`, `clap`. `cdx`: `ipc/wire`, `ipc/cli`만 |
+| 의존할 수 있는 것 | `ipc_server`: `application/usecases/*`, `application/kernel`, `ipc/wire`. `ipc/wire`: 기초 crate만(`serde`). `ipc/cli`: `ipc/wire`, `clap`. `cdx`: 워크스페이스 crate는 `ipc/wire`, `ipc/cli`만(외부 crate는 `interprocess` 등, [platform §1](../cross_cutting/02_platform.md#1-기술-스택)) |
 
 - 요청·응답 타입(`ipc/wire`)과 명령 정의(`ipc/cli`)는 바뀌는 이유가 다르다. 명령 설명·`ToolGuide` 문구를 고쳐도 `ipc_server`는 다시 빌드되지 않는다.
 

@@ -17,7 +17,7 @@
 | crate | `domain/core`(엔티티, 학교 업무 규칙, §4.2 이름 규칙), `domain/slides`(§4.1 슬라이드 판정) |
 | 의존할 수 있는 것 | 기초 crate만. `domain/core`의 외부 crate는 `jiff`(시각 값 타입)만, `domain/slides`는 외부 crate가 없고 `domain/core`도 모른다 |
 
-- `domain/core`는 거의 모든 crate가 의존하므로 자주 바뀌는 규칙을 두지 않는다. 기준값을 자주 조정하는 영상 처리 정책은 `domain/slides`로 떼어, 조정해도 학습 기능 쪽만 다시 빌드되게 한다([build_ci §2](../cross_cutting/03_build_ci.md#2-crate를-나누는-기준)).
+- `domain/core`는 거의 모든 crate가 의존하므로 자주 바뀌는 규칙을 두지 않는다. 기준값을 자주 조정하는 영상 처리 정책은 `domain/slides`로 떼고 `usecases/learning`만 이를 쓰게 해, 조정해도 학습 유스케이스와 그 위만 다시 빌드되게 한다([build_ci §2](../cross_cutting/03_build_ci.md#2-crate를-나누는-기준)).
 
 ## 2. 원칙
 
