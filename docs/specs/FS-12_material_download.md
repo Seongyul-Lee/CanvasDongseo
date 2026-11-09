@@ -44,7 +44,7 @@
 ### F3 저장 위치
 
 - 파일은 [domain §4.2](../layers/01_domain.md#42-학습-결과물-이름-규칙)의 키(학기, 과목, 종류, `{NN}주차_{M}차시_{제목}`)로 정한 위치에 둔다. 동영상은 슬라이드 PDF·스크립트와 키에서 종류만 다르므로 짝이 된다. 학습 기능(FS-13·FS-14)이 이 짝으로 주차별 자료를 모은다.
-- 위치의 모양은 [learning_adapters §5](../layers/06_learning_adapters.md#5-결과-파일)와 같은 `<학습 자료 폴더>/<학기>/<과목>/<종류>/…`로 본다. 동영상·강의 자료의 종류 폴더 이름은 아직 문서에 없다(추론, §6).
+- 위치의 모양은 [learning_adapters §5](../layers/06_learning_adapters.md#5-결과-파일)와 같은 `<학습 자료 폴더>/<학기>/<과목>/<종류>/…`로 본다. 학습 자료 폴더는 macOS `~/CanvasDongseo/`, Windows `%USERPROFILE%\CanvasDongseo\`이고 MVP에서는 바꿀 수 없다(같은 절). 동영상·강의 자료의 종류 폴더 이름은 아직 문서에 없다(추론, §6).
 - 학기·과목명·제목은 학교 데이터이므로 이름 정리 규칙(경로 구분자, 금지 문자, 예약 이름, 길이, 충돌)을 반드시 거친다([domain §4.2](../layers/01_domain.md#42-학습-결과물-이름-규칙), security R4). 일반 파일의 확장자는 `Content-Disposition`에서 오므로 확장자도 같은 정리를 거친다(추론, §6).
 - 파일은 앱이 정한 학습 자료 폴더 밖에 만들지 않는다.
 
@@ -112,7 +112,6 @@
 
 - **자료 목록 조회의 위치**: [application §3](../layers/02_application.md#3-유스케이스-후보)의 "조회" 행에는 자료 목록이 없고 "자료" 행은 내려받기만 적는다. F7을 "자료" 묶음의 유스케이스로 둘지 확정해 application §3에 적는다. 아키텍처에 넣지 않기로 하면 UX Strategy §12 후보다
 - **자료 "열기"의 원문 링크**: 주차학습·수업자료실 항목을 브라우저에서 여는 주소 형식은 [03_learningx](../layers/data_access/03_learningx.md)에 없다. 실제 계정으로 확인한다
-- **학습 자료 폴더의 위치**: [learning_adapters §5](../layers/06_learning_adapters.md#5-결과-파일)와 [entrypoints §4](../layers/04_entrypoints.md#4-cdx-명령)는 `<학습 자료 폴더>`를 쓰지만 실제 위치(기본값, OS별 경로)와 학생이 바꿀 수 있는지는 어디에도 없다. [UX Strategy §7.5](../06_ux_strategy.md#75-설정)의 설정에도 이 항목이 없다. 바꿀 수 있게 하려면 아키텍처에 없음 → UX Strategy §12 후보
 - **동영상·강의 자료의 종류 폴더**: [domain §4.2](../layers/01_domain.md#42-학습-결과물-이름-규칙)의 종류는 "동영상·슬라이드·스크립트"뿐이고, 강의 자료(PDF·수업자료실 파일)의 종류와 키가 없다. 수업자료실 파일에는 주차·차시가 없을 수 있어 `{NN}주차_{M}차시_{제목}` 키를 쓸 수 없다. 강의 자료의 키와 폴더 이름을 domain에 정한다. [learning_adapters §5](../layers/06_learning_adapters.md#5-결과-파일) 표에도 동영상 행이 없다
 - **받은 파일을 저장하는 구현의 위치**: `MaterialDownloadGateway`·`MediaDownloadGateway`는 `ports/school`(data_access 구현)이고, 키를 경로로 바꾸는 일은 `LearningOutputRepository`(`local_store/learning`, 슬라이드 PDF·스크립트만)가 맡는다([application §4.1·§4.3](../layers/02_application.md#4-출력-포트)). 내려받은 파일의 키 → 경로 변환과 원자적 저장을 어느 포트·구현이 맡는지 정한다
 - **긴 다운로드와 작업**: 동영상은 0.5GB까지 실측됐는데([learning_adapters §3.4](../layers/06_learning_adapters.md#34-상한-security-r4)), [application §4.6](../layers/02_application.md#46-작업-오래-걸리는-유스케이스)은 작업을 `usecases/learning`에만 둔다. 다운로드가 AI 도구 호출 제한 시간을 넘길 수 있다. 다운로드를 작업으로 실행할지(취소·진행 표시 포함), 아니면 `cdx` 요청 안에서 끝낼지 정한다. 작업으로 하면 `usecases/school`이 `usecases/jobs`에 의존하게 되므로 [System Architecture §3.2](../02_system_architecture.md#32-의존-규칙-cargo-dependencies로-강제)를 고쳐야 한다

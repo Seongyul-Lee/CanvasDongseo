@@ -46,7 +46,7 @@
 | [FS-01](FS-01_onboarding.md) | 온보딩 | S1-1, S1-3, S1-4, S1-7 | 초안 |
 | [FS-02](FS-02_ai_connection.md) | AI 연결 | S1-1~S1-3, S2-4, S2-5, S10-3 | 초안 |
 | [FS-03](FS-03_school_account.md) | 학교 계정 연결 | S1-4~S1-6, S2-1, S2-2, S10-3 | 초안 |
-| [FS-04](FS-04_student_portal_login.md) | 학생지원시스템 로그인 | S2-3, S6-1 | 초안 |
+| [FS-04](FS-04_student_portal_login.md) | 학생지원시스템 로그인 | S2-3, S6-1, S6-2 | 초안 |
 | [FS-05](FS-05_departments.md) | 학과 설정 | S1-7, S5-3 | 초안 |
 | [FS-06](FS-06_connection_status.md) | 연결 상태와 출처 장애 | S2-2, S2-7 | 초안 |
 | [FS-07](FS-07_conversation.md) | 대화 | S9-1~S9-3, S10-3 | 초안 |

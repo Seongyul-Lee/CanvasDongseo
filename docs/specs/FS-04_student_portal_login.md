@@ -4,7 +4,7 @@
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
 | 상태 | 초안 |
-| 시나리오 | S2-3, S6-1 ([UX Strategy §4](../06_ux_strategy.md#4-actor와-시나리오)) |
+| 시나리오 | S2-3, S6-1, S6-2 ([UX Strategy §4](../06_ux_strategy.md#4-actor와-시나리오)) |
 | 화면 | 학생지원시스템 로그인 창(대화 위에 뜨는 창), 설정 > 연결 > 학생지원시스템, 연결 알약, 연결 로그아웃 확인 창 ([UX Strategy §7.2](../06_ux_strategy.md#72-mvp-화면), [§7.5](../06_ux_strategy.md#75-설정)) |
 | 유스케이스 | 아키텍처에 이름이 없다(§6). 학생지원시스템 데이터를 조회하는 유스케이스([FS-10](FS-10_academic_records.md))가 로그인 창을 조율한다 |
 | 근거 | [07_student_portal §2](../layers/data_access/07_student_portal.md#2-로그인과-세션), [07_student_portal §3.5](../layers/data_access/07_student_portal.md#35-앱이-지킬-것), [data_access §2.5](../layers/data_access/README.md#25-http--auth--인증과-http-정책), [security §3](../cross_cutting/01_security.md#3-지킬-것과-강제하는-곳) |
