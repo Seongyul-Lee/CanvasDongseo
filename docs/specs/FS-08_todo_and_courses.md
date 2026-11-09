@@ -64,10 +64,10 @@
 
 ### F5 출처별 부분 실패
 
-- 과제(Canvas)와 차시(LearningX)는 따로 조회한다. 한 출처가 실패해도 다른 출처의 결과를 돌려준다(S2-7).
+- 과제(Canvas)와 차시(LearningX)는 따로 조회한다. 한 출처가 실패해도 다른 출처의 결과를 돌려준다(S2-7). 근거는 "전면 장애가 아니라 경로별로 저하되도록 설계한다"([PRD §9.2](../01_prd.md#92-제약과-위험))다. 여러 출처를 합치는 다른 조회도 이 규칙을 따른다.
 - 결과에 출처별 상태(성공, 실패와 그 application 오류)와 실패한 과목을 붙인다. AI는 이것으로 "LearningX 차시는 지금 가져오지 못했다"처럼 빠진 범위를 말한다. 어떤 출처 이름을 보일지는 §6.
 - 과목 하나의 `NotAvailable`은 실패가 아니라 정상 결과다(F3).
-- 세션 만료(`NeedsLogin`)는 부분 실패로 넘기지 않는다. [FS-03](FS-03_school_account.md) F5대로 OTP를 받아 원래 요청을 다시 실행한다.
+- 세션 만료는 부분 실패로 넘기지 않는다. [FS-03](FS-03_school_account.md) F5대로 OTP를 받아 원래 요청 전체를 다시 실행한다. 창을 닫거나 대기 상한을 넘겨 `NeedsLogin`이 되면 부분 결과 없이 요청 전체가 `NeedsLogin`으로 끝난다.
 
 ### F6 AI에게 주는 형태
 
@@ -79,7 +79,7 @@
 
 | 상황 | 판정 | application 오류 | 다음 행동(P5) |
 |---|---|---|---|
-| 학교 세션 만료 | `SessionExpired` | `NeedsLogin` | OTP 입력 창, 입력 뒤 원래 요청 다시 실행([FS-03](FS-03_school_account.md) F5) |
+| 학교 세션 만료 | `SessionExpired` | 없음. 유스케이스가 창 안에서 처리하고, 창을 닫거나 대기 상한을 넘기면 `NeedsLogin` | OTP 입력 창, 입력 뒤 원래 요청 다시 실행([FS-03](FS-03_school_account.md) F5) |
 | 과목이 주차학습·과제 기능을 쓰지 않음 | `NotAvailable` | `NotAvailable` | 그 칸만 "쓰지 않음". 나머지는 그대로(F3) |
 | LearningX 또는 Canvas 응답 형식이 바뀜 | `SourceChanged` | `SourceChanged` | 그 출처의 결과만 빠지고, 앱 업데이트가 필요하다는 안내. 다른 출처 결과는 돌려준다(F5) |
 | 과제 GraphQL 묶음 조회 실패 | `SourceChanged`·`Network` | — | REST 구현으로 바꿔 끼울 수 있다([02_canvas §4](../layers/data_access/02_canvas.md#4-graphql)). 실행 중 자동 전환할지는 §6 |

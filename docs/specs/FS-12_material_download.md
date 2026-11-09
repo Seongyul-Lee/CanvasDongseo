@@ -10,7 +10,7 @@
 | 근거 | [03_learningx §2](../layers/data_access/03_learningx.md#2-경로), [05_commons](../layers/data_access/05_commons.md), [domain §4.2](../layers/01_domain.md#42-학습-결과물-이름-규칙), [learning_adapters §5](../layers/06_learning_adapters.md#5-결과-파일), [entrypoints §4](../layers/04_entrypoints.md#4-cdx-명령), [PRD §8.3](../01_prd.md#83-학습-지원-기능) |
 
 > **이 문서의 역할**: 학생이 대화로 요청한 강의 자료(PDF·수업자료실 파일)와 주차별 강의 동영상을 앱이 정한 폴더에 내려받고, 저장 위치를 알려 주는 기능의 동작과 수용 기준을 정한다.
-> 받는 경로와 다운로드 동작은 [05_commons](../layers/data_access/05_commons.md), 이름 규칙은 [domain §4.2](../layers/01_domain.md#42-학습-결과물-이름-규칙)가 맡는다. 자료 목록 조회는 FS-08, 받은 동영상으로 슬라이드 PDF·스크립트를 만드는 일은 FS-13이다([README §3](README.md#3-목록)).
+> 받는 경로와 다운로드 동작은 [05_commons](../layers/data_access/05_commons.md), 이름 규칙은 [domain §4.2](../layers/01_domain.md#42-학습-결과물-이름-규칙)가 맡는다. 자료 목록 조회도 이 문서(F7)가 맡는다. 받은 동영상으로 슬라이드 PDF·스크립트를 만드는 일은 FS-13이다([README §3](README.md#3-목록)).
 
 ---
 
@@ -23,12 +23,13 @@
 | 주차별 강의 동영상 내려받기 | 동영상 시청 기록·진도 바꾸기([PRD §9.1](../01_prd.md#91-비목표-non-goals)) |
 | 앱이 정한 학기/과목 폴더에 저장하고 위치 알리기 | 저장 위치를 AI나 학생이 경로로 정하기 |
 | 끊긴 다운로드 이어 받기 | 받은 파일 지우기(AI가 권한 확인을 거쳐 한다, F6) |
+| 과목·주차별 자료 목록 보이기와 원문 열기(F7) | 앱 안에서 자료 미리 보기 |
 
 ## 2. 기능 요구사항
 
 ### F1 받을 대상 고르기
 
-- **입력**: AI가 `cdx`로 넘기는 과목과 항목 식별자(LearningX의 `item_id` 또는 수업자료실 항목, 그 안의 `content_id`). 목록은 FS-08의 조회 결과에서 온다.
+- **입력**: AI가 `cdx`로 넘기는 과목과 항목 식별자(LearningX의 `item_id` 또는 수업자료실 항목, 그 안의 `content_id`). 목록은 F7의 조회 결과에서 온다.
 - 파일 경로 인자는 받지 않는다. 저장 위치는 앱이 정한다(F3, [entrypoints §4](../layers/04_entrypoints.md#4-cdx-명령)).
 - 대상은 [03_learningx §2](../layers/data_access/03_learningx.md#2-경로)의 주차학습 항목(`item_content_data.content_id`, `content_type`)과 수업자료실 항목(`commons_content`)이다. `commons_content`가 없는 수업자료실 항목은 안내문만 있으므로 받을 파일이 없다고 돌려준다.
 - 학교 데이터 요청이므로 학교 계정 연결이 필요하다. 목록 조회(LearningX)에서 세션이 만료되면 FS-03 F5처럼 OTP를 받고 원래 요청을 다시 실행한다.
@@ -63,11 +64,18 @@
 - 이 기능이 정하는 것은 AI가 지울 대상을 찾을 수 있게 **저장 위치가 고정돼 있고 F4로 알려진다**는 것까지다.
 - 파일이 지워진 뒤 같은 항목을 요청하면 처음부터 다시 받는다.
 
+### F7 자료 목록 (S4-2)
+
+- **입력**: 과목(필수), 주차(선택). 과목 식별자는 FS-08의 과목 목록에서 온다.
+- **출력**: 주차학습 항목([03_learningx §2](../layers/data_access/03_learningx.md#2-경로) 주차학습: 주차·차시, 제목, `content_type`, `total_file_size`, `updated_at`)과 수업자료실 항목(같은 절 수업자료실: `content_type`, `updated_at`, 받을 파일이 있는지)을 항목 식별자와 함께 돌려준다. 이미 받은 항목이면 저장 위치를 함께 준다(F4).
+- 학생에게는 대화에 목록이 보이고, 항목마다 **열기**와 **받기** 수단이 있다(S4-2). 열기는 그 항목의 LearningX 원문 링크를 OS 기본 브라우저로 여는 것이고(추론, §6), 받기는 F1~F4다.
+- 이 조회는 [application §3](../layers/02_application.md#3-유스케이스-후보)의 "자료" 묶음(`usecases/school`)에 두는 것으로 본다(추론, §6). 목록 없이는 받을 대상을 고를 수 없기 때문이다.
+
 ## 3. 예외
 
 | 상황 | 판정 | application 오류 | 다음 행동(P5) |
 |---|---|---|---|
-| 목록 조회 중 학교 세션 만료 | `SessionExpired` | `NeedsLogin` | OTP 입력 창(FS-03 F5). 성공하면 원래 요청을 다시 실행 |
+| 목록 조회 중 학교 세션 만료 | `SessionExpired` | 없음. 유스케이스가 창 안에서 처리하고, 창을 닫거나 대기 상한을 넘기면 `NeedsLogin` | OTP 입력 창(FS-03 F5). 성공하면 원래 요청을 다시 실행 |
 | 받을 파일이 없는 항목(안내문만 있음) | — | `NotAvailable` | 받을 파일이 없다는 안내 |
 | XML 형식이 다르거나 `DOCTYPE`·`ENTITY`가 있음, 크기 초과 | `SourceChanged` | `SourceChanged` | 앱 업데이트가 필요하다는 안내 |
 | 다운로드 응답이 HTML 등 예상 밖 내용 | `SourceChanged` | `SourceChanged` | 위와 같음. 완료 파일을 만들지 않는다 |
@@ -91,9 +99,10 @@
 | AC8 | `cdx` 다운로드 명령에 저장 경로 인자가 없다 | `cdx --help`와 IPC 요청 타입 확인 | — |
 | AC9 | 받을 파일이 없는 수업자료실 항목은 `NotAvailable`로 끝나고 빈 파일이 생기지 않는다 | 응답을 고정한 테스트 | S4-2 |
 | AC10 | 여러 항목을 요청했을 때 한 항목이 실패해도 나머지는 받고, 결과에 항목별 성공·실패가 보인다 | 한 항목만 실패하는 테스트 | S4-2 |
-| AC11 | "다운로드 받은 동영상 모두 지워 줘"에 권한 확인 창이 뜨고, 승인하면 동영상 폴더가 비며, 학습 자료 폴더 밖의 파일은 그대로다 | 실제 앱에서 요청한다 | S10-3 |
+| AC11 | "다운로드 받은 동영상 모두 지워 줘"에 권한 확인 창이 뜨고, 승인하면 동영상 폴더가 비며, 학습 자료 폴더 밖의 파일은 그대로다 | 실제 앱에서 요청한다 | S10-3 ★ |
+| AC12 | 과목의 자료를 물으면 주차학습 자료와 수업자료실 자료가 항목마다 열기·받기 수단과 함께 보이고, 받을 파일이 없는 수업자료실 항목은 그렇게 표시된다 | 실제 계정으로 요청한다 | S4-2 ★ |
 
-★ 실제 학교 계정과 서버가 있어야 확인할 수 있다.
+★ 실제 학교 계정과 서버가 있어야 확인할 수 있다. AC11은 유료 Claude 계정도 필요하다.
 
 ## 5. User Flow (UF-12)
 
@@ -101,6 +110,8 @@
 
 ## 6. 미확인 항목
 
+- **자료 목록 조회의 위치**: [application §3](../layers/02_application.md#3-유스케이스-후보)의 "조회" 행에는 자료 목록이 없고 "자료" 행은 내려받기만 적는다. F7을 "자료" 묶음의 유스케이스로 둘지 확정해 application §3에 적는다. 아키텍처에 넣지 않기로 하면 UX Strategy §12 후보다
+- **자료 "열기"의 원문 링크**: 주차학습·수업자료실 항목을 브라우저에서 여는 주소 형식은 [03_learningx](../layers/data_access/03_learningx.md)에 없다. 실제 계정으로 확인한다
 - **학습 자료 폴더의 위치**: [learning_adapters §5](../layers/06_learning_adapters.md#5-결과-파일)와 [entrypoints §4](../layers/04_entrypoints.md#4-cdx-명령)는 `<학습 자료 폴더>`를 쓰지만 실제 위치(기본값, OS별 경로)와 학생이 바꿀 수 있는지는 어디에도 없다. [UX Strategy §7.5](../06_ux_strategy.md#75-설정)의 설정에도 이 항목이 없다. 바꿀 수 있게 하려면 아키텍처에 없음 → UX Strategy §12 후보
 - **동영상·강의 자료의 종류 폴더**: [domain §4.2](../layers/01_domain.md#42-학습-결과물-이름-규칙)의 종류는 "동영상·슬라이드·스크립트"뿐이고, 강의 자료(PDF·수업자료실 파일)의 종류와 키가 없다. 수업자료실 파일에는 주차·차시가 없을 수 있어 `{NN}주차_{M}차시_{제목}` 키를 쓸 수 없다. 강의 자료의 키와 폴더 이름을 domain에 정한다. [learning_adapters §5](../layers/06_learning_adapters.md#5-결과-파일) 표에도 동영상 행이 없다
 - **받은 파일을 저장하는 구현의 위치**: `MaterialDownloadGateway`·`MediaDownloadGateway`는 `ports/school`(data_access 구현)이고, 키를 경로로 바꾸는 일은 `LearningOutputRepository`(`local_store/learning`, 슬라이드 PDF·스크립트만)가 맡는다([application §4.1·§4.3](../layers/02_application.md#4-출력-포트)). 내려받은 파일의 키 → 경로 변환과 원자적 저장을 어느 포트·구현이 맡는지 정한다

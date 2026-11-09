@@ -10,7 +10,7 @@
 | 근거 | [PRD §9.1](../01_prd.md#91-비목표-non-goals), [data_access §1.3](../layers/data_access/README.md#13-지키는-원칙), [02_canvas §2](../layers/data_access/02_canvas.md#2-rest-경로), [security §3](../cross_cutting/01_security.md#3-지킬-것과-강제하는-곳), [entrypoints §4](../layers/04_entrypoints.md#4-cdx-명령), [presentation §2.3](../layers/03_presentation.md#23-신뢰하지-않는-html과-webview-보안) |
 
 > **이 문서의 역할**: 학생이 대화로 요청한 개인 캘린더 일정·플래너 메모·완료 표시를, 앱이 만든 확인 창에서 승인받은 뒤에만 Canvas에 쓰는 기능의 동작과 수용 기준을 정한다.
-> 쓰기 확인 규칙의 원본은 [application §4.4](../layers/02_application.md#44-사용자-상호작용과-로컬-저장), 쓰기 경로는 [02_canvas §2](../layers/data_access/02_canvas.md#2-rest-경로)가 맡는다. 일정·플래너 조회는 FS-08([README §3](README.md#3-목록))이다.
+> 쓰기 확인 규칙의 원본은 [application §4.4](../layers/02_application.md#44-사용자-상호작용과-로컬-저장), 쓰기 경로는 [02_canvas §2](../layers/data_access/02_canvas.md#2-rest-경로)가 맡는다. 일정·플래너를 학생에게 보이는 조회는 이 문서와 FS-08 어디에도 없다(§6).
 
 ---
 
@@ -77,7 +77,7 @@
 | 격리 모드 대화에서 온 쓰기 | — | `Rejected(PolicyDenied)` | 없음(사람이 보지 않는 대화) |
 | 승인 응답의 ID·해시가 확인 요청과 다름 | — | `Rejected(PolicyDenied)`(추론) | 없음. 요청을 보내지 않는다 |
 | 바꾸기·지우기 대상이 개인 항목이 아님 | — | `Rejected(PolicyDenied)`(추론) | 개인 일정만 바꿀 수 있다는 안내 |
-| 학교 세션 만료 | `SessionExpired` | `NeedsLogin` | OTP 입력 창(FS-03 F5). 성공하면 승인된 요청을 다시 보낸다 |
+| 학교 세션 만료 | `SessionExpired` | 없음. 유스케이스가 창 안에서 처리하고, 창을 닫거나 대기 상한을 넘기면 `NeedsLogin` | OTP 입력 창(FS-03 F5). 성공하면 승인된 요청을 다시 보낸다 |
 | 학생 권한으로 막힘(401 헤더 없음, 404) | `NotAvailable` | `NotAvailable` | 그 기능은 쓸 수 없다는 안내 |
 | 응답 형식이 다름(필수 필드 없음) | `SourceChanged` | `SourceChanged` | 앱 업데이트가 필요하다는 안내 |
 | 요청 제한 | `RateLimited` | `Temporary` | 다시 시도. 제한 응답은 서버가 처리하지 않았으므로 코어가 백오프 재시도한다([data_access README](../layers/data_access/README.md) HTTP 정책) |
@@ -90,7 +90,7 @@
 | # | 기준 | 확인 방법 | 시나리오 |
 |---|---|---|---|
 | AC1 | "이 과제 마감을 내 캘린더에 넣어 줘"에 확인 창이 뜨고, 승인하면 Canvas 개인 캘린더에 일정이 생기며 대화에 반영 완료가 보인다 | 실제 계정으로 요청하고 Canvas 웹 캘린더에서 확인한다 | S8-1 ★ |
-| AC2 | 확인 창에서 거부하면(창 닫기 포함) 일정이 생기지 않고 결과가 `Rejected(UserDeclined)`다 | `UserConfirmation` 메모리 구현으로 거부를 돌려주는 테스트 + 실제 계정 | S8-1 |
+| AC2 | 확인 창에서 거부하면(창 닫기 포함) 일정이 생기지 않고 결과가 `Rejected(UserDeclined)`다 | `UserConfirmation` 메모리 구현으로 거부를 돌려주는 테스트 + 실제 계정 | S8-1 ★ |
 | AC3 | 확인 창의 값이 실제로 보낸 요청 본문과 같다. AI가 다른 설명을 붙여도 창에는 요청 값만 보인다 | 요청을 기록하는 메모리 Gateway로 창 내용과 요청을 비교하는 테스트 | S8-1 |
 | AC4 | 승인 응답의 요청 ID나 내용 해시가 하나라도 다르면 요청이 나가지 않는다 | 다른 ID·해시로 승인하는 테스트 | — |
 | AC5 | 같은 요청 ID로 승인이 두 번 와도 요청은 한 번만 나간다 | 승인 두 번을 보내는 테스트 | — |
@@ -102,7 +102,7 @@
 | AC11 | 요청을 보낸 뒤 연결이 끊기면 코어가 다시 보내지 않는다(중복 일정 없음) | 응답 전에 연결을 끊는 테스트 | — |
 | AC12 | 플래너 메모 만들기·바꾸기·지우기와 완료 표시·해제가 각각 확인 창을 거쳐 Canvas에 반영된다 | 실제 계정으로 하나씩 실행하고 Canvas 플래너에서 확인한다 | S8-1 ★ |
 
-★ 실제 학교 계정과 서버가 있어야 확인할 수 있다.
+★ 실제 학교 계정과 서버가 있어야 확인할 수 있다(실제 대화로 확인하면 유료 Claude 계정도 필요하다).
 
 ## 5. User Flow (UF-11)
 
@@ -110,6 +110,7 @@
 
 ## 6. 미확인 항목
 
+- **개인 일정·플래너 조회가 아키텍처에 없다**: F1은 바꾸기·지우기 전에 대상 항목을 읽어 확인하는데, 그 읽기와 "내 일정 보여 줘" 같은 조회를 맡는 유스케이스가 [application §3](../layers/02_application.md#3-유스케이스-후보)에 없다("조회" 행은 할 일·과목·차시·과제·공지·출결·성적뿐). 바꾸기·지우기의 대상 확인은 쓰기 유스케이스 안의 읽기로 두고(추론), 학생에게 보이는 일정·플래너 조회는 UX Strategy §12 후보로 올린다. 이것이 정해지기 전에는 바꾸기·지우기의 대상 ID를 AI가 얻을 경로도 없다
 - 쓰기 경로 6개(`POST·PUT·DELETE /calendar_events`, `POST·PUT·DELETE /planner_notes`, `POST·PUT /planner/overrides`)는 모두 "미확인"이다([02_canvas §2](../layers/data_access/02_canvas.md#2-rest-경로)). 학생 권한으로 만들고 지울 수 있는지, 응답 필드가 무엇인지 실제 계정으로 기록한다. 완료 표시 해제가 `PUT`으로 되는지도 함께 본다
 - **확인 대기 상한**: 확인 창을 기다리는 동안 `cdx` 요청이 열려 있다. AI 제공자의 도구 호출 제한 시간을 넘기면 어떻게 끝낼지(오류 종류, 창을 닫을지) 정해야 한다. FS-03 §6의 같은 항목과 함께 정한다
 - **ID·해시 불일치와 대상이 개인 항목이 아닌 경우의 사유**: [application §4.5](../layers/02_application.md#45-application-오류)의 `Rejected` 사유 중 `PolicyDenied`가 가장 가깝다고 보고 썼다(추론). 따로 사유를 둘지 정한다

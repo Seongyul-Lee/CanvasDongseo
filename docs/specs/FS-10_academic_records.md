@@ -74,8 +74,8 @@
 
 | 상황 | 판정 | application 오류 | 다음 행동(P5) |
 |---|---|---|---|
-| 학생지원시스템 로그인 안 됨·세션 만료 | `SessionExpired` | `NeedsLogin` | 학생지원시스템 로그인 창, 로그인 뒤 답이 이어짐([FS-04 F4](FS-04_student_portal_login.md)) |
-| 학교 계정 세션 만료(출결) | `SessionExpired` | `NeedsLogin` | OTP 창, 입력 뒤 답이 이어짐([FS-03 F5](FS-03_school_account.md)) |
+| 학생지원시스템 로그인 안 됨·세션 만료 | `SessionExpired` | 없음. 유스케이스가 창 안에서 처리하고, 창을 닫거나 대기 상한을 넘기면 `NeedsLogin` | 학생지원시스템 로그인 창, 로그인 뒤 답이 이어짐([FS-04 F4](FS-04_student_portal_login.md)) |
+| 학교 계정 세션 만료(출결) | `SessionExpired` | 없음. 유스케이스가 창 안에서 처리하고, 창을 닫거나 대기 상한을 넘기면 `NeedsLogin` | OTP 창, 입력 뒤 답이 이어짐([FS-03 F5](FS-03_school_account.md)) |
 | 로그인 창을 닫음 | — | `NeedsLogin` | 해당 연결 행으로 가는 버튼 |
 | 그 과목에서 스마트출결을 쓰지 않음 | `NotAvailable` | `NotAvailable` | 그 과목은 출결 기록이 없다는 안내 |
 | 화면 HTML에서 쿼리 토큰을 못 찾음, 필수 필드 없음 | `SourceChanged`(실패 단계 이름) | `SourceChanged` | 앱 업데이트가 필요하다는 안내 |

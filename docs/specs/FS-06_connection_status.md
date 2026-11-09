@@ -70,7 +70,7 @@
 - AI에는 `cdx`가 같은 오류를 AI용 코드(`not_available`, `source_changed` 등)로 준다([entrypoints §4](../layers/04_entrypoints.md#4-cdx-명령)). AI는 학교 데이터를 추측해 채우지 않는다(R2).
 - 출처 장애는 로그인 상태를 바꾸지 않는다. 장애 때문에 연결 행이 "로그인 필요"나 로그아웃이 되지 않는다.
 - 설정 행과 알약에는 출처 장애가 학교 계정 행의 "사용할 수 없음" 원인으로 보인다([UX Strategy §7.5](../06_ux_strategy.md#75-설정)). 다만 어느 출처가 언제부터 안 되는지 기억하고 회복을 판정하는 곳이 아키텍처에 없다(§6). 그 전까지 이 표시는 구현하지 않는다.
-- 여러 출처를 합치는 조회(예: 이번 주 할 일 = Canvas + LearningX, [data_access §2.3](../layers/data_access/README.md#23-출력-포트-구현-data_accessrepositories))에서 출처 하나만 실패할 때 나머지로 부분 결과를 낼지는 아키텍처가 정하지 않았다(§6).
+- 여러 출처를 합치는 조회(예: 이번 주 할 일 = Canvas + LearningX, [data_access §2.3](../layers/data_access/README.md#23-출력-포트-구현-data_accessrepositories))에서 출처 하나만 실패하면 나머지로 부분 결과를 내고 빠진 출처를 함께 알린다. 규칙은 [FS-08 F5](FS-08_todo_and_courses.md#f5-출처별-부분-실패)가 정한다([PRD §9.2](../01_prd.md#92-제약과-위험)).
 
 ## 3. 예외
 
@@ -80,8 +80,8 @@
 | 요청 제한 | `RateLimited` | `Temporary` | 다시 시도 |
 | 권한 없음, 그 과목에서 쓰지 않는 기능 | `NotAvailable` | `NotAvailable` | 안 되는 출처·기능과 나머지는 쓸 수 있다는 안내 |
 | 학교 쪽 화면·형식이 바뀜 | `SourceChanged`(실패 단계 이름) | `SourceChanged` | 앱 업데이트가 필요하다는 안내 |
-| 학교 세션 만료 | `SessionExpired` | `NeedsLogin` | OTP 창([FS-03 F5](FS-03_school_account.md)), 대화는 "Input" |
-| 학생지원시스템 세션 만료 | `SessionExpired` | `NeedsLogin` | 학생지원시스템 로그인 창([FS-04 F4](FS-04_student_portal_login.md)), 대화는 "Input" |
+| 학교 세션 만료 | `SessionExpired` | 없음. 유스케이스가 창 안에서 처리하고, 창을 닫거나 대기 상한을 넘기면 `NeedsLogin` | OTP 창([FS-03 F5](FS-03_school_account.md)), 대화는 "Input" |
+| 학생지원시스템 세션 만료 | `SessionExpired` | 없음. 유스케이스가 창 안에서 처리하고, 창을 닫거나 대기 상한을 넘기면 `NeedsLogin` | 학생지원시스템 로그인 창([FS-04 F4](FS-04_student_portal_login.md)), 대화는 "Input" |
 | AI를 쓸 수 없음 | — | `AiUnavailable(NotInstalled)`, `AiUnavailable(LoggedOut)`, `AiUnavailable(PlanNotSupported)`, `AiUnavailable(UsageLimit)` | 사유별: 설치 / 로그인 / 유료 플랜 안내 / 한도가 풀리는 시각 |
 | 상태 입력 하나를 얻지 못함 | — | — | 그 행만 "확인 중". 다른 행은 그대로(추론) |
 
@@ -113,7 +113,6 @@
 
 - **아키텍처에 없음 → [UX Strategy §12](../06_ux_strategy.md#12-아키텍처에-올릴-것) 후보: 출처별 장애 상태의 보관과 회복 판정.** [UX Strategy §7.5](../06_ux_strategy.md#75-설정)는 "출처별 장애(LearningX만 안 됨 등)는 … 학교 계정 행의 '사용할 수 없음' 원인으로 보인다"고 하고, [§11](../06_ux_strategy.md#11-대응표)은 출처별 장애를 "설정 > 연결 > 학교 계정, 연결 알약"에 대응시킨다. 그러나 [presentation §1](../layers/03_presentation.md#1-개요)의 `shell` 입력은 `GetAuthState`, 학생지원시스템 세션, AI 상태뿐이고, 최근 실패한 출처를 기억하는 유스케이스·포트와 언제 정상으로 되돌릴지의 규칙이 없다
 - **`NotAvailable`의 뜻이 문서마다 다르다.** [application §4.5](../layers/02_application.md#45-application-오류)는 "권한이 없거나 그 과목에서 쓰지 않는 기능", [data_access §2.4](../layers/data_access/README.md#24-datasource-i와-계약-data_accesscontracts)는 예로 "Canvas 401(헤더 없음), 404 '사용 안 함'"을 든다. 학교 시스템 장애(연결 실패, 5xx)는 `Network` → `Temporary`다. 한편 [UX Strategy §11](../06_ux_strategy.md#11-대응표)은 "출처별 장애·구조 변경(`NotAvailable`, `SourceChanged`)", [§7.5](../06_ux_strategy.md#75-설정)는 "사용할 수 없음 … 학교 시스템 장애"로 쓴다. 장애가 `Temporary`로만 오면 "다시 시도"만 보여 S2-7의 "안 되는 출처와 기능이 보이고"를 채우지 못한다. `Temporary`에도 출처를 담을지, 장애를 따로 둘지 정한다
-- 여러 출처를 합치는 조회에서 한 출처가 실패할 때 부분 결과를 낼지, 낸다면 빠진 출처를 어떻게 표시할지(F5). [data_access §2.3](../layers/data_access/README.md#23-출력-포트-구현-data_accessrepositories)은 합치는 방식만 정한다
 - **학생지원시스템 행의 "로그인 안 됨" 표시.** 학생지원시스템은 필요할 때만 로그인하므로([UX Strategy §7.2](../06_ux_strategy.md#72-mvp-화면)) 대부분의 시간에 로그인되지 않은 상태다. 이를 [§7.5](../06_ux_strategy.md#75-설정)의 "로그인 필요"(빨강 점)로 두면 알약이 거의 늘 보인다. 점 없는 상태를 새로 둘지(§7.5 표 변경), "로그인 필요"로 두되 알약 개수에서 뺄지 정한다
 - 학생지원시스템 행에서 "곧 만료"를 쓸지. 60분 세션이라 쓰지 않는 것으로 추론했다
 - 학생지원시스템 장애를 어느 행에 보일지. [UX Strategy §7.5](../06_ux_strategy.md#75-설정)는 학교 계정 행만 말한다. 학생지원시스템 행으로 보이는 것은 추론이다. 로그인이 없는 출처(학교·학과 공지, Commons)의 장애는 어느 행에도 속하지 않는다

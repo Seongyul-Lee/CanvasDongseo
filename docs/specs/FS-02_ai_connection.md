@@ -75,7 +75,7 @@
 | `NotInstalled` | 설치 안 됨 | 설치(연결 행으로) |
 | `LoggedOut` | 로그인 필요 | 로그인(연결 행으로) |
 | `PlanNotSupported` | 사용할 수 없음 / 플랜 미지원 | 유료 플랜 안내 |
-| `UsageLimit` | 사용할 수 없음 / 사용 한도 | 풀리는 시각. CLI가 시각을 주지 않으면 시각 없이 한도 안내만 |
+| `UsageLimit` | 사용할 수 없음 / 사용 한도(연결 행에 올리는 입력 경로는 미결, [FS-06](FS-06_connection_status.md) §6) | 풀리는 시각. CLI가 시각을 주지 않으면 시각 없이 한도 안내만 |
 
 - 사용 한도는 중립 이벤트 `UsageLimit`으로 알게 된다. 그 대화의 상태는 "Limited"가 된다(판정은 FS-06, [UX Strategy §7.4](../06_ux_strategy.md#74-대화별-상태)).
 - 한도가 풀리는 시각이 지나면 다음 전송을 막지 않는다. 앱이 다시 보내지는 않는다(추론, §6).
@@ -134,6 +134,7 @@
 
 ## 6. 미확인 항목
 
+- **사용 한도를 연결 행에 올리는 입력**: F6 표는 `UsageLimit`이면 AI 연결 행을 "사용할 수 없음 / 사용 한도"로 둔다. 그런데 한도는 대화 중 중립 이벤트 `UsageLimit`으로만 오고 `AiAccount.account()`에는 없어서, `presenters/shell`이 연결 행을 그렇게 판정할 입력이 없다([FS-06](FS-06_connection_status.md) §6과 같은 항목). 정해지기 전에는 대화별 상태 "Limited"만 확실하다
 - **설치를 실행하는 포트 동작이 아키텍처에 없음 → UX Strategy §12 후보.** [ai_adapters §2](../layers/05_ai_adapters.md#2-claude-로그인)는 "공식 설치 스크립트를 사용자 동의 뒤 실행한다"고 하지만, [application §4.2](../layers/02_application.md#42-ai)의 `AiInstallation`에는 `detect()`만 있다. `install()`(진행·실패 결과 포함)을 더할지 정한다
 - **설치 실패에 대응하는 application 오류가 없다.** `Temporary`로 볼지, 사유를 더할지 정한다. 위 항목과 함께 §12 후보
 - **최소 버전 미충족일 때의 사유와 행동이 없다.** `detect()`는 "최소 버전 충족"을 돌려주지만 `AiUnavailable`의 사유 열거형에는 버전 항목이 없고, [UX Strategy §7.5](../06_ux_strategy.md#75-설정) 연결 행 상태에도 "업데이트"가 없다. `NotInstalled`로 다루고 설치 스크립트를 다시 실행할지(추론), 사유를 더할지 정한다. 더하면 §12 후보
