@@ -117,5 +117,6 @@
 - 학생지원시스템 행에서 "곧 만료"를 쓸지. 60분 세션이라 쓰지 않는 것으로 추론했다
 - 학생지원시스템 장애를 어느 행에 보일지. [UX Strategy §7.5](../06_ux_strategy.md#75-설정)는 학교 계정 행만 말한다. 학생지원시스템 행으로 보이는 것은 추론이다. 로그인이 없는 출처(학교·학과 공지, Commons)의 장애는 어느 행에도 속하지 않는다
 - **AI 사용 한도를 행에 올리는 경로 → [UX Strategy §12](../06_ux_strategy.md#12-아키텍처에-올릴-것) 후보.** 한도는 대화 중 `UsageLimit` 이벤트로만 온다([application §4.2](../layers/02_application.md#42-ai)). `AiAccount.account()`에는 한도가 없어, `shell`이 AI 행을 "사용할 수 없음(사용 한도)"으로 판정할 입력이 없다
+- **AI 자격 증명 읽기 막힘의 연결 행 상태.** `account()`가 로그인 상태로 "자격 증명 읽기 막힘"을 줄 수 있는데([application §4.2](../layers/02_application.md#42-ai)) F1 표에 이 입력에 대응하는 상태가 없고, 알약 개수(F2)에 셀지도 정하지 않았다. [FS-02 §6](FS-02_ai_connection.md#6-미확인-항목)과 같은 항목이고 FS-02의 Design Process ②에서 정한다
 - 상태가 바뀔 때 화면에 알리는 방식(코어 이벤트를 보낼지, 화면이 다시 조회할지). [presentation §2.1](../layers/03_presentation.md#21-프런트엔드-spa-내부-구조)은 "코어 이벤트는 store에 들어간다"고만 쓴다
 - 키체인 `Misconfigured`일 때 학교 계정 행의 상태([FS-03 §6](FS-03_school_account.md#6-미확인-항목)과 같은 항목)
