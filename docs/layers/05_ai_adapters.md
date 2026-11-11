@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | 2026-10-26 Claude Code 2.1.310·codex-cli 0.160.0 로그인 실측, 2026-11-08 Claude Code 2.1.319 실측(§6), 2026-11-12 Claude Code 2.1.322 도구 호출 제한 시간 실측(§6.1) |
+| 근거 | 2026-10-26 Claude Code 2.1.310·codex-cli 0.160.0 로그인 실측, 2026-11-08 Claude Code 2.1.319 실측(§6), 2026-11-12 Claude Code 2.1.322 도구 호출 제한 시간 실측(§6.1), 2026-11-12 플랜별 구독 종류 조사(§2.1) |
 
 > **이 문서의 역할**: AI 포트(`AiInstallation`·`AiAccount`·`AiSession`, [application §4.2](02_application.md))의 제공자별 구현을 정한다. MVP는 Claude Code다.
 
@@ -25,7 +25,7 @@
 | 항목 | 방식 |
 |---|---|
 | 설치 | 공식 설치 스크립트를 사용자 동의 뒤 실행한다. 앱이 CLI를 재배포하지 않는다 |
-| 상태 | `claude auth status` → `loggedIn`, `authMethod`, `subscriptionType`만 읽는다. `subscriptionType`이 Claude Code를 쓸 수 없는 플랜(Free)이면 `PlanNotSupported`로 판정한다 |
+| 상태 | `claude auth status` → `loggedIn`, `authMethod`, `subscriptionType`만 읽는다. `subscriptionType`은 표시 이름에만 쓰고, 값만으로 `PlanNotSupported`를 판정하지 않는다(§2.1) |
 | 로그인 | `claude auth login`을 자식 프로세스로 실행. CLI가 OS 브라우저를 열고 localhost 콜백으로 끝낸다. 완료 = 종료 코드 0 + `loggedIn: true` |
 | 브라우저가 안 열림 | stdout에서 수동 주소를 뽑아(이스케이프 제거, `https://claude.com/` 접두사 검사) 버튼으로 준다. **코드 붙여 넣기는 앱이 받지 않고** 터미널 실행을 안내한다 |
 | 계정 폴더 | 기본 `~/.claude` 그대로. 터미널에서 로그인돼 있으면 바로 완료 |
@@ -40,6 +40,26 @@
 | `claude setup-token` → 앱 키체인 → `CLAUDE_CODE_OAUTH_TOKEN` | 앱이 장기 AI 토큰을 보관·중계한다(S6 위반) |
 | 앱 전용 `CLAUDE_CONFIG_DIR` | 로그인을 따로 해야 하고, 대화 재개 기록이 계정 폴더에 묶여 대화마다 계정을 추적해야 한다 |
 | `--bare` | 구독 OAuth·키체인을 읽지 않는다(API 키 전용) |
+
+### 2.1 플랜별 구독 종류와 Free 계정 (2026-11-12 조사)
+
+근거는 세 가지다. 이 기기의 `claude auth status` 출력(Claude Code 2.1.322, Max 계정 하나), 설치된 CLI 2.1.322가 계정의 조직 종류를 구독 종류로 바꾸는 표, 그리고 공식 문서와 공개 이슈다. Pro·Team·Enterprise·Free 계정으로 직접 실행해 보지는 않았다.
+
+| 플랜 | `subscriptionType` | 근거 |
+|---|---|---|
+| Max | `"max"` | 이 기기에서 확인(`planTier`는 `"max_5x"`). CLI의 표 `claude_max` → `max` |
+| Pro | `"pro"` | CLI의 표 `claude_pro` → `pro`. 공개 이슈의 출력 예 |
+| Team | `"team"` | CLI의 표 `claude_team` → `team` |
+| Enterprise | `"enterprise"` | CLI의 표 `claude_enterprise` → `enterprise` |
+| Ultra | 확인하지 못함 | 공식 문서는 Ultra를 쓸 수 있는 플랜으로 적는다. CLI 2.1.322의 표에는 Ultra에 해당하는 항목이 없다 |
+| 표에 없는 조직 종류, 확인 실패 | `null` | CLI는 표에 없으면 `null`을 준다 |
+| Free | 로그인이 끝나지 않아 값이 없다 | 아래 |
+
+- **Free 계정은 로그인 단계에서 막힌다.** 브라우저의 승인 화면(claude.ai/oauth)이 "Claude Max or Pro is required to connect to Claude Code"를 보이고 localhost 콜백이 오지 않는다(공개 이슈 anthropics/claude-code #50349(2026-04), #54588(2.1.120)의 보고). 그래서 `claude auth login`이 끝나지 않고, 앱은 로그인을 기다리는 상태에 머문다. 이 문구는 브라우저에만 보여서 앱이 읽을 수 없다.
+- **`null`은 Free를 뜻하지 않는다.** 유료 계정인데 `subscriptionType: null`이 나온 보고가 있다(#34049: iOS App Store로 결제한 Pro, 2.1.74, 사용하면 `403 Request not allowed`. #36769: Pro, 2.1.80). Ultra의 값도 모른다. 그래서 `null`이나 모르는 값은 막지 않고 플랜 이름 없이 연결된 것으로 보인다.
+- 로그인한 뒤에 구독이 끝난 계정이 무엇을 내는지(`claude auth status`의 값, 첫 메시지의 오류)는 확인하지 못했다(§8). `PlanNotSupported`는 이 경우를 위한 판정으로 남긴다.
+- `claude auth status`의 다른 필드(`email`, `orgId`, `orgName`, `planTier`, `loginExpiresAt` 등)는 읽지 않는다. `planTier`는 CLI가 `subscriptionType`과 사용 한도 등급으로 만든 값이다(`pro`, `max_5x`, `max_20x`, `max_other`, `other`).
+- 공식 문서: 쓸 수 있는 계정은 Pro·Max·Ultra 구독, Team·Enterprise, Console이다([인증 문서](https://code.claude.com/docs/en/authentication), [Pro·Max·Ultra](https://support.claude.com/en/articles/11145838), [Team·Enterprise](https://support.claude.com/en/articles/11845131)). 옛 Enterprise 플랜은 Claude Code가 들어 있는 좌석이어야 한다.
 
 ## 3. 실행 모드
 
@@ -148,7 +168,9 @@
 
 ## 8. 미확인 항목
 
-- Free 계정의 `subscriptionType` 값, 그리고 Free 계정이 막히는 지점(로그인 단계인지, 첫 메시지의 오류인지). 실측해 `PlanNotSupported` 판정 기준을 정한다
+- 로그인한 뒤 구독이 끝난 계정의 `claude auth status` 값과 첫 메시지의 오류 형식. `PlanNotSupported`를 무엇으로 판정할지 이것으로 정한다(§2.1)
+- Ultra 플랜과 Console 계정의 `subscriptionType` 값, Claude Code가 없는 좌석(옛 Enterprise)의 계정이 막히는 지점(§2.1)
+- Free 계정이 막히는 지점은 공개 이슈의 보고로 확인했다. Free 계정으로 직접 재현하지는 않았다(§2.1)
 - 사용 한도에 걸렸을 때 CLI가 풀리는 시각을 주는지와 그 형식
 - 대화 모드에서 권한 확인 요청을 stream-json으로 중계하는 메시지 형식(`--permission-prompts host`, CLI 제어 메시지로 예상)
 - `/clear`·`/compact`를 stream-json 입력으로 보냈을 때의 정확한 동작
