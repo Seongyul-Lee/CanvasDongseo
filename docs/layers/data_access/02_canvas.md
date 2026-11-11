@@ -46,9 +46,9 @@
 | 캘린더 일정 | `GET /calendar_events?type=event&all_events=true&context_codes[]=course_{id}` | ✅ | |
 | 캘린더 과제 | `GET /calendar_events?type=assignment&all_events=true&context_codes[]=course_{id}` | ✅ | `context_codes`가 없으면 0건 |
 | 플래너 메모 | `GET /planner_notes` | ✅ | |
-| 플래너 메모 쓰기 | `POST /planner_notes`, `PUT·DELETE /planner_notes/{id}` | 미확인 | 개인 데이터 쓰기 예외([README §1.3](README.md)) |
-| 플래너 완료 표시 | `POST /planner/overrides`, `PUT /planner/overrides/{id}` | 미확인 | 개인 데이터 쓰기 예외([README §1.3](README.md)) |
-| 개인 캘린더 일정 쓰기 | `POST /calendar_events`(`context_code=user_{id}`), `PUT·DELETE /calendar_events/{id}` | 미확인 | 개인 데이터 쓰기 예외([README §1.3](README.md)). 과목 일정은 만들지 않는다 |
+| 플래너 메모 쓰기 | `POST /planner_notes`, `PUT·DELETE /planner_notes/{id}` | ✅ (2026-11-12) | 개인 데이터 쓰기 예외([README §1.3](README.md)). 요청·응답은 §2.1 |
+| 플래너 완료 표시 | `POST /planner/overrides`, `PUT /planner/overrides/{id}` | ✅ (2026-11-12) | 개인 데이터 쓰기 예외([README §1.3](README.md)). 해제는 `PUT`으로 된다. 요청·응답은 §2.1 |
+| 개인 캘린더 일정 쓰기 | `POST /calendar_events`(`context_code=user_{id}`), `PUT·DELETE /calendar_events/{id}` | ✅ (2026-11-12) | 개인 데이터 쓰기 예외([README §1.3](README.md)). 과목 일정은 만들지 않는다. 요청·응답은 §2.1 |
 | 메시지 상세 | `GET /conversations/{id}` | ✅ | |
 | 안 읽은 메시지 수 | `GET /conversations/unread_count` | ✅ | |
 | 활동 요약 | `GET /users/self/activity_stream/summary` | ✅ | 종류별 안 읽은 수 |
@@ -73,6 +73,32 @@
 
 - 페이지·퀴즈·과목 파일·첫 페이지는 확인한 과목에서 막혔지만 Canvas가 학생에게 여는 경로다. 과목마다 열릴 수 있으므로 DS는 구현해 두고 `NotAvailable`을 정상 결과로 다룬다.
 - 404 "사용 안 함"은 과목마다 다를 수 있다. 막힌 경로는 `NotAvailable`로 다루고, 과목마다 다시 확인한다.
+
+### 2.1 개인 데이터 쓰기의 요청과 응답 (2026-11-12 확인)
+
+학생 본인 계정의 웹 세션으로, 시험용 개인 일정 1개와 플래너 메모 1개를 만들고 고치고 지웠다. 완료 표시는 그 시험용 메모에만 걸었다. 끝난 뒤 목록을 다시 읽어 시험용 항목이 남지 않은 것을 확인했다. 과목 일정과 과제에는 요청을 보내지 않았다.
+
+- 쓰기 요청에는 세션 쿠키와 `X-CSRF-Token` 헤더(쿠키 `_csrf_token`을 URL 디코딩한 값)가 필요하다([01_auth §1](01_auth.md#1-자격-증명)). 본문은 JSON으로 보냈다.
+- 여덟 경로 모두 학생 권한으로 된다. 만들기는 201, 고치기와 지우기는 200이다.
+- **지우기는 항목을 없애지 않고 `workflow_state`를 `deleted`로 바꾼다.** 지우기의 응답도, 지운 뒤 `GET …/{id}`의 응답도 200에 `workflow_state: "deleted"`인 항목이다(404가 아니다). 목록 조회(`GET /planner_notes`, `GET /calendar_events`)에는 나오지 않았다.
+
+| 요청 | 보낸 필드 | 결과 | 응답 필드 |
+|---|---|---|---|
+| `POST /calendar_events` | `calendar_event[context_code]`(`user_{id}`), `calendar_event[title]`, `calendar_event[start_at]`, `calendar_event[end_at]`, `calendar_event[description]` | 201. `workflow_state: "active"`, `type: "event"`, `all_day: false`, `hidden: false` | 아래 일정 필드 |
+| `PUT /calendar_events/{id}` | `calendar_event[title]`, `calendar_event[start_at]`, `calendar_event[end_at]` | 200. 보낸 값으로 바뀐다 | 일정 필드 |
+| `DELETE /calendar_events/{id}` | — | 200. `workflow_state: "deleted"` | 일정 필드 |
+| `POST /planner_notes` | `title`, `details`, `todo_date` | 201. `workflow_state: "active"`, `course_id: null` | 아래 메모 필드 |
+| `PUT /planner_notes/{id}` | `title`, `details`, `todo_date` | 200. 보낸 값으로 바뀐다 | 메모 필드 |
+| `DELETE /planner_notes/{id}` | — | 200. `workflow_state: "deleted"` | 메모 필드 |
+| `POST /planner/overrides` | `plannable_type`(`planner_note`), `plannable_id`, `marked_complete`(`true`) | 201. `marked_complete: true`, `dismissed: false`, `workflow_state: "active"` | 아래 완료 표시 필드 |
+| `PUT /planner/overrides/{id}` | `marked_complete`(`false`) | 200. `marked_complete: false`. **완료 표시 해제가 `PUT`으로 된다** | 완료 표시 필드 |
+
+- 일정 필드(24개): `id`, `title`, `start_at`, `end_at`, `workflow_state`, `created_at`, `updated_at`, `all_day`, `all_day_date`, `comments`, `location_address`, `location_name`, `type`, `description`, `child_events_count`, `all_context_codes`, `context_code`, `context_name`, `parent_event_id`, `hidden`, `child_events`, `url`, `html_url`, `duplicates`
+- 메모 필드(9개): `id`, `todo_date`, `title`, `details`, `user_id`, `course_id`, `workflow_state`, `created_at`, `updated_at`
+- 완료 표시 필드(11개): `id`, `plannable_type`, `plannable_id`, `user_id`, `workflow_state`, `marked_complete`, `deleted_at`, `created_at`, `updated_at`, `dismissed`, `assignment_id`
+- 완료 표시는 `GET /planner/items`의 항목 안 `planner_override`로 읽힌다(필드는 위와 같다). 표시를 걸면 `planner_override.marked_complete`가 `true`, `PUT`으로 풀면 `false`가 됐다. 항목의 필드는 `plannable_id`, `plannable_type`, `plannable`, `plannable_date`, `planner_override`, `new_activity`, `submissions`다.
+- `DELETE /planner/overrides/{id}`도 200(`workflow_state: "deleted"`)으로 된다. 시험용 표시를 지우는 데 썼다. 앱이 보내는 요청 목록([README §1.3](README.md))에는 없는 경로다.
+- 확인하지 않은 것: 과제·퀴즈 같은 다른 항목의 완료 표시(`plannable_type`이 `planner_note`가 아닌 경우), 과목에 연결한 메모(`course_id`), 하루 종일 일정과 반복 일정, 잘못된 값을 보냈을 때의 오류 응답, 다른 사람이나 과목의 일정에 쓰려 할 때의 거부 응답.
 
 ## 3. LTI 도구 번호 찾기
 

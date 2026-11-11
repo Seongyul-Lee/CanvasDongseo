@@ -115,7 +115,9 @@
 ## 6. 미확인 항목
 
 - **개인 일정·플래너 조회가 아키텍처에 없다**: F1은 바꾸기·지우기 전에 대상 항목을 읽어 확인하는데, 그 읽기와 "내 일정 보여 줘" 같은 조회를 맡는 유스케이스가 [application §3](../layers/02_application.md#3-유스케이스-후보)에 없다("조회" 행은 할 일·과목·차시·과제·공지·출결·성적뿐). 바꾸기·지우기의 대상 확인은 쓰기 유스케이스 안의 읽기로 두고(추론), 학생에게 보이는 일정·플래너 조회는 UX Strategy §12 후보로 올린다. 이것이 정해지기 전에는 바꾸기·지우기의 대상 ID를 AI가 얻을 경로도 없다
-- 쓰기 경로 6개(`POST·PUT·DELETE /calendar_events`, `POST·PUT·DELETE /planner_notes`, `POST·PUT /planner/overrides`)는 모두 "미확인"이다([02_canvas §2](../layers/data_access/02_canvas.md#2-rest-경로)). 학생 권한으로 만들고 지울 수 있는지, 응답 필드가 무엇인지 실제 계정으로 기록한다. 완료 표시 해제가 `PUT`으로 되는지도 함께 본다
+- ~~쓰기 경로(`POST·PUT·DELETE /calendar_events`, `POST·PUT·DELETE /planner_notes`, `POST·PUT /planner/overrides`)가 학생 권한으로 되는지~~ **확인함(2026-11-12, 본인 계정)**. 여덟 경로 모두 된다. 완료 표시 해제는 `PUT`(`marked_complete: false`)으로 된다. 요청·응답 필드는 [02_canvas §2.1](../layers/data_access/02_canvas.md#21-개인-데이터-쓰기의-요청과-응답-2026-11-12-확인)에 있다
+- **지운 항목의 응답**: Canvas는 지우기를 `workflow_state: "deleted"`로 처리하고, 지운 항목을 다시 읽어도 200으로 준다([02_canvas §2.1](../layers/data_access/02_canvas.md#21-개인-데이터-쓰기의-요청과-응답-2026-11-12-확인)). 바꾸기·지우기 전에 대상을 읽어 확인할 때(F1) 이미 지워진 항목을 어떻게 다룰지 정한다
+- 과제·퀴즈 같은 플래너 항목의 완료 표시(`plannable_type`이 `planner_note`가 아닌 경우)는 확인하지 않았다. 시험용 메모로만 확인했다
 - **확인 대기 상한**: 확인 창을 기다리는 동안 `cdx` 요청이 열려 있다. 상한은 [FS-03 F5](FS-03_school_account.md#f5-끊긴-연결-이어-가기)와 같이 요청을 받은 때부터 240초다(2026-11-12 실측으로 정함). 상한을 넘기면 어떻게 끝낼지(오류 종류, 창을 닫을지)는 아직 정하지 않았다. 끝내지 않으면 `cdx` 호출이 백그라운드로 옮겨져 AI가 결과를 바로 받지 못한다([ai_adapters §6.1](../layers/05_ai_adapters.md))
 - **ID·해시 불일치와 대상이 개인 항목이 아닌 경우의 사유**: [application §4.5](../layers/02_application.md#45-application-오류)의 `Rejected` 사유 중 `PolicyDenied`가 가장 가깝다고 보고 썼다(추론). 따로 사유를 둘지 정한다
 - **바꾸기·지우기의 대상 제한**: [02_canvas §2](../layers/data_access/02_canvas.md#2-rest-경로)는 "과목 일정은 만들지 않는다"만 적는다. 바꾸기·지우기도 개인 항목만으로 제한한다는 F1 규칙은 추론이다. Canvas가 학생의 과목 일정 수정을 어차피 막는지 확인하고, 앱에서도 막을지 정한다
