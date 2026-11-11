@@ -97,7 +97,7 @@
 - 메모 필드(9개): `id`, `todo_date`, `title`, `details`, `user_id`, `course_id`, `workflow_state`, `created_at`, `updated_at`
 - 완료 표시 필드(11개): `id`, `plannable_type`, `plannable_id`, `user_id`, `workflow_state`, `marked_complete`, `deleted_at`, `created_at`, `updated_at`, `dismissed`, `assignment_id`
 - 완료 표시는 `GET /planner/items`의 항목 안 `planner_override`로 읽힌다(필드는 위와 같다). 표시를 걸면 `planner_override.marked_complete`가 `true`, `PUT`으로 풀면 `false`가 됐다. 항목의 필드는 `plannable_id`, `plannable_type`, `plannable`, `plannable_date`, `planner_override`, `new_activity`, `submissions`다.
-- `DELETE /planner/overrides/{id}`도 200(`workflow_state: "deleted"`)으로 된다. 시험용 표시를 지우는 데 썼다. 앱이 보내는 요청 목록([README §1.3](README.md))에는 없는 경로다.
+- `DELETE /planner/overrides/{id}`도 200(`workflow_state: "deleted"`)으로 된다. 시험용 표시를 지우는 데 썼다. 앱이 보내는 요청 목록([README §1.3](README.md))에는 없는 경로이고, 넣지 않는다(2026-11-12 결정). 앱은 완료 표시 해제를 `PUT`으로 한다.
 - 확인하지 않은 것: 과제·퀴즈 같은 다른 항목의 완료 표시(`plannable_type`이 `planner_note`가 아닌 경우), 과목에 연결한 메모(`course_id`), 하루 종일 일정과 반복 일정, 잘못된 값을 보냈을 때의 오류 응답, 다른 사람이나 과목의 일정에 쓰려 할 때의 거부 응답.
 
 ## 3. LTI 도구 번호 찾기
