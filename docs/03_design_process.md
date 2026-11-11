@@ -142,11 +142,11 @@ C 뒤에도 실패하는 파일과 원인:
 
 나머지 약 40개 파일(button, input, dialog, menu, popover, select, checkbox, switch 등)은 B·C의 보조 파일만으로 통과한다.
 
-필요한 npm 의존(통과한 부품 기준): `@base-ui/react` 1.9.0, `lucide-react` 0.564.0, `class-variance-authority` 0.7.1, `tailwind-merge` 3.4.0, `react`·`react-dom` 19.3.0, `@types/react`·`@types/react-dom` 19.3.0. Tailwind는 v4(우리 4.3.3, 원본 workspace도 4.3.3). 이 중 `class-variance-authority`, `tailwind-merge`는 아직 `ui/package.json`에 없다.
+필요한 npm 의존(통과한 부품 기준, 원본 `pnpm-lock.yaml`이 해석한 버전): `@base-ui/react` 1.9.0, `lucide-react` 0.564.0, `class-variance-authority` 0.7.1, `tailwind-merge` 3.6.0(원본 `package.json`의 범위는 `^3.4.0`), `react`·`react-dom` 19.3.0, `@types/react`·`@types/react-dom` 19.3.0, `tailwindcss` 4.3.3. 이 중 `class-variance-authority`, `tailwind-merge`는 아직 `ui/package.json`에 없다.
 
 Foundation(#21)에 주는 결론:
 
 - 2단계 "그대로 복사"는 `components/ui/` 전체가 아니라 **통과하는 부품만** 고르는 방식으로 바꾼다. 위 표의 파일은 가져오지 않거나, 가져오면 `UPSTREAM.md`에 고친 이유를 적는다.
 - `components/ui/` 밖에서 가져와야 하는 파일이 생긴다: `lib/utils.ts`는 원본을 그대로 쓸 수 없어(`@t3tools/contracts`, `effect`, `composerDraftStore` 의존) `cn`만 둔 우리 파일로 둔다. 보조 모듈 4개는 원본 그대로 가져온다.
 - 원본 import를 고치지 않으려면 `~/*` 별칭을 `ui/tsconfig.json`과 `vite.config.ts`에 더해야 한다. 별칭이 폴더 의존 검사(`boundaries.config.js`)와 맞는지 함께 확인한다.
-- `tooltip`은 자주 쓰는 기본 부품이라 빼기 어렵다. `windowControlsOverlay`를 Tauri용으로 대신할지(원본 고침), 우리 tooltip을 따로 쓸지는 #21에서 정한다.
+- `tooltip`은 자주 쓰는 기본 부품이라 빼지 않는다. `tooltip.tsx`·`command.tsx`가 `windowControlsOverlay`에서 쓰는 것은 `useNativeTitlebarHeight` 하나뿐이므로 두 부품은 고치지 않고, `lib/windowControlsOverlay.ts`만 Tauri용으로 바꿔 둔다(2026-11-11 결정). 고친 이유는 `UPSTREAM.md`에 적는다.
