@@ -112,6 +112,7 @@ selectService(QP.paramJson(), callback);
 - **앱은 조회 서비스만, 그것도 이름을 명시한 허용 목록(화이트리스트)으로만 호출한다.** §4의 표는 화면 소스에서 뽑은 원본이라 분류가 서비스의 선언 종류(`SELECT`/`INSERT`/…)에 따른다. 이름만으로는 판별되지 않는다 — 예: `UPSERT_MAJOR_MERGE*`(AB050_M), `INS_CERT_NO`(AG090)는 이름이 쓰기지만 표에서는 조회 쪽에 있을 수 있다. 그래서 "`SELECT`로 시작하면 조회" 같은 이름 규칙으로 거르지 않는다.
 - 허용 목록에는 **읽기만 하는 것이 확인된 서비스 이름만** 넣는다. 휴학·복학·전공 신청(UPSERT), 강의평가, 학점포기, P/N 신청, 등록금 분할납부, 봉사일지, 증명서 발번(`INS_CERT_NO`) 등 상태를 바꾸는 서비스는 넣지 않는다([README §1.3](README.md)).
 - **허용 목록과 서비스별 학번 매개변수 레지스트리**: 성적·졸업시뮬레이션·학생기본정보·과목출결조회 여섯 화면의 목록을 §5에 적었다(2026-11-12). 구현 때 §5의 표를 `{화면, 서비스, 창구, 매개변수, 학번 매개변수}` 데이터로 옮기고, 그 목록에 없는 서비스는 호출하지 않는다. 다른 화면은 §4 표가 원재료다. §5와 같은 방법으로 읽기만 하는 것을 확인한 뒤 더한다. "외 N개"로 줄인 화면은 화면 소스에서 전체를 확인한 뒤 넣는다.
+- **응답에서 버리는 필드**: 허용 목록의 서비스라도 은행과 계좌번호(`SELECT_STD_INFO_CHG`의 `SUD010_BANK_NM`, `SUD010_BANK_CSH`)는 `student_portal` Source가 응답을 받자마자 버린다. DS 계약과 그 위 계층에는 이 필드가 없다(2026-11-12 결정). 나머지 필드는 버리지 않는다.
 - 출력·증명서(`/report/reqReport.jsp`, 외부 증명서 발급 `uni.webminwon.com`)는 대상이 아니다.
 
 ## 4. 메뉴별 서비스 목록
@@ -218,7 +219,7 @@ selectService(QP.paramJson(), callback);
 |---|---|---|---|---|
 | `SELECT_INFO` | `select.do` | **`USER_ID`** | `CMINOR_NM`, `CSMAJOR_NM`, `EMAJOR_NM`, `MINOR_NM`, `MJR_NM`, `NAME`, `PROF_NM`, `SBJ_NM`, `SMAJOR_NM`, `STS`, `ST_YEAR`, `SUD010_STUDENT_CD`, `TEACH_FLAG` | 1행 |
 | `SELECT_INFO` | `select.do` | **`USER_ID`**, `SUD200_GRAD_DIV` | (0행이라 확인하지 못함) | 0행. `SELECTMAP`. 응답이 `null`이었다 |
-| `SELECT_STD_INFO_CHG` | `select.do` | **`USER_ID`** | `DEPT`, `MAJOR`, `NEW_NM_CHK`, `PROF`, `STS`, `SUD010_ADD1`, `SUD010_ADD2`, `SUD010_BANK_CSH`, `SUD010_BANK_NM`, `SUD010_EMAIL`, `SUD010_IMG_PATH`, `SUD010_NM`, `SUD010_NM_ENG`, `SUD010_PROTEC_EMAIL`, `SUD010_PROTEC_NM`, `SUD010_ROAD_ADD1`, `SUD010_ROAD_ADD2`, `SUD010_ROAD_ADD3`, `SUD010_ROAD_ZIP1`, `SUD010_STUDENT_CD`, `SUD010_STUDENT_PCS`, `SUD010_STUDENT_YEAR`, `SUD010_TEL`, `SUD010_ZIP1`, `SUD200_GRAD_DIV` | 1행. **허용 목록에 넣지 않는다.** 주소·전화·계좌·보호자 정보가 들어 있고 앱이 쓰지 않는다 |
+| `SELECT_STD_INFO_CHG` | `select.do` | **`USER_ID`** | `DEPT`, `MAJOR`, `NEW_NM_CHK`, `PROF`, `STS`, `SUD010_ADD1`, `SUD010_ADD2`, `SUD010_BANK_CSH`, `SUD010_BANK_NM`, `SUD010_EMAIL`, `SUD010_IMG_PATH`, `SUD010_NM`, `SUD010_NM_ENG`, `SUD010_PROTEC_EMAIL`, `SUD010_PROTEC_NM`, `SUD010_ROAD_ADD1`, `SUD010_ROAD_ADD2`, `SUD010_ROAD_ADD3`, `SUD010_ROAD_ZIP1`, `SUD010_STUDENT_CD`, `SUD010_STUDENT_PCS`, `SUD010_STUDENT_YEAR`, `SUD010_TEL`, `SUD010_ZIP1`, `SUD200_GRAD_DIV` | 1행. 허용한다. 다만 은행과 계좌번호(`SUD010_BANK_NM`, `SUD010_BANK_CSH`)는 Source 안에서 버린다(2026-11-12 결정, §3.5) |
 | `LIST` | `selectWithPage.do` | **`USER_ID`** | `CHG_CONTENT`, `CHG_DT`, `DISCHARGE_DT`, `HYUHAK_TERM_CNT`, `RCT_DT`, `RESCHOOL_YEAR_HAKGI`, `SMT_NM`, `SUD030_YEAR` | 4행. 학적 변동 내역. 화면 머리글: 년도, 학기, 변동내역, 변동일자, 복학예정 년도/학기, 휴학기수/통산, 입대일자, 제대일자 |
 
 **중간성적 조회 `AE011`** — 지금은 조회 기간이 아니라(`SELECT_TERM_CHK` 0행) 화면이 성적 목록 `LIST`를 부르지 않았다.
