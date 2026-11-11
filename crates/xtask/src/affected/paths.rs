@@ -16,6 +16,8 @@ pub enum Effect {
     Frontend,
     /// 그 crate(패키지 이름)와 역의존
     Crate(String),
+    /// 그 crate(패키지 이름)와 역의존 + 프런트엔드 작업
+    CrateAndFrontend(String),
 }
 
 /// 경로 표의 "바뀐 경로" 열.
@@ -39,6 +41,7 @@ enum Action {
     PresenterSamples,
     Frontend,
     Crate,
+    CrateAndFrontend,
 }
 
 /// build_ci §5.2 경로 표. 파일마다 위에서부터 처음 맞는 행을 쓴다.
@@ -66,6 +69,11 @@ const ROWS: &[(&[Pattern], Action)] = &[
         Action::PresenterSamples,
     ),
     (&[Pattern::Under("ui/")], Action::Frontend),
+    // 프런트엔드 테스트(ui/test/lib.test.js)가 창 설정을 읽는다
+    (
+        &[Pattern::Exact("crates/bin/app/tauri.conf.json")],
+        Action::CrateAndFrontend,
+    ),
     (&[Pattern::WorkspaceCrate], Action::Crate),
     (
         &[Pattern::Under("docs/"), Pattern::Under("design/")],
@@ -99,6 +107,11 @@ pub fn classify(path: &str, workspace: &Workspace) -> Effect {
                 Action::Crate => {
                     Effect::Crate(crate_name.expect("WorkspaceCrate 행만 Crate를 쓴다"))
                 }
+                Action::CrateAndFrontend => match workspace.owner_of(path) {
+                    Some(member) => Effect::CrateAndFrontend(member.name.clone()),
+                    // 그 crate가 워크스페이스에 없으면 다음 행으로 넘어간다
+                    None => continue,
+                },
             };
         }
     }
@@ -152,6 +165,29 @@ mod tests {
     fn ui는_프런트엔드_작업() {
         assert_eq!(c("ui/src/main.tsx"), Effect::Frontend);
         assert_eq!(c("ui/package.json"), Effect::Frontend);
+    }
+
+    #[test]
+    fn tauri_창_설정은_그_crate와_프런트엔드_작업() {
+        // 프런트엔드 테스트(ui/test/lib.test.js)가 창 설정을 읽는다
+        assert_eq!(
+            c("crates/bin/app/tauri.conf.json"),
+            Effect::CrateAndFrontend("app".into())
+        );
+        // 같은 crate의 다른 파일은 crate 행이다
+        assert_eq!(c("crates/bin/app/build.rs"), Effect::Crate("app".into()));
+        assert_eq!(
+            c("crates/bin/app/capabilities/default.json"),
+            Effect::Crate("app".into())
+        );
+    }
+
+    #[test]
+    fn 앱_crate가_없으면_tauri_창_설정은_전체() {
+        // 그 crate가 워크스페이스에 없으면 아래 행으로 넘어가 안전하게 전체를 돌린다
+        let mut ws = sample();
+        ws.members.retain(|m| m.name != "app");
+        assert_eq!(classify("crates/bin/app/tauri.conf.json", &ws), Effect::All);
     }
 
     #[test]

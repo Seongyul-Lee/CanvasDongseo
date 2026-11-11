@@ -101,6 +101,7 @@
 | `.github/**`(위 행 밖: PR·이슈 템플릿 등) | 빌드 없음 |
 | `design/samples/**` | `presenters/*` 전부(Presenter 테스트의 기대값, [presentation §2.1](../layers/03_presentation.md#21-프런트엔드-spa-내부-구조)). Presenter crate는 순수 로직이라 전부 돌려도 싸다. 샘플 모드의 입력이기도 하므로 프런트엔드 타입 검사와 `eslint-plugin-boundaries`도 돌린다([presentation §2.4](../layers/03_presentation.md#24-샘플-모드)) |
 | `ui/**` | 프런트엔드 작업(타입 검사, `eslint-plugin-boundaries`, 테스트, **배포용 빌드** `vite build`). PR에서는 Rust crate를 돌리지 않는다. develop 푸시에서는 `bin/app` 빌드도 돌린다(앱이 `ui/dist`를 번들에 넣으므로) |
+| `crates/bin/app/tauri.conf.json` | `bin/app`(아래 crate 행과 같다)과 프런트엔드 작업(위 `ui/**` 행과 같다). 프런트엔드 테스트가 창 설정을 읽어 화면 쪽 값(타이틀바 높이, `ui/src/lib/windowControlsOverlay.ts`)과 맞는지 확인하므로, 창 설정만 바뀐 PR에서도 테스트가 돌아야 한다 |
 | `crates/<crate>/**` | 그 crate |
 | `docs/**`, `design/**`(samples 밖) | 빌드 없음 |
 | 그 밖의 경로 | 전체(대응표에 없는 경로는 안전한 쪽으로 처리한다) |
