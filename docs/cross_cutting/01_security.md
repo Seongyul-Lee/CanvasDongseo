@@ -134,6 +134,19 @@ ffmpeg를 App Sandbox 권한(`com.apple.security.app-sandbox`, 파일 접근 권
 - Hardened Runtime(공증 조건)에서는 라이브러리 검증 때문에 Homebrew처럼 다른 서명의 dylib을 쓰는 빌드가 뜨지 않는다. 시스템 프레임워크에만 의존하는 **정적 빌드**는 뜬다.
 - 공증(notarization) 제출은 하지 않았다(§7).
 
+### 5.4 백그라운드로 옮겨진 `cdx` 호출과 hook (2026-11-12, Claude Code 2.1.322)
+
+`--settings`로 넣은 PreToolUse·PostToolUse hook(matcher `Bash`)이 받은 입력을 기록했다. 실행 조건은 [ai_adapters §6.1](../layers/05_ai_adapters.md)과 같다.
+
+| 조건 | 결과 |
+|---|---|
+| 제한 시간(4초로 낮춤)을 넘긴 `cdx wait 12` | 4초에 명령이 백그라운드로 옮겨지면서 PostToolUse가 한 번 불렸다. `tool_response`는 `stdout: ""`, `backgroundTaskId`, `timedOutAfterMs: 4000`이다. 12초에 명령이 끝났을 때는 hook이 불리지 않았다 |
+| AI가 `run_in_background: true`로 부른 `cdx wait 3` | 확인 없이 실행됐다. PostToolUse는 시작 직후 `stdout: ""`, `backgroundTaskId`로 한 번 불렸고, 끝났을 때는 불리지 않았다 |
+| 위 + PreToolUse hook이 `updatedInput`으로 `run_in_background`를 뺌 | 포그라운드로 실행됐고 PostToolUse가 `cdx`의 출력(`stdout`)을 받았다 |
+
+- 두 경우 모두 AI는 명령이 끝났다는 알림(종료 코드만)을 받고, 출력은 파일에 남는다. AI가 그 파일을 읽으면 `cdx` 출력이 `cdx` 호출의 PostToolUse를 거치지 않고 AI에 들어간다. Bash `cat`으로 읽으면 그 `cat` 호출의 PostToolUse(`Bash`)가 `cdx` 출력을 `stdout`으로 받았다. Read 도구로 읽는 경우는 시험하지 않았다(matcher가 `Bash`라 불리지 않는다고 본다, 추론).
+- `Peer` 데이터를 돌려주는 `cdx` 호출이 이 경로로 가면 §4.2의 "읽은 직후 경고"가 빠지거나 늦어진다. "위험 행동 직전 경고"는 코어가 가진 대화 상태로 판정하므로 그대로라고 본다(추론, 구현 전).
+
 ## 6. 수용한 위험
 
 | 위험 | 이유 |
@@ -154,5 +167,6 @@ ffmpeg를 App Sandbox 권한(`com.apple.security.app-sandbox`, 파일 접근 권
 - 사용자 설정(`~/.claude/settings.json`)의 `disableAllHooks`도 앱 `--settings`가 덮는지, 하위 에이전트(Task) 안의 도구 호출에도 hook이 적용되는지
 - 호출자 계보 확인(피어 PID → 부모 체인)의 macOS·Windows 구현 방법
 - 위험 도구 목록을 어떤 기준으로 고르는지(도구 이름 규칙, 사용자 MCP 분류)
+- 제한 시간을 넘기거나 AI가 `run_in_background`로 부른 `cdx` 호출은 출력이 그 호출의 PostToolUse hook을 거치지 않는다(§5.4). 막는 방법을 정한다. `cdx`가 제한 시간 안에 끝나게 하는 것([FS-03 F5](../specs/FS-03_school_account.md#f5-끊긴-연결-이어-가기)의 대기 상한)으로는 AI가 직접 백그라운드로 부르는 경우가 남는다. 후보는 둘이다. PreToolUse hook이 `cdx` 호출의 `run_in_background`와 `timeout`을 고친다(동작 확인함. Bash 호출마다 hook 프로세스가 하나 더 뜬다). 또는 `claude` 프로세스에 `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`을 준다(제한 시간을 넘긴 명령이 SIGTERM으로 끝나고 Bash 도구에서 `run_in_background` 매개변수가 없어진다. 둘 다 확인함. 그 대화에서 사용자가 쓰는 백그라운드 실행도 꺼진다)
 - ffmpeg 샌드박스 번들의 공증: 수용 기준은 공증을 통과한 `.pkg` 안의 번들이 §5.3 표를 그대로 재현하는 것
 - Windows ffmpeg 격리: 수용 기준은 AppContainer(또는 낮은 무결성 수준 + Job 객체)에서 §5.3 표와 같은 결과(정상 성공, 홈 파일·네트워크·쓰기 거부)
