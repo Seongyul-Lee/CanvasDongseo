@@ -67,7 +67,7 @@ pub struct Plan {
     pub crates: BTreeSet<String>,
     /// 프런트엔드 작업(타입 검사, eslint-plugin-boundaries)을 돌린다
     pub frontend: bool,
-    /// 프런트엔드 테스트와 배포용 빌드(`vite build`)도 돌린다(`ui/**` 대응)
+    /// 프런트엔드 테스트와 배포용 빌드(`vite build`)도 돌린다(`ui/**`, `tauri.conf.json` 대응)
     pub frontend_full: bool,
     /// 파일별 대응(출력용)
     pub files: Vec<(String, Effect)>,
@@ -119,6 +119,11 @@ pub fn plan(files: &[String], workspace: &Workspace, event: Event) -> Plan {
             }
             Effect::Crate(name) => {
                 seeds.insert(name.clone());
+            }
+            Effect::CrateAndFrontend(name) => {
+                seeds.insert(name.clone());
+                plan.frontend = true;
+                plan.frontend_full = true;
             }
         }
         plan.files.push((file.clone(), effect));
@@ -461,6 +466,32 @@ mod tests {
         assert!(push.frontend);
         assert_eq!(push.crates, set(&["app"]));
         assert!(push.changed.is_empty());
+    }
+
+    #[test]
+    fn tauri_창_설정은_pr에서도_앱과_프런트엔드를_함께_돌린다() {
+        // 프런트엔드 테스트가 창 설정을 읽으므로(타이틀바 높이) 창 설정만 바뀐 PR에서도 테스트가 돌아야 한다
+        let p = plan(
+            &files(&["crates/bin/app/tauri.conf.json"]),
+            &sample(),
+            Event::PullRequest,
+        );
+        assert!(!p.all);
+        assert_eq!(p.changed, set(&["app"]));
+        assert_eq!(p.crates, set(&["app"]));
+        assert!(p.frontend && p.frontend_full);
+        assert_eq!(
+            joined(frontend_commands(&p)),
+            [
+                "npm --prefix ui ci",
+                "npm --prefix ui run typecheck",
+                "npm --prefix ui run lint",
+                "npm --prefix ui run test",
+                "npm --prefix ui run build"
+            ]
+        );
+        assert_eq!(names(crates_for(&p, &sample(), Runner::Macos)), ["app"]);
+        assert!(crates_for(&p, &sample(), Runner::Linux).is_empty());
     }
 
     #[test]
