@@ -115,5 +115,38 @@ ui/
 ## 5. 미확인 항목
 
 - 한글 글꼴(무엇을 쓸지, 앱에 포함할지)
-- `components/ui/`를 복사만 해서 컴파일되는지(T3 Code 내부 import·상태 관리 의존). Foundation 2단계 전에 빈 Vite + React 프로젝트에 복사해 `tsc --noEmit`으로 확인한다
 - 샘플 모드 화면을 상태별로 캡처하는 도구. Tauri 창 자체의 캡처는 우선 직접 한다
+
+## 6. 확인한 항목
+
+### 6.1 `components/ui/`를 복사만 해서 컴파일되는지 (#20, 2026-11-11)
+
+기준 태그 `v0.1.8-nightly.20261109.4399`(커밋 `357fb754`)의 `apps/web/src/components/ui/` 52개 파일(테스트 4개 제외)을 빈 프로젝트에 복사해 `tsc --noEmit`으로 확인했다. `ui/tsconfig.json`과 같은 옵션(`strict`, `noUnused*`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`)에 `~/*` 별칭만 더했다. **복사만으로는 통과하지 않는다.**
+
+| 단계 | 더한 것 | 결과 |
+|---|---|---|
+| A | 복사만 | 거의 모든 파일 실패. 부품 41곳이 `~/lib/utils`의 `cn`을 쓴다 |
+| B | `lib/utils.ts`(`cn`만, 원본과 같은 tailwind-merge 설정) | `components/ui/` 밖 의존이 있는 14개 파일만 실패 |
+| C | 자체 완결 보조 모듈 4개 원본 복사: `lib/visibleAnimation`, `lib/observeResize`, `lib/color`, `hooks/useCommitOnBlur` | 아래 표의 파일만 실패. 우리 엄격 옵션 때문에 새로 생긴 오류는 없다 |
+
+C 뒤에도 실패하는 파일과 원인:
+
+| 파일 | 걸리는 의존 | 성격 |
+|---|---|---|
+| `tooltip.tsx`, `command.tsx` (+ `tooltip`을 쓰는 `panel-tab-close-button.tsx`) | `~/lib/windowControlsOverlay` → `~/env`(`isElectron`), `utils`의 `isMacPlatform`(`@t3tools/shared/keybindings`) | Electron 창 제어 영역. 기본 부품인데 걸린다 |
+| `toast.tsx`, `toast.logic.ts`, `toastHelpers.ts`, `anchoredCopyToast.ts` | `@t3tools/contracts`, `~/composerDraftStore`, `~/hooks/useThreadRouteTarget`, `~/hooks/useCopyToClipboard`, `~/components/MorphIcon`, `lucide` | 앱 상태·라우팅에 묶임 |
+| `sidebar.tsx` | `effect/Schema`, `~/hooks/useLocalStorage`·`useMediaQuery`·`useResizeDrag`, `~/lib/accessibilityAnnouncements`, `~/components/MorphIcon`, `lucide` | 기능 화면 성격(원래 복사 대상 아님) |
+| `calendar.tsx` | `@daypicker/react` | 외부 npm 의존 |
+| `qr-code.tsx` | `@t3tools/shared/qrCode` | T3 내부 패키지 |
+| `standalone-page.tsx`, `wizard.tsx` | `../T3Wordmark`(브랜드 자산), `../AnimatedHeight` | 브랜드·앱 컴포넌트 |
+
+나머지 약 40개 파일(button, input, dialog, menu, popover, select, checkbox, switch 등)은 B·C의 보조 파일만으로 통과한다.
+
+필요한 npm 의존(통과한 부품 기준): `@base-ui/react` 1.9.0, `lucide-react` 0.564.0, `class-variance-authority` 0.7.1, `tailwind-merge` 3.4.0, `react`·`react-dom` 19.3.0, `@types/react`·`@types/react-dom` 19.3.0. Tailwind는 v4(우리 4.3.3, 원본 workspace도 4.3.3). 이 중 `class-variance-authority`, `tailwind-merge`는 아직 `ui/package.json`에 없다.
+
+Foundation(#21)에 주는 결론:
+
+- 2단계 "그대로 복사"는 `components/ui/` 전체가 아니라 **통과하는 부품만** 고르는 방식으로 바꾼다. 위 표의 파일은 가져오지 않거나, 가져오면 `UPSTREAM.md`에 고친 이유를 적는다.
+- `components/ui/` 밖에서 가져와야 하는 파일이 생긴다: `lib/utils.ts`는 원본을 그대로 쓸 수 없어(`@t3tools/contracts`, `effect`, `composerDraftStore` 의존) `cn`만 둔 우리 파일로 둔다. 보조 모듈 4개는 원본 그대로 가져온다.
+- 원본 import를 고치지 않으려면 `~/*` 별칭을 `ui/tsconfig.json`과 `vite.config.ts`에 더해야 한다. 별칭이 폴더 의존 검사(`boundaries.config.js`)와 맞는지 함께 확인한다.
+- `tooltip`은 자주 쓰는 기본 부품이라 빼기 어렵다. `windowControlsOverlay`를 Tauri용으로 대신할지(원본 고침), 우리 tooltip을 따로 쓸지는 #21에서 정한다.
