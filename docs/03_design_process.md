@@ -40,7 +40,7 @@
 | 순서 | 할 일 | 산출물 |
 |---|---|---|
 | 1 | 기준 버전과 가져온 파일 목록을 기록한다. 가져온 파일에 브랜드 자산(T3 Code·다른 회사 로고)이 섞였는지 점검해 기록한다 | `ui/UPSTREAM.md`: 기준 버전·커밋, 가져온 파일마다 원본 경로, 고친 파일과 이유, 브랜드 자산 점검 결과 |
-| 2 | 그대로 가져올 것을 복사한다: `apps/web/src/index.css`, `apps/web/src/components/ui/`(Base UI 래퍼), lucide 아이콘 | `ui/src/theme/t3code.css`, `ui/src/components/ui/` |
+| 2 | 그대로 가져올 것을 복사한다: `apps/web/src/index.css`, `apps/web/src/components/ui/`(Base UI 래퍼) 중 T3 Code 내부(앱 상태, 내부 패키지, 브랜드 자산)에 묶이지 않은 부품, 그 부품이 부르는 보조 모듈, lucide 아이콘. 원본을 그대로 쓸 수 없는 보조 모듈은 필요한 부분만 다시 쓰고 `UPSTREAM.md`의 고친 파일에 적는다 | `ui/src/theme/t3code.css`, `ui/src/components/ui/`, `ui/src/lib/`, `ui/src/hooks/` |
 | 3 | 기본 테마 값만 쓴다. 실행 중에 색을 계산해 변수를 덮어쓰는 코드(`themePalette.ts`, `appearanceContrast.ts` 등)는 가져오지 않는다 | |
 | 4 | 한글 글꼴을 고르고 `--font-sans` 앞에 넣는다. 크기와 색은 그대로 둔다. 화면이 깨질 때만 줄 간격을 고친다 | `ui/src/theme/app.css`, 글꼴 파일과 라이선스 |
 | 5 | 문구, 용어, 한글 표기 규칙을 정한다. [UX Strategy §10](06_ux_strategy.md#10-문구-원칙)의 문구 원칙을 따른다 | `design/writing.md` |
@@ -108,8 +108,10 @@ design/
     <상태>.json        ViewModel 샘플 = Presenter 테스트 기대값 = ③ 샘플 모드 입력
 ui/
   UPSTREAM.md          T3 Code 기준 버전과 가져온 파일 기록
+  LICENSE-t3code       T3 Code의 라이선스 전문(MIT)
   src/theme/           t3code.css(가져온 원본), app.css(우리 것)
   src/components/ui/   T3 Code에서 가져온 기본 부품
+  src/lib/, src/hooks/ 가져온 부품이 부르는 보조 모듈
 ```
 
 ## 5. 미확인 항목
