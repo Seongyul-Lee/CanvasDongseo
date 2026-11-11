@@ -100,7 +100,7 @@ ui/src/
 |---|---|
 | 정화 | 학교 HTML은 Presenter(Rust)에서 허용 목록 방식으로 정화한 뒤 ViewModel에 넣는다. 스크립트, 이벤트 속성, `javascript:` 링크, iframe, form을 지운다 |
 | 렌더링 | 정화된 HTML은 스크립트가 없는 샌드박스 iframe(`sandbox` 속성, `allow-scripts` 없음)에 그린다 |
-| CSP | `script-src 'self'`(인라인 스크립트 금지), `connect-src`는 Tauri IPC만, 외부 이미지는 허용 목록 호스트만 |
+| CSP | `script-src 'self'`(인라인 스크립트 금지), `connect-src`는 Tauri IPC만, 외부 이미지는 허용 목록 호스트만. `data:` 이미지는 허용한다(`img-src 'self' data:`). 가져온 테마의 바탕 결 무늬가 `data:` URL이기 때문이다(`ui/UPSTREAM.md` §7) |
 | capabilities | WebView가 부를 수 있는 command를 Tauri capabilities로 제한한다 |
 | 확인 화면 | `UserConfirmation`의 내용은 코어가 만든 값만 그린다. 승인 command는 요청 ID·내용 해시를 함께 보낸다([application §4.4](02_application.md)) |
 | 링크 | 외부 링크는 OS 브라우저로 연다. 앱 WebView 안에서 이동하지 않는다 |

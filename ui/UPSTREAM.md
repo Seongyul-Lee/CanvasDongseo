@@ -89,7 +89,7 @@ T3 Code의 소스 파일에는 파일별 라이선스 문구가 없다. 저작�
 
 ## 7. 원본과 다르게 보이거나 동작하는 것
 
-- **바탕 결 무늬**: `--surface-grain`은 `data:` URL이다. 앱의 CSP(`default-src 'self'`)에서는 막혀서 무늬가 그려지지 않고 콘솔에 CSP 위반이 남는다(2026-11-11, 빌드 결과에 같은 CSP 헤더를 붙여 확인). CSP에 `img-src 'self' data:`를 더할지, `app.css`에서 무늬를 끌지는 정하지 않았다.
+- **바탕 결 무늬**: `--surface-grain`은 `data:` URL 이미지다. `default-src 'self'`만 있는 CSP에서는 막혀서 그려지지 않으므로, 앱의 CSP에 `img-src 'self' data:`를 더했다(2026-11-12 결정). 무늬가 있고 없고의 차이는 눈으로 거의 구분되지 않는다(배포 앱의 빈 바탕 기준 라이트 252 → 평균 250.8, 브라우저 다크 0 → 평균 3.3). 그래서 CSP가 `data:` 이미지를 막지 않는지 `test/theme.test.js`가 확인한다.
 - **빌드 경고**: Tailwind가 CSS를 줄일 때 `::highlight()` 경고 4개를 낸다. `t3code.css`의 인용 강조 규칙에서 나오고 우리는 그 규칙을 쓰지 않는다. 원본 그대로 두려고 고치지 않았다.
 - **React Compiler**: 원본의 린트 설정과 부품 주석(`tooltip.tsx`)은 React Compiler가 메모이제이션을 맡는다고 전제한다. 우리 빌드는 React Compiler를 쓰지 않는다. 다시 그리는 횟수가 다를 수 있다(측정하지 않았다).
 
