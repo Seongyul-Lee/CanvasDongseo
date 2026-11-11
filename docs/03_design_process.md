@@ -68,7 +68,7 @@
 
 ### 2.3 목업
 
-- 목업은 따로 그리지 않고 **SPA 샘플 모드**로 그린다. SPA의 command 래퍼를 샘플 구현으로 바꿔 끼우면, 코어 없이 `design/samples/<기능>/<상태>.json`을 받아 실제 컴포넌트로 화면을 그린다. Vite 개발 서버로 띄우므로 Rust·Tauri 빌드가 없고, 컴포넌트나 샘플을 저장하면 바로 반영된다. 구조는 [Presentation §2.4](layers/03_presentation.md#24-샘플-모드).
+- 목업은 따로 그리지 않고 **SPA 샘플 모드**로 그린다. SPA의 command 래퍼를 샘플 구현으로 바꿔 끼우면, 코어 없이 `design/samples/<기능>/<상태>.json`을 받아 실제 컴포넌트로 화면을 그린다. Vite 개발 서버로 띄우므로(`npm --prefix ui run dev:sample`) Rust·Tauri 빌드가 없고, 컴포넌트나 샘플을 저장하면 바로 반영된다. 구조와 상태를 고르는 방법은 [Presentation §2.4](layers/03_presentation.md#24-샘플-모드).
 - 샘플 데이터는 **ViewModel 모양의 JSON**이다. 목업이 곧 ViewModel 타입 초안이 되고, 화면이 조건 분기 없이 그려지는지 이 단계에서 확인한다(예: 배너는 `banner.kind`로 받는다).
 - **샘플 JSON은 Presenter 테스트의 기대값이다**(읽는 방법은 [Presentation §2.1](layers/03_presentation.md#21-프런트엔드-spa-내부-구조)). ③에서 샘플 모드가 이 파일을 그리고, ④에서 Presenter 테스트가 Presenter 출력과 같은 파일을 비교한다. ViewModel이 바뀌면 테스트가 실패하므로 목업과 앱이 어긋나지 않는다.
 - 화면 구조와 배치는 T3 Code의 해당 화면을 본뜬다([UX Strategy §7](06_ux_strategy.md#7-화면-구성)). 값을 직접 적지 않고 CSS 변수와 Tailwind 유틸리티만 쓴다.
@@ -106,6 +106,7 @@ design/
   samples/<기능>/
     README.md          ② 상태 목록
     <상태>.json        ViewModel 샘플 = Presenter 테스트 기대값 = ③ 샘플 모드 입력
+    <상태>.events.json (있을 때만) 그 상태에서 순서대로 흘려보낼 이벤트
 ui/
   UPSTREAM.md          T3 Code 기준 버전과 가져온 파일 기록
   LICENSE-t3code       T3 Code의 라이선스 전문(MIT)

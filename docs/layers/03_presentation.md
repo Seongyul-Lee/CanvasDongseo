@@ -72,7 +72,7 @@ ui/src/
 | `hooks` | 없음 | `lib`과 같다 |
 | `screens` | `components`, `stores`, `theme` | command 직접 호출, ViewModel 가공 |
 | `stores` | `commands`, `viewmodels` | 표시 판단, 값 계산, 파생 값(selector 계산) |
-| `commands` | `viewmodels`, Tauri API, 샘플 구현만 `design/samples/` | 상태 보관 |
+| `commands` | `viewmodels`, Tauri API, 샘플 구현(`commands/sample/`)만 `design/samples/`. 샘플 구현을 부르는 것은 `commands/core.ts` 하나다(§2.4) | 상태 보관 |
 
 - `lib/`와 `hooks/`는 T3 Code 부품이 `~/lib/utils`, `~/hooks/useCommitOnBlur`처럼 부르는 원본 경로를 그대로 둔 것이다. 가져온 부품을 고치지 않으려고 별칭 `~`(`ui/src`)를 `tsconfig.json`과 `vite.config.ts`에 둔다. 우리 코드는 상대 경로를 쓴다. 가져온 파일과 고친 파일은 `ui/UPSTREAM.md`에 있다.
 - 화면 상태에 따른 표시 판단(배너 종류, 버튼 활성 여부)은 ViewModel 필드로 받는다. 컴포넌트는 필드 값을 그대로 그린다(`banner.kind`에 맞는 변형을 고르는 것까지는 View의 일이다).
@@ -111,10 +111,13 @@ ui/src/
 
 | 항목 | 내용 |
 |---|---|
-| 구조 | `commands/`에 실제 구현(Tauri `invoke`, 코어 이벤트 구독)과 샘플 구현을 둔다. 둘은 같은 함수 모양이고, `stores`·`screens`는 어느 쪽이 붙었는지 모른다 |
-| 고르는 방법 | 실행할 때 환경 변수로 고른다. 샘플 모드는 Vite 개발 서버로만 띄운다 |
-| 배포 빌드와의 경계 | 샘플 구현과 `design/samples/`는 별도 엔트리(또는 샘플 모드에서만 실행되는 동적 import)로만 불러, 배포용 `vite build` 결과에 들어가지 않게 한다. 배포 빌드 결과에 샘플 JSON이 없는지 CI에서 확인한다 |
-| 샘플 구현 | `design/samples/<기능>/<상태>.json`을 command 응답으로 돌려준다. 상태는 화면에서 고를 수 있게 한다. 시간에 따라 바뀌는 것(AI 스트림, 작업 진행)은 이벤트를 순서대로 흘려보내 흉내 낸다 |
+| 구조 | 코어를 부르는 통로의 모양은 `commands/types.ts`의 `Core`(`invoke`, `listen`)다. 실제 구현(`commands/tauri.ts`: Tauri `invoke`, 코어 이벤트 구독)과 샘플 구현(`commands/sample/`)이 이 모양을 지킨다. 기능의 command 래퍼(`commands/<기능>.ts`)는 한 번만 쓰고 `commands/core.ts`의 `invoke`·`listen`을 부른다. 어느 구현을 붙일지는 `core.ts`만 고르므로 command 래퍼·`stores`·`screens`는 어느 쪽이 붙었는지 모른다 |
+| 고르는 방법 | 환경 변수 `VITE_SAMPLE_MODE=1`로 고른다. `npm --prefix ui run dev:sample`이 이 값을 넣어 Vite 개발 서버를 띄운다. 개발 서버(`import.meta.env.DEV`)에서만 켜지고, 배포 빌드에서는 값을 넣어도 켜지지 않는다 |
+| 배포 빌드와의 경계 | `core.ts`가 샘플 구현을 샘플 모드에서만 실행되는 동적 import로 부른다. 배포 빌드에서는 그 갈래가 지워져 샘플 구현과 `design/samples/`가 결과에 들어가지 않는다. 들어가면 Vite 플러그인(`ui/sample-guard.js`)이 `vite build`를 실패시키므로, 배포 빌드를 돌리는 CI와 배포가 모두 막힌다. 플러그인이 실제로 막는지는 `ui/test/sample-guard.test.js`가 확인한다 |
+| 샘플 구현 | 고른 상태의 `design/samples/<기능>/<상태>.json`을 command 응답으로 돌려준다. 어느 command가 어느 기능의 샘플을 받는지는 `commands/sample/responses.ts`의 표에 적고, 표에 없는 command는 실패한다 |
+| 상태 고르기 | 화면 오른쪽 아래 패널에서 기능마다 상태를 고른다. 고른 상태는 주소에 담기고(`?sample.<기능>=<상태>`) 화면을 새로 불러온다. 주소에 없으면 이름 순 첫 상태다. 패널은 샘플 구현이 React 화면 밖에 DOM으로 직접 그린다(`components`·`screens`가 샘플 모드를 모르게 하기 위해서다) |
+| 이벤트 | 시간에 따라 바뀌는 것(AI 스트림, 작업 진행)은 `<상태>.events.json`에 `[{ "afterMs": 300, "event": "<이벤트 이름>", "payload": {} }]` 모양으로 적는다. `afterMs`는 앞 이벤트 뒤에 기다릴 시간(ms)이다. 화면이 그 이벤트를 처음 구독할 때부터 순서대로 한 번 흘려보낸다 |
+| 파일을 고쳤을 때 | 샘플 파일을 고치거나 더하거나 지우면 화면을 통째로 새로 불러온다. 파일 모양이 틀리면 패널에 파일과 이유를 보여 준다 |
 | 한계 | 브라우저에서 보므로 WKWebView와 다를 수 있고, Tauri 전용 기능은 동작하지 않는다. 실제 앱 확인은 [Design Process ⑤](../03_design_process.md#24-실제-앱-확인) |
 
 ## 3. 대화 화면의 슬래시 커맨드
@@ -138,4 +141,3 @@ ui/src/
 ## 5. 미확인 항목
 
 - Rust → TypeScript 타입 생성 도구
-- 샘플 모드의 환경 변수 이름과 상태를 고르는 화면의 모양

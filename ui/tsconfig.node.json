@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["vite.config.ts", "eslint.config.js", "boundaries.config.js", "test/*.js"]
+  "include": ["vite.config.ts", "eslint.config.js", "boundaries.config.js", "sample-guard.js", "test/*.js"]
 }

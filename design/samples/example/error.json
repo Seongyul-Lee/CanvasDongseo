@@ -1,0 +1,11 @@
+{
+  "title": "자료 내려받기 (예시)",
+  "description": "샘플 모드에서는 코어 대신 design/samples/example/의 JSON이 응답으로 와요.",
+  "banner": {
+    "kind": "error",
+    "title": "자료 목록을 불러오지 못했어요",
+    "message": "인터넷 연결을 확인하고 다시 시도해 주세요."
+  },
+  "items": [],
+  "emptyMessage": null
+}
