@@ -48,15 +48,36 @@ OTP 화면 속성(`data-user_login`, `data-result`)이 없다고 모두 "비밀�
 
 | 응답 화면 | 판정 | 앱 동작 |
 |---|---|---|
-| OTP 입력 화면 (`data-user_login`, `data-result`) | `OtpRequired` | OTP 6자리를 받아 단계 3으로 |
-| OTP 등록 화면 (QR·설정 키) | `OtpNotRegistered` | 앱 안에서 등록하지 않는다. 학교 매뉴얼 링크와 함께 브라우저에서 한 번 등록하도록 안내하고, 등록 후 다시 로그인하게 한다 |
+| OTP 입력 화면: `…/js/Google2FA/Authentication/authentication.app.js`를 불러온다 | `OtpRequired` | `#root`의 `data-user_login`, `data-result`를 읽고 OTP 6자리를 받아 단계 3으로 |
+| OTP 등록 화면: `…/js/Google2FA/Registration/registration.app.js`를 불러온다 | `OtpNotRegistered` | 앱 안에서 등록하지 않는다. 학교 매뉴얼 링크와 함께 브라우저에서 한 번 등록하도록 안내하고, 등록 후 다시 로그인하게 한다 |
 | 2차 인증 없이 Canvas 세션이 생김 (`pseudonym_credentials` 발급, 단계 4~6에 해당하는 화면) | `NoSecondFactor` | 단계 3을 건너뛰고 이어서 진행한다 (존재 여부 미확인, 대비만 한다) |
 | SSO 로그인 화면으로 다시 옴 + 오류 문구 | `PasswordRejected` | 학번·비밀번호 확인 안내 |
 | 그 밖의 화면 | `SourceChanged("password_submit")` | 비밀번호 거부로 단정하지 않는다 |
 
+- **두 화면의 스크립트는 `#root`의 `data-user_login`과 `data-result`를 똑같이 읽는다.** 등록 화면에도 이 속성이 있다는 뜻이므로, 두 속성이 있다는 것만으로 OTP 입력 화면이라고 판정하면 OTP 미등록 학생에게 OTP를 물어보게 된다. 어느 화면인지는 불러오는 스크립트로 가른다(아래 §2.2). 인증 화면이 실제로 그 스크립트를 불러오는지는 다음 로그인 실측 때 화면 HTML로 확인한다.
 - 앱이 OTP 등록을 대신하지 않는 이유: 등록 화면의 설정 키는 OTP를 만들어 낼 수 있는 비밀이다. 앱이 다루면 2차 인증의 목적(본인 기기 인증, 대리출석 방지)을 해친다.
 - 공인인증서만 쓰는 학생은 지원하지 않는다. 인증서 서명은 KICA 앱·PC 모듈이 필요하다. 이 학생들에게는 OTP 등록을 안내한다(앱 설계에서 확정).
-- 등록 화면과 "2차 인증 없음" 응답의 실제 HTML은 확인하지 못했다. OTP를 등록하지 않은 계정으로 단계 2 응답을 한 번 기록해야 판정 조건을 확정할 수 있다(아래 미확인 항목).
+- 등록 화면의 판정 조건은 화면 스크립트를 읽어 정했다(§2.2). OTP를 등록하지 않은 계정으로 단계 2의 실제 응답(주소, HTML)을 받아 보지는 못했다(아래 미확인 항목).
+
+### 2.2 OTP 등록 화면과 인증 화면의 동작 (2026-11-12, 화면 스크립트 분석)
+
+LearningX가 공개로 내려 주는 화면 스크립트를 읽어 확인했다. 번들 목록은 `/learningx/mix-manifest.json`에 있고, 두 화면의 번들이 따로 있다. 스크립트를 실행하거나 OTP 미등록 계정으로 로그인해 보지는 않았다. 서버가 어느 화면을 내려 주는지는 서버의 판단이라 스크립트로는 알 수 없다.
+
+| 항목 | OTP 인증 화면 (등록한 계정) | OTP 등록 화면 (등록하지 않은 계정) |
+|---|---|---|
+| 번들 | `/learningx/js/Google2FA/Authentication/authentication.app.js` | `/learningx/js/Google2FA/Registration/registration.app.js` |
+| `#root`에서 읽는 속성 | `data-user_login`, `data-user_email`, `data-result`, `data-catalog_url`, `data-from`, `data-goback` | `data-user_login`, `data-user_email`, `data-result`, `data-catalog_url`, `data-from`, `data-re` |
+| 첫 화면 | OTP 6자리 입력("2단계 인증") | "2단계 인증을 위해서는 Google OTP 등록이 필요합니다."와 `Google OTP 등록` 단추 |
+| 화면이 열릴 때 부르는 것 | `GET …/google2fa/guide`(안내문) | `POST …/google2fa/register`(`user_login`) → `QR_Image`, `secret_key`. 이어서 `GET …/google2fa/guide` |
+
+경로는 모두 `/learningx/api/v1` 아래다.
+
+- **OTP 미등록 계정은 바로 로그인되지 않는다.** 두 화면 모두 세션을 만드는 다음 단계(`/learningx/google2fa/login/callback?result=…`, §2의 단계 4)로 넘어가는 곳이 두 군데뿐이다. `POST …/google2fa/authenticate`가 204를 줄 때와 `POST …/google2fa/mail/verify`가 204를 줄 때다. 2차 인증을 건너뛰고 넘어가는 경로는 스크립트에 없다.
+- **등록 화면의 순서**: QR 코드나 설정 키를 OTP 앱에 등록 → `등록 완료하기`(`POST …/google2fa/register_complete`, `user_login`·`secret_key`) → 같은 화면에서 OTP 6자리 입력(`POST …/google2fa/authenticate`) → 단계 4. 등록만 하고 끝나지 않고 그 자리에서 인증까지 해야 로그인된다.
+- **메일 인증이 있다.** 두 화면 모두 "스마트폰이 없는 경우에는 임시로 메일 인증을 통해 로그인할 수 있습니다."라며 메일로 일회성 인증키를 보내고(`POST …/google2fa/mail/send`, `user_login`·`user_email`) 확인한다(`POST …/google2fa/mail/verify`, `user_login`·`auth_key`). 204면 단계 4로 간다. 실패는 OTP와 같이 401(틀림)·403(잠김)이고 `remained_time`, `retry_limit`, `current_fail_count`를 준다.
+- **OTP 재등록**: 인증 화면에서 메일 인증키로 `POST …/google2fa/mail/verify/rereg`가 204를 주면 등록 정보가 지워지고 `/learningx/login?result=…&re=true`로 간다. `data-re`가 있는 등록 화면은 안내 화면을 건너뛰고 등록 단계부터 시작한다.
+- 안내문(`GET …/google2fa/guide`)의 제목은 "대리출석 방지를 위한 2단계 인증 의무화 안내"이고, "OTP 등록하기 (처음 1회)" 뒤에 "로그인 시 2단계 인증 이용하기"로 적는다.
+- 앱은 `…/google2fa/register`를 부르지 않는다. 부르면 설정 키가 만들어진다(등록을 대신하지 않는 이유는 §2.1).
 
 ## 3. 세션 갱신 (OTP 없이)
 
@@ -103,5 +124,8 @@ OTP 화면 속성(`data-user_login`, `data-result`)이 없다고 모두 "비밀�
 
 - 첫 OTP 로그인 뒤 14일이 지나도 갱신이 계속되는지(서버 쪽 절대 기한)
 - 방학처럼 활성 과목이 없을 때 LTI 갱신이 되는지(지난 학기 과목으로 되는지)
-- OTP 미등록 계정의 1차 로그인 응답(등록 화면) HTML과, 2차 인증 없이 로그인되는 학생 계정이 있는지(§2.1). OTP를 등록하지 않은 계정으로 한 번 기록해야 한다
+- OTP 미등록 계정이 단계 2에서 받는 실제 응답(주소, HTML). 판정 조건은 화면 스크립트로 정했고(§2.2), 실제 계정으로 받아 보지는 못했다. 등록 화면이 인증 화면과 같은 주소(`/learningx/google2fa/callback`)로 오는지도 모른다
+- 2차 인증 없이 로그인되는 학생 계정이 있는지. 화면 스크립트에는 그런 경로가 없다(§2.2). 서버가 예외 계정에 다른 화면을 주는지는 확인하지 못했다
+- 공인인증서만 쓰는 학생이 학번·비밀번호로 로그인했을 때 OTP 등록 화면이 나오는지. 그런 계정을 확보하지 못했다
+- 메일 인증(§2.2)을 앱이 지원할지. 학교가 스마트폰이 없는 학생에게 주는 임시 수단이고, 지금 앱은 OTP 입력만 받는다
 - 학교 관리자에게 Developer Key를 받을 수 있는지(README D2)
