@@ -33,7 +33,15 @@ export function boundariesConfig({ repoRoot, uiDir }) {
         { type: "samples", pattern: "design/samples/**", partialMatch: false },
       ],
       // 엔트리(main.tsx)는 폴더가 아니라 파일 하나라서 파일 분류로 둔다
-      "boundaries/files": [{ pattern: ui("main.tsx"), category: "entry" }],
+      "boundaries/files": [
+        { pattern: ui("main.tsx"), category: "entry" },
+        // 샘플 모드 예시 화면의 엔트리. 첫 기능이 들어오면 예시와 함께 지운다(design/samples/example/README.md)
+        { pattern: ui("example.tsx"), category: "entry" },
+        // 실제 구현과 샘플 구현 중 하나를 고르는 파일(presentation §2.4)
+        { pattern: ui("commands/core.ts"), category: "sample-switch" },
+        // 통로의 모양. 샘플 구현이 commands/에서 부를 수 있는 유일한 파일이다
+        { pattern: ui("commands/types.ts"), category: "core-contract" },
+      ],
       "import/resolver": {
         typescript: { project: `${uiDir}/tsconfig.json` },
       },
@@ -62,10 +70,19 @@ export function boundariesConfig({ repoRoot, uiDir }) {
             { from: { element: { type: "screens" } }, allow: to(["screens", "components", "stores", "theme"]) },
             { from: { element: { type: "stores" } }, allow: to(["stores", "commands", "viewmodels"]) },
             { from: { element: { type: "commands" } }, allow: to(["commands", "viewmodels"]) },
+            // 샘플 구현은 commands/core.ts만 부른다. 샘플 모드에서만 실행되는 동적 import여야 하고,
+            // 배포 빌드에 들어가면 sample-guard.js가 빌드를 실패시킨다
+            { from: { file: { categories: "sample-switch" } }, allow: to("commands-sample") },
             // ui/ 밖 참조는 샘플 구현이 design/samples/를 읽는 경우 하나뿐이다
             {
               from: { element: { type: "commands-sample" } },
-              allow: to(["commands-sample", "commands", "viewmodels", "samples"]),
+              allow: to(["commands-sample", "viewmodels", "samples"]),
+            },
+            // 샘플 구현이 commands/에서 부를 수 있는 것은 통로의 모양(types.ts)뿐이다.
+            // core.ts나 command 래퍼를 부르면 core.ts → 샘플 구현 → core.ts로 순환이 된다
+            {
+              from: { element: { type: "commands-sample" } },
+              allow: { to: { file: { categories: "core-contract" } } },
             },
             // 외부 패키지는 허용하되, Tauri API는 commands/의 실제 구현만 쓴다
             { allow: { to: { module: { origin: "external" } } } },

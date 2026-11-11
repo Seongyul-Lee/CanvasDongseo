@@ -1,0 +1,11 @@
+{
+  "title": "자료 내려받기 (예시)",
+  "description": "샘플 모드에서는 코어 대신 design/samples/example/의 JSON이 응답으로 와요.",
+  "banner": {
+    "kind": "info",
+    "title": "새 자료가 없어요",
+    "message": "교수님이 자료를 올리면 여기에 보여요."
+  },
+  "items": [],
+  "emptyMessage": "이번 주에 올라온 자료가 없어요."
+}

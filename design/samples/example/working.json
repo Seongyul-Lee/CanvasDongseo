@@ -1,0 +1,26 @@
+{
+  "title": "자료 내려받기 (예시)",
+  "description": "이 상태는 working.events.json의 이벤트를 순서대로 흘려보내요.",
+  "banner": null,
+  "items": [
+    {
+      "id": "os-week10",
+      "name": "운영체제 10주차 강의 자료.pdf",
+      "detail": "운영체제 · 2.4MB",
+      "badge": { "kind": "success", "label": "받음" }
+    },
+    {
+      "id": "db-week10",
+      "name": "데이터베이스 10주차 실습.zip",
+      "detail": "데이터베이스 · 18MB",
+      "badge": { "kind": "info", "label": "받는 중" }
+    },
+    {
+      "id": "net-week9",
+      "name": "컴퓨터네트워크 9주차 녹화 강의.mp4",
+      "detail": "컴퓨터네트워크 · 412MB",
+      "badge": { "kind": "warning", "label": "기다리는 중" }
+    }
+  ],
+  "emptyMessage": null
+}

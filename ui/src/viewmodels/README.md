@@ -6,3 +6,5 @@
 - 생성 도구(`ts-rs`·`specta` 등)는 아직 정하지 않았다([presentation §5](../../../docs/layers/03_presentation.md#5-미확인-항목)). 정해지면 생성 명령을 여기에 적는다.
 - CI는 `presenters/*`가 바뀌면 타입을 다시 생성해 이 폴더와 차이가 없는지 확인한다([build_ci §5.2](../../../docs/cross_cutting/03_build_ci.md#52-영향-범위-계산-cargo-xtask-affected)).
 - 이 폴더는 다른 `ui/src` 폴더에 의존하지 않는다(`eslint-plugin-boundaries`로 검사한다).
+
+**임시 예외**: `example.ts`는 샘플 모드 예시의 타입이다. 생성 도구를 정하기 전이라 손으로 썼다. 첫 기능이 들어오면 예시와 함께 지운다([design/samples/example/README.md](../../../design/samples/example/README.md)).

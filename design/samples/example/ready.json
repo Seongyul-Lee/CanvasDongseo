@@ -1,0 +1,26 @@
+{
+  "title": "자료 내려받기 (예시)",
+  "description": "샘플 모드에서는 코어 대신 design/samples/example/의 JSON이 응답으로 와요.",
+  "banner": null,
+  "items": [
+    {
+      "id": "os-week10",
+      "name": "운영체제 10주차 강의 자료.pdf",
+      "detail": "운영체제 · 2.4MB",
+      "badge": { "kind": "success", "label": "받음" }
+    },
+    {
+      "id": "db-week10",
+      "name": "데이터베이스 10주차 실습.zip",
+      "detail": "데이터베이스 · 18MB",
+      "badge": { "kind": "outline", "label": "받지 않음" }
+    },
+    {
+      "id": "net-week9",
+      "name": "컴퓨터네트워크 9주차 녹화 강의.mp4",
+      "detail": "컴퓨터네트워크 · 412MB",
+      "badge": { "kind": "outline", "label": "받지 않음" }
+    }
+  ],
+  "emptyMessage": null
+}

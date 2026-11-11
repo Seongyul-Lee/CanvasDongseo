@@ -1,0 +1,7 @@
+[
+  { "afterMs": 300, "event": "example://progress", "payload": { "label": "자료 3개 중 1개를 받았어요", "percent": 33 } },
+  { "afterMs": 900, "event": "example://progress", "payload": { "label": "데이터베이스 10주차 실습.zip을 받는 중이에요", "percent": 48 } },
+  { "afterMs": 900, "event": "example://progress", "payload": { "label": "자료 3개 중 2개를 받았어요", "percent": 66 } },
+  { "afterMs": 900, "event": "example://progress", "payload": { "label": "컴퓨터네트워크 9주차 녹화 강의.mp4를 받는 중이에요", "percent": 84 } },
+  { "afterMs": 1200, "event": "example://progress", "payload": { "label": "자료 3개를 모두 받았어요", "percent": 100 } }
+]
