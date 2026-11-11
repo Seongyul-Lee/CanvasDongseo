@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | 2026-10-26 Claude Code 2.1.310·codex-cli 0.160.0 로그인 실측, 2026-11-08 Claude Code 2.1.319 실측(§6) |
+| 근거 | 2026-10-26 Claude Code 2.1.310·codex-cli 0.160.0 로그인 실측, 2026-11-08 Claude Code 2.1.319 실측(§6), 2026-11-12 Claude Code 2.1.322 도구 호출 제한 시간 실측(§6.1) |
 
 > **이 문서의 역할**: AI 포트(`AiInstallation`·`AiAccount`·`AiSession`, [application §4.2](02_application.md))의 제공자별 구현을 정한다. MVP는 Claude Code다.
 
@@ -53,6 +53,7 @@
 - 격리 모드는 **제공자 CLI의 옵션**에 기댄다(코어가 강제하는 경계가 아니다). 격리 모드에서 쓰기를 거부하는 것은 코어가 강제한다([entrypoints §4](04_entrypoints.md)).
 - `ToolGuide` 주입: `--append-system-prompt`.
 - 모델 선택(`/model`)은 `session_spec`의 모델 값으로 `--model`에 넘긴다.
+- **도구 호출 제한 시간**: Claude Code는 Bash 호출이 제한 시간(기본 120초)을 넘기면 명령을 끝내지 않고 백그라운드로 옮긴다(§6.1). AI는 `cdx` 결과 대신 옮겼다는 안내를 받고, 나중에 나온 출력은 그 호출의 PostToolUse hook에 오지 않는다([security §5.4](../cross_cutting/01_security.md)). 그래서 `cdx` 요청은 제한 시간 안에 끝나야 한다. 앱은 `--settings`의 `env`에 `BASH_DEFAULT_TIMEOUT_MS=300000`을 넣어 제한 시간을 300초로 늘리고(§5, 대화·격리 모드 모두), 사용자 입력을 기다리는 유스케이스는 요청을 받은 때부터 240초까지만 기다린다([FS-03 F5](../specs/FS-03_school_account.md#f5-끊긴-연결-이어-가기)). 이 값은 그 프로세스의 모든 Bash 호출에 적용되고, 프로젝트 설정에 같은 변수가 있어도 앱의 값이 쓰인다.
 
 ## 4. 슬래시 커맨드 전달
 
@@ -67,6 +68,7 @@
 ```json
 {
   "disableAllHooks": false,
+  "env": { "BASH_DEFAULT_TIMEOUT_MS": "300000" },
   "hooks": {
     "PostToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "cdx hook post --provider claude" }] }],
     "PreToolUse":  [{ "matcher": "<위험 도구 패턴>", "hooks": [{ "type": "command", "command": "cdx hook pre --provider claude" }] }]
@@ -75,6 +77,7 @@
 ```
 
 - `disableAllHooks: false`를 항상 넣는다. 프로젝트 설정의 `disableAllHooks: true`를 덮는다(§6).
+- `env`의 `BASH_DEFAULT_TIMEOUT_MS`는 Bash 도구 호출 제한 시간을 300초로 늘린다(§3). `--settings`의 `env`는 프로세스 환경 변수와 프로젝트 설정의 `env`보다 우선한다(§6.1).
 - `cdx hook`은 Claude hook JSON(stdin)을 코어의 중립 판정으로 바꾸고, 판정을 Claude 형식으로 돌려준다.
   - `warn(context)` → PostToolUse `additionalContext`
   - `deny_once(reason)` → PreToolUse `permissionDecision: "deny"` + `permissionDecisionReason`
@@ -113,6 +116,32 @@
 
 **hook과 컨텍스트 주입**: 결과는 [security §5.1](../cross_cutting/01_security.md)에 둔다.
 
+### 6.1 Bash 도구 호출 제한 시간 (2026-11-12, Claude Code 2.1.322, macOS)
+
+모델은 Sonnet 5.5다. 시작·끝·받은 신호를 기록하는 가짜 `cdx wait <초>`로 시험했다. 옵션은 `--setting-sources "" --strict-mcp-config --tools Bash --allowedTools "Bash(cdx *)" --permission-mode dontAsk`이고, 조건에 적은 것만 바꿨다. 제한 시간을 넘겼을 때의 동작은 기다리는 시간을 줄이려고 제한 시간을 몇 초로 낮춰 시험했다.
+
+| 조건 | 호출 | 결과 |
+|---|---|---|
+| 기본 | `cdx wait 130` | 120.3초에 도구 결과로 "Command did not complete within its 120s timeout and was moved to the background"가 왔다. `cdx`는 신호를 받지 않고 130초에 끝났다 |
+| 프로세스 환경 변수 `BASH_DEFAULT_TIMEOUT_MS=300000` | `cdx wait 130` | 130초에 `cdx` 출력이 도구 결과로 왔다 |
+| AI가 `timeout: 600000`을 지정 | `cdx wait 130` | 130초에 `cdx` 출력이 도구 결과로 왔다 |
+| 기본 20초, AI가 `timeout: 4000`을 지정 | `cdx wait 10` | 4초에 백그라운드로 옮겨졌다. AI가 준 더 짧은 값이 쓰인다 |
+| 기본 4초·`BASH_MAX_TIMEOUT_MS=8000`, AI가 `timeout: 30000`을 지정 | `cdx wait 20` | 오류 없이 8초로 깎여, 8초에 옮겨졌다 |
+| `BASH_DEFAULT_TIMEOUT_MS=20000`·`BASH_MAX_TIMEOUT_MS=4000` | `cdx wait 10` | 10초에 출력이 왔다. 최댓값은 AI가 지정한 값만 깎고 기본값은 깎지 않는다 |
+| `--settings`의 `env`로 4초 | `cdx wait 15` | 4초에 옮겨졌다 |
+| 프로세스 환경 변수 4초 + `--settings`의 `env` 20초 | `cdx wait 10` | 10초에 출력이 왔다. `--settings`의 `env`가 우선한다 |
+| 프로젝트 설정의 `env` 4초(`--setting-sources project`) | `cdx wait 10` | 4초에 옮겨졌다 |
+| 위 + `--settings`의 `env` 20초 | `cdx wait 10` | 10초에 출력이 왔다. `--settings`가 프로젝트 설정보다 우선한다 |
+| 기본 4초, PreToolUse hook이 `updatedInput`으로 `timeout: 20000`을 넣음 | `cdx wait 10` | 10초에 출력이 왔다. `permissionDecision`을 함께 주지 않아도 적용됐다 |
+| 기본 4초 | `cdx wait 700` | 4초에 옮겨졌고, 그로부터 600초 뒤(604초)에 `cdx`가 SIGTERM을 받았다. AI는 "stopped after reaching its background time limit" 알림을 받았다 |
+| 기본 4초 + `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` | `cdx wait 15` | 옮겨지지 않았다. 4초에 `cdx`가 SIGTERM을 받았고 도구 결과는 오류 "Exit code 143 / Command timed out after 4s"다. 이 설정에서는 Bash 도구에 `run_in_background` 매개변수가 없다(AI가 없다고 답하고 포그라운드로 실행했다) |
+| AI가 `run_in_background: true`를 지정 | `cdx wait 3` | `Bash(cdx *)` 허용에 포함돼 거부 없이 실행됐다. 도구 결과는 바로 "Command running in background"다 |
+
+- 도구 설명에는 "`timeout` is in milliseconds: default 120000, max 600000 for a foreground command"로 적혀 있다. `BASH_DEFAULT_TIMEOUT_MS=300000`·`BASH_MAX_TIMEOUT_MS=900000`을 주면 이 문장이 "default 300000, max 900000"으로 바뀐다. 백그라운드 실행의 한도는 "default 600000, max 7200000"이다.
+- 백그라운드로 옮겨진 명령이 끝나면 stream-json 출력에 `system`/`task_notification` 이벤트(`task_id`, `tool_use_id`, `status`, `output_file`)가 나오고, AI는 종료 코드만 담긴 알림으로 새 턴을 시작한다. `-p` 실행은 그 턴이 끝난 뒤에 종료한다. 명령의 출력은 알림에 없고 출력 파일에만 있다.
+- 같은 옵션에서 AI가 그 출력 파일을 `cat`으로 읽는 것은 거부 없이 실행됐다. 따로 확인하니 작업 폴더 안의 파일은 `cat`으로 읽혔고, 작업 폴더 밖의 파일(`cat`, `head`, `ls`)은 모두 거부됐다. 11-08에는 쓰기가 들어간 명령만 시험했다.
+- 한정: 최댓값 600초는 도구 설명으로 확인했고 600초를 실제로 기다려 보지는 않았다. 사용자 설정(`~/.claude/settings.json`)과 관리형 설정의 `env`는 시험하지 않았다(§8). 사용자 환경을 그대로 쓰는 대화 모드와 `--input-format stream-json`으로 오래 띄운 프로세스에서는 시험하지 않았다.
+
 ## 7. 추가 제공자 메모
 
 - Codex: `codex app-server`(한 줄 JSON). 로그인은 `account/login/start`가 주는 `authUrl`을 앱이 연다. 포트 1455 충돌 때 기기 코드 방식. 지시 주입·도구 제한 방법은 착수 때 확인한다.
@@ -123,3 +152,7 @@
 - 사용 한도에 걸렸을 때 CLI가 풀리는 시각을 주는지와 그 형식
 - 대화 모드에서 권한 확인 요청을 stream-json으로 중계하는 메시지 형식(`--permission-prompts host`, CLI 제어 메시지로 예상)
 - `/clear`·`/compact`를 stream-json 입력으로 보냈을 때의 정확한 동작
+- 사용자 설정(`~/.claude/settings.json`)이나 관리형 설정에 `BASH_DEFAULT_TIMEOUT_MS`가 있을 때도 앱 `--settings`의 값이 쓰이는지(프로젝트 설정보다 우선하는 것만 확인했다, §6.1)
+- AI가 `cdx` 호출에 더 짧은 `timeout`을 주거나 `run_in_background`로 부르면 §3의 전제가 깨진다. PreToolUse hook이 `cdx` 호출의 두 값을 고치게 할지, `ToolGuide`의 안내로 둘지([security §7](../cross_cutting/01_security.md#7-미확인-항목))
+- 제한 시간을 넘겨 백그라운드로 옮겨진 `cdx` 호출을 어댑터가 어떻게 다룰지(`task_notification` 이벤트를 화면에 알릴지, 뒤늦은 결과를 대화에 어떻게 보일지)
+- 격리 모드에서도 작업 폴더 안의 파일은 읽기 전용 명령으로 읽힌다(§6.1). `session_spec`의 작업 폴더를 격리 모드에서 빈 폴더로 둘지
