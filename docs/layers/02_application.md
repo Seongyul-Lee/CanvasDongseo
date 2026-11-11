@@ -138,7 +138,7 @@ crate: `ports/learning`(아래 표 전부)
 | `SourceChanged` | 학교 쪽 형식이 바뀌었다(실패 단계 이름만) |
 | `Temporary` | 네트워크·요청 제한. 다시 시도할 수 있다 |
 | `Rejected` | 사용자나 학교 서버, 정책이 요청을 거부했다. 사유를 열거형으로 준다: `UserDeclined`(사용자가 확인 창에서 거부), `PolicyDenied`(격리 모드 쓰기 등 앱 정책), `LimitExceeded`(학습 작업의 상한, [learning_adapters §3.4](06_learning_adapters.md#34-상한-security-r4)), `PasswordIncorrect`(학번·비밀번호 거부), `OtpNotRegistered`(OTP 미등록), `OtpIncorrect`(남은 시도 횟수를 알면 함께), `OtpLocked`(풀리는 시각을 알면 함께). 화면은 사유만 보고 안내를 고른다 |
-| `AiUnavailable` | AI를 쓸 수 없다. 사유를 열거형으로 준다: `NotInstalled`, `LoggedOut`, `PlanNotSupported`(Claude Code를 쓸 수 없는 플랜, 예: Free), `UsageLimit`(풀리는 시각을 알면 함께). 화면은 사유만 보고 안내를 고른다 |
+| `AiUnavailable` | AI를 쓸 수 없다. 사유를 열거형으로 준다: `NotInstalled`, `LoggedOut`, `PlanNotSupported`(Claude Code를 쓸 수 없는 계정. Free 계정은 로그인 단계에서 막혀 여기에 오지 않는다. 판정 입력은 [FS-02 F4](../specs/FS-02_ai_connection.md#f4-플랜-판정-s1-2)), `UsageLimit`(풀리는 시각을 알면 함께). 화면은 사유만 보고 안내를 고른다 |
 | `ComponentMissing` | 학습 부품(ffmpeg, 전사 모델, OCR 언어 등)이 없거나 해시·서명 확인에 실패했다. 어떤 부품인지와 **복구 방법**(`Installer`: 설치 프로그램 다시 실행, `OsSettings`: OS 설정에서 설치)을 열거형으로 함께 준다. 화면은 복구 방법만 보고 안내를 고른다 |
 
 - data_access의 공통 오류([data_access §2.4](data_access/README.md))는 출력 포트 구현이 위 오류로 바꾼다.
