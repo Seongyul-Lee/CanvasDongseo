@@ -22,6 +22,9 @@ export function boundariesConfig({ repoRoot, uiDir }) {
         { type: "theme", pattern: ui("theme/**"), partialMatch: false },
         { type: "viewmodels", pattern: ui("viewmodels/**"), partialMatch: false },
         { type: "components", pattern: ui("components/**"), partialMatch: false },
+        // 가져온 부품이 쓰는 화면 보조 모듈(presentation §2.1). 원본 경로(~/lib, ~/hooks)를 그대로 둔다
+        { type: "lib", pattern: ui("lib/**"), partialMatch: false },
+        { type: "hooks", pattern: ui("hooks/**"), partialMatch: false },
         { type: "screens", pattern: ui("screens/**"), partialMatch: false },
         { type: "stores", pattern: ui("stores/**"), partialMatch: false },
         // 샘플 구현(presentation §2.4). commands보다 먼저 둬야 이 타입으로 분류된다
@@ -50,7 +53,12 @@ export function boundariesConfig({ repoRoot, uiDir }) {
             { from: { file: { categories: "entry" } }, allow: to(["screens", "theme"]) },
             { from: { element: { type: "theme" } }, allow: to("theme") },
             { from: { element: { type: "viewmodels" } }, allow: to("viewmodels") },
-            { from: { element: { type: "components" } }, allow: to(["components", "theme", "viewmodels"]) },
+            {
+              from: { element: { type: "components" } },
+              allow: to(["components", "lib", "hooks", "theme", "viewmodels"]),
+            },
+            { from: { element: { type: "lib" } }, allow: to("lib") },
+            { from: { element: { type: "hooks" } }, allow: to("hooks") },
             { from: { element: { type: "screens" } }, allow: to(["screens", "components", "stores", "theme"]) },
             { from: { element: { type: "stores" } }, allow: to(["stores", "commands", "viewmodels"]) },
             { from: { element: { type: "commands" } }, allow: to(["commands", "viewmodels"]) },

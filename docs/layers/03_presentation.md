@@ -55,6 +55,8 @@ ui/src/
   theme/       CSS 변수 원본. t3code.css(T3 Code에서 가져옴, 고치지 않음), app.css(우리 것)
   components/  재사용 UI. props는 ViewModel 조각이다
     ui/        T3 Code에서 가져온 기본 부품(Base UI 래퍼). 고치지 않는다
+  lib/         가져온 부품이 부르는 화면 보조 모듈(클래스 합치기, 크기 관찰, 타이틀바 높이 등)
+  hooks/       가져온 부품이 부르는 화면 보조 훅
   screens/     컴포넌트 조립과 store 연결만 한다
   stores/      ViewModel 보관. 값을 새로 만들지 않는다
   viewmodels/  Rust에서 생성한 ViewModel·이벤트 타입. 손으로 고치지 않는다
@@ -65,11 +67,14 @@ ui/src/
 |---|---|---|
 | `theme` | 없음 | 컴포넌트·화면 코드 |
 | `viewmodels` | 없음(생성 코드) | 손으로 고치기 |
-| `components` | `theme`, `viewmodels` | store·command 호출, 조건 분기로 표시 판단 |
+| `components` | `theme`, `viewmodels`, `lib`, `hooks` | store·command 호출, 조건 분기로 표시 판단 |
+| `lib` | 없음 | store·command 호출, ViewModel 값에 따른 표시 판단 |
+| `hooks` | 없음 | `lib`과 같다 |
 | `screens` | `components`, `stores`, `theme` | command 직접 호출, ViewModel 가공 |
 | `stores` | `commands`, `viewmodels` | 표시 판단, 값 계산, 파생 값(selector 계산) |
 | `commands` | `viewmodels`, Tauri API, 샘플 구현만 `design/samples/` | 상태 보관 |
 
+- `lib/`와 `hooks/`는 T3 Code 부품이 `~/lib/utils`, `~/hooks/useCommitOnBlur`처럼 부르는 원본 경로를 그대로 둔 것이다. 가져온 부품을 고치지 않으려고 별칭 `~`(`ui/src`)를 `tsconfig.json`과 `vite.config.ts`에 둔다. 우리 코드는 상대 경로를 쓴다. 가져온 파일과 고친 파일은 `ui/UPSTREAM.md`에 있다.
 - 화면 상태에 따른 표시 판단(배너 종류, 버튼 활성 여부)은 ViewModel 필드로 받는다. 컴포넌트는 필드 값을 그대로 그린다(`banner.kind`에 맞는 변형을 고르는 것까지는 View의 일이다).
 - 사용자 동작은 `screens` → store 액션 → `commands` 래퍼 순서로 코어에 간다. 응답과 코어 이벤트는 store에 들어가고 `screens`가 store를 구독해 그린다.
 - `viewmodels/`는 화면과 코어 사이의 계약이다. command 응답뿐 아니라 이벤트(AI 스트림, 진행률)의 타입도 여기에 있다.
@@ -84,7 +89,7 @@ ui/src/
 - 우리 값(한글 글꼴, 우리 앱만의 상태 색 등)은 `ui/src/theme/app.css`에서 더하거나 덮어쓴다. 가져온 파일은 고치지 않는다. 기준 버전을 올릴 때 가져온 파일을 통째로 바꾸고 차이를 확인한다.
 - 컴포넌트는 CSS 변수와 Tailwind 유틸리티만 쓰고 값을 직접 적지 않는다.
 - 테마는 시스템(기본, `prefers-color-scheme`)·라이트·다크 중에서 설정으로 고른다. 루트 요소의 `.dark` 클래스로 적용한다. 테마는 코어의 판단이 필요 없는 화면 전용 값이므로 코어 설정(`SettingsRepository`)에 두지 않고 프런트엔드 로컬 저장(WebView `localStorage`)에 둔다. 읽고 쓰는 일은 `stores/`의 테마 store 하나만 하며, ViewModel 보관 규칙의 유일한 예외다. T3 Code의 실행 중 색 계산(`themePalette.ts` 등)은 가져오지 않고 기본 테마 값만 쓴다.
-- 기반 컴포넌트는 Base UI다. T3 Code의 `components/ui/`(Base UI 래퍼)를 그대로 가져와 `ui/src/components/ui/`에 둔다. 아이콘은 `lucide-react`를 쓴다.
+- 기반 컴포넌트는 Base UI다. T3 Code의 `components/ui/`(Base UI 래퍼) 중 T3 Code 내부(앱 상태, 내부 패키지, 브랜드 자산)에 묶이지 않은 부품을 그대로 가져와 `ui/src/components/ui/`에 둔다. 가져오지 않은 부품과 이유는 `ui/UPSTREAM.md`에 있다. 아이콘은 `lucide-react`를 쓴다.
 - 가져온 기본 부품 안의 상호작용 처리(열림 상태, 포커스 이동 등)는 View의 일이다. ViewModel 값에 따른 표시 판단은 여전히 Presenter가 한다.
 
 ### 2.3 신뢰하지 않는 HTML과 WebView 보안
