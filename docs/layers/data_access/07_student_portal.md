@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 독자 | 개발자 본인, 후속 문서·구현을 돕는 AI 에이전트 |
-| 근거 | 2026-11-08 로그인한 학생 세션으로 확인. 화면 소스(서비스 선언)를 읽고, 조회 화면 몇 개만 열어 요청·응답 형식을 기록했다. 쓰기 서비스는 실행하지 않았다 |
+| 근거 | 2026-11-08 로그인한 학생 세션으로 확인. 화면 소스(서비스 선언)를 읽고, 조회 화면 몇 개만 열어 요청·응답 형식을 기록했다. 쓰기 서비스는 실행하지 않았다. 2026-11-12 조회 화면 여섯 개의 요청·응답을 다시 기록했다(§5) |
 
 > **이 문서의 역할**: 학사행정웹서비스(`im.dongseo.ac.kr`)의 로그인과 데이터 조회 경로를 정의한다. Source `student_portal`.
 > 구조(레이어, `<I>`·DS 배치, 공통 오류, HTTP 정책)는 [README](README.md)를 따른다.
@@ -73,6 +73,8 @@ selectService(QP.paramJson(), callback);
 
 - 순번은 `10010000`, `10020000`, …(서비스), `10013001`, `10013002`, …(첫 서비스의 매개변수)처럼 늘어난다. 여러 서비스를 한 요청에 묶을 수 있다.
 - 응답: `{"SUCCESS_YN":"Y","ERROR_MESSAGE":"", "{서비스명}":[{…행…}], …}`. 서비스마다 결과 배열이 서비스명 키로 온다.
+- **목록은 다른 창구로 온다**(2026-11-12 확인): 화면의 표는 `POST /selectWithPage.do`를 쓴다. 요청 form은 `select.do`와 같은 키 형식이다. 응답은 `{"SUCCESS_YN":"Y","ERROR_MESSAGE":"","data":[{…행…}],"recordsTotal":n,"recordsFiltered":n}`이고, 행이 서비스 이름 키가 아니라 `data`에 온다. 관찰한 요청은 모두 서비스 하나만 담았다. 어느 서비스가 어느 창구인지는 §5의 표에 있다.
+- 화면은 학번을 서버가 화면 HTML에 넣어 준 값(`var userId = "…"`)에서 읽어 `USER_ID`로 보낸다(2026-11-12 확인).
 - 다른 창구: `POST /apiProcess.do`(JSON `{"QUERY":"<토큰>","QUERY_GBN":"S","USER_NO":"<학번>"}` → `{"list":[…],"isSuccess":true}`), `POST /menuLoadNm.do`. 첫 화면 알림·설문 확인에 쓰인다.
 
 **예: 로그인 사용자 정보**
@@ -109,7 +111,7 @@ selectService(QP.paramJson(), callback);
 
 - **앱은 조회 서비스만, 그것도 이름을 명시한 허용 목록(화이트리스트)으로만 호출한다.** §4의 표는 화면 소스에서 뽑은 원본이라 분류가 서비스의 선언 종류(`SELECT`/`INSERT`/…)에 따른다. 이름만으로는 판별되지 않는다 — 예: `UPSERT_MAJOR_MERGE*`(AB050_M), `INS_CERT_NO`(AG090)는 이름이 쓰기지만 표에서는 조회 쪽에 있을 수 있다. 그래서 "`SELECT`로 시작하면 조회" 같은 이름 규칙으로 거르지 않는다.
 - 허용 목록에는 **읽기만 하는 것이 확인된 서비스 이름만** 넣는다. 휴학·복학·전공 신청(UPSERT), 강의평가, 학점포기, P/N 신청, 등록금 분할납부, 봉사일지, 증명서 발번(`INS_CERT_NO`) 등 상태를 바꾸는 서비스는 넣지 않는다([README §1.3](README.md)).
-- **허용 목록과 서비스별 학번 매개변수 레지스트리는 아직 만들지 않았다(구현 과제).** §4 표가 그 원재료다. 구현 때 §4에서 조회 전용 서비스를 골라 `{서비스명 → 학번 매개변수명}` 형태의 데이터로 만들고, 그 목록에 없는 서비스는 호출하지 않는다. "외 N개"로 줄인 화면은 화면 소스에서 전체를 확인한 뒤 넣는다.
+- **허용 목록과 서비스별 학번 매개변수 레지스트리**: 성적·졸업시뮬레이션·학생기본정보·과목출결조회 여섯 화면의 목록을 §5에 적었다(2026-11-12). 구현 때 §5의 표를 `{화면, 서비스, 창구, 매개변수, 학번 매개변수}` 데이터로 옮기고, 그 목록에 없는 서비스는 호출하지 않는다. 다른 화면은 §4 표가 원재료다. §5와 같은 방법으로 읽기만 하는 것을 확인한 뒤 더한다. "외 N개"로 줄인 화면은 화면 소스에서 전체를 확인한 뒤 넣는다.
 - 출력·증명서(`/report/reqReport.jsp`, 외부 증명서 발급 `uni.webminwon.com`)는 대상이 아니다.
 
 ## 4. 메뉴별 서비스 목록
@@ -197,10 +199,111 @@ selectService(QP.paramJson(), callback);
 
 ---
 
+## 5. 조회 허용 목록과 응답 필드 (2026-11-12 실측)
+
+성적(`AE011`, `AE010`, `AE020`), 졸업시뮬레이션(`AE040`), 학생기본정보(`AB010`), 과목출결조회(`AC110`) 여섯 화면을 로그인한 학생 세션의 브라우저에서 열고, 화면이 스스로 보내는 조회 요청과 응답을 기록했다. 요청을 따로 만들어 보내지 않았다. 남긴 것은 서비스 이름, 매개변수 이름, 응답 필드 이름, 행 수뿐이다. 값(성적, 학번, 이름)은 기록하지 않았다. 쓰기 단추(`저장`, `신청 접수`)와 `출력` 단추는 누르지 않았다.
+
+**이 여섯 화면의 허용 목록은 아래 표다.** 표에 없는 서비스는 부르지 않는다(§3.5).
+
+- **학번 매개변수는 여섯 화면 모두 `USER_ID`다**(표에서 굵게 적었다). 앱은 이 자리에 세션 학번만 넣는다(§3.5).
+- 모든 화면이 열릴 때 `SELECT_STD_INFO`(매개변수 **`USER_ID`**, 창구 `select.do`)를 부른다. 응답 필드는 `CMINOR_NM`, `CSMAJOR_NM`, `EMAJOR_NM`, `MINOR_NM`, `MJR_NM`, `NAME`, `PROF_NM`, `SBJ_NM`, `SMAJOR_NM`, `STS`, `ST_YEAR`, `SUD010_STUDENT_CD`, `TEACH_FLAG`다(1행). 표에서는 뺐다.
+- 모든 화면이 열릴 때 `POST /apiProcess.do`도 부른다. 요청 키는 `QUERY`, `QUERY_GBN`, `USER_NO`, `MENU_CD`이고 응답은 `list[].CNT`다. 여기서는 학번이 `USER_NO`로 간다. 앱은 부르지 않는다.
+- 응답에 학번으로 보이는 필드가 여러 이름으로 온다: `SUD010_STUDENT_CD`(`SELECT_STD_INFO`, `SELECT_INFO`), `SUH030_STUDENT_CD`(`S_WARN_DISPLAY`), `STUDENT_CD`(`SELECT_STD_DETAIL`, `SELECT_GRADE_FAIL_REASON`), `STD_CD`(`SELECT_MAJOR_INFO`). 이름으로 본 것이고 값과 대조하지는 않았다. §3.5의 응답 검증은 `USER_NO`·`USER_ID`만이 아니라 이 이름들도 봐야 한다.
+- 필드의 뜻은 이름과 화면 표의 머리글로 짐작한 것이다. 값과 대조하지 않았다.
+- 창구 열의 `selectWithPage.do`는 응답의 행이 `data`에 온다(§3.3).
+
+**학생기본정보 `AB010`** — 화면에 `저장`·`신청 접수` 단추가 있다(쓰기). 누르지 않았다.
+
+| 서비스 | 창구 | 매개변수 | 응답 필드 | 비고 |
+|---|---|---|---|---|
+| `SELECT_INFO` | `select.do` | **`USER_ID`** | `CMINOR_NM`, `CSMAJOR_NM`, `EMAJOR_NM`, `MINOR_NM`, `MJR_NM`, `NAME`, `PROF_NM`, `SBJ_NM`, `SMAJOR_NM`, `STS`, `ST_YEAR`, `SUD010_STUDENT_CD`, `TEACH_FLAG` | 1행 |
+| `SELECT_INFO` | `select.do` | **`USER_ID`**, `SUD200_GRAD_DIV` | (0행이라 확인하지 못함) | 0행. `SELECTMAP`. 응답이 `null`이었다 |
+| `SELECT_STD_INFO_CHG` | `select.do` | **`USER_ID`** | `DEPT`, `MAJOR`, `NEW_NM_CHK`, `PROF`, `STS`, `SUD010_ADD1`, `SUD010_ADD2`, `SUD010_BANK_CSH`, `SUD010_BANK_NM`, `SUD010_EMAIL`, `SUD010_IMG_PATH`, `SUD010_NM`, `SUD010_NM_ENG`, `SUD010_PROTEC_EMAIL`, `SUD010_PROTEC_NM`, `SUD010_ROAD_ADD1`, `SUD010_ROAD_ADD2`, `SUD010_ROAD_ADD3`, `SUD010_ROAD_ZIP1`, `SUD010_STUDENT_CD`, `SUD010_STUDENT_PCS`, `SUD010_STUDENT_YEAR`, `SUD010_TEL`, `SUD010_ZIP1`, `SUD200_GRAD_DIV` | 1행. **허용 목록에 넣지 않는다.** 주소·전화·계좌·보호자 정보가 들어 있고 앱이 쓰지 않는다 |
+| `LIST` | `selectWithPage.do` | **`USER_ID`** | `CHG_CONTENT`, `CHG_DT`, `DISCHARGE_DT`, `HYUHAK_TERM_CNT`, `RCT_DT`, `RESCHOOL_YEAR_HAKGI`, `SMT_NM`, `SUD030_YEAR` | 4행. 학적 변동 내역. 화면 머리글: 년도, 학기, 변동내역, 변동일자, 복학예정 년도/학기, 휴학기수/통산, 입대일자, 제대일자 |
+
+**중간성적 조회 `AE011`** — 지금은 조회 기간이 아니라(`SELECT_TERM_CHK` 0행) 화면이 성적 목록 `LIST`를 부르지 않았다.
+
+| 서비스 | 창구 | 매개변수 | 응답 필드 | 비고 |
+|---|---|---|---|---|
+| `SELECT_SUM_INFO` | `select.do` | **`USER_ID`** | `SUM_CDT_NUM`, `SUM_GPA` | 1행 |
+| `SELECT_TERM_CHK` | `select.do` | — | (0행이라 확인하지 못함) | 0행 |
+| `SELECT_TERM_CNT` | `select.do` | — | `TERM_CNT` | 1행 |
+| `S_YY_SHTM` | `select.do` | **`USER_ID`** | `CUR_SMT`, `CUR_SMT_CODE`, `CUR_YEAR` | 1행 |
+| `LIST` | 확인하지 못함 | `S_YEAR`, `S_SHTM`, **`USER_ID`** | (불리지 않음) | 기간 밖이라 불리지 않았다. 화면의 열 선언은 `COM_DIV_NM`(이수구분), `CURI_NM`(교과목명), `CDT_NUM`(학점), `EMP_NM`(담당교수), `REPORT_1`~`REPORT_4`(과제I~IV), `EXAM_1`(중간고사)다 |
+
+**확정전 성적조회 `AE010`** — 지금은 조회 기간이 아니라(`SELECT_TERM_CHK` 0행) 화면이 성적 목록 `LIST`를 부르지 않았다.
+
+| 서비스 | 창구 | 매개변수 | 응답 필드 | 비고 |
+|---|---|---|---|---|
+| `SELECT_SUM_INFO` | `select.do` | **`USER_ID`** | `SUM_CDT_NUM`, `SUM_GPA` | 1행 |
+| `SELECT_TERM_CHK` | `select.do` | — | (0행이라 확인하지 못함) | 0행 |
+| `SELECT_TERM_CNT` | `select.do` | — | `TERM_CHECK_YN`, `TERM_PERIOD_MSG` | 1행 |
+| `S_YY_SHTM` | `select.do` | **`USER_ID`** | `CUR_SMT`, `CUR_SMT_CODE`, `CUR_YEAR` | 1행 |
+| `LIST` | 확인하지 못함 | `S_YEAR`, `S_SHTM`, `ROW_CHK`, **`USER_ID`** | (불리지 않음) | 기간 밖이라 불리지 않았다. 화면의 열 선언은 `COM_DIV_NM`(이수구분), `CURI_NM`(교과목명), `CDT_NUM`(학점), `EMP_NM`(담당교수), `GRADE`(등급), `DESCRIPTION`(서술성적내용)이다 |
+| `SELECT_TERM_DATE` | 확인하지 못함 | — | (불리지 않음) | 선언만 있고 불리지 않았다 |
+
+**성적조회 `AE020`** — 학기 목록에서 행 하나를 골라 과목별 성적을 불렀다. `출력` 단추는 누르지 않았다.
+
+| 서비스 | 창구 | 매개변수 | 응답 필드 | 비고 |
+|---|---|---|---|---|
+| `SELECT_COMDIV_CD` | `select.do` | — | `KEYCODE`, `KEYTEXT` | 9행 |
+| `SELECT_EVAL_NOTICE_YN` | `select.do` | **`USER_ID`** | (0행이라 확인하지 못함) | 0행 |
+| `SELECT_GRADE_INFO` | `select.do` | **`USER_ID`** | `T_APPLY`, `T_GPA`, `T_PASS`, `T_POINT` | 1행. 누적 값 |
+| `SELECT_OPEN_POP_CHK` | `select.do` | — | (0행이라 확인하지 못함) | 0행 |
+| `S_WARN_DISPLAY` | `select.do` | `S_YEAR`, `S_SHTM`, **`USER_ID`** | `SUH030_STUDENT_CD`, `S_CDT_ATTEMPT`, `S_CDT_PASS`, `S_CONT_DESC`, `S_GPA`, `S_POINT`, `S_SEQ`, `S_SMT`, `S_YEAR`, `WARN_DIS`, `WARN_DIS2`, `WARN_DIS3`, `WARN_DIS4`, `WARN_NM`, `WARN_YN` | 1행 |
+| `S_YY` | `select.do` | **`USER_ID`** | `KEYCODE`, `KEYTEXT` | 4행 |
+| `LIST` | `selectWithPage.do` | **`USER_ID`** | `COM_DIV`, `COM_DIV_NM`, `TOT_GPA` | 8행. 이수구분별 학점. 화면 머리글: 이수구분, 학점 |
+| `LIST` | `selectWithPage.do` | **`USER_ID`** | `S_CDT_ATTEMPT`, `S_CDT_PASS`, `S_CONT_DESC`, `S_GPA`, `S_POINT`, `S_SEQ`, `S_SMT`, `S_VIEW_YN`, `S_WARN_YN`, `S_YEAR` | 5행. 학기별 요약. 화면 머리글: 년도, 학기, 신청학점, 취득학점, 평균평점, 백분율, 비고 |
+| `LIST` | `selectWithPage.do` | `S_YEAR`, `S_SHTM`, `S_VIEW_GRADE_YN`, **`USER_ID`** | `C_CDT_NUM`, `C_COMDIV_NM`, `C_CURI_NM`, `C_CURI_NUM`, `C_GRADE`, `C_SEQ`, `C_SMT`, `C_SMT_NM`, `C_YEAR` | 8행. 과목별 성적. 화면 머리글: 년도, 학기, 교과번호, 교과목명, 이수구분, 학점, 성적 |
+| `S_SHTM` | 확인하지 못함 | **`USER_ID`**, `S_YEAR` | (불리지 않음) | 선언만 있고 불리지 않았다 |
+
+**졸업시뮬레이션 `AE040`** — `수강전` 시뮬레이션을 실행했다(화면의 확인 창 뒤에 불리는 조회). `수강후`는 실행하지 않았다. 선언된 서비스 22개가 모두 `SELECT`다.
+
+| 서비스 | 창구 | 매개변수 | 응답 필드 | 비고 |
+|---|---|---|---|---|
+| `SELECT_GRADE_CHK` | `select.do` | **`USER_ID`** | `CNT` | 1행 |
+| `SELECT_GRADE_FAIL_REASON` | `select.do` | `S_YEAR`, `S_SHTM`, **`USER_ID`** | `NON_PASS`, `NON_TP`, `SMT`, `STUDENT_CD`, `YEAR` | 6행 |
+| `SELECT_GRADE_ISU_PNT` | `select.do` | `S_YEAR`, `S_SHTM`, `SUG_CHECK`, **`USER_ID`** | `GRD_DIV`, `VAL00`, `VAL10`, `VAL11`, `VAL12`, `VAL13`, `VAL21`, `VAL31`, `VAL32` | 2행 |
+| `SELECT_GRADE_ISU_PNT_DETAIL` | `select.do` | `S_YEAR`, `S_SHTM`, `APPLY_YEAR`, `SUG_CHECK`, **`USER_ID`** | 필드 63개: `CDT_*`, `TCDT_*`, `UCDT_*` 꼴(이수구분 번호별 학점) | 1행 |
+| `SELECT_GRADE_TOTAL_POINT_TABLE` | `select.do` | `S_YEAR`, `S_SHTM`, **`USER_ID`** | (0행이라 확인하지 못함) | 0행 |
+| `SELECT_MAJOR_INFO` | `select.do` | **`USER_ID`** | `DEPT_CD`, `DEPT_NM`, `DIV_CD`, `DIV_NM`, `SCH_STS`, `STD_CD`, `STD_NM`, `STD_YR` | 1행 |
+| `SELECT_RC_CHK` | `select.do` | `S_YEAR`, `S_SHTM`, **`USER_ID`**, `GBN_DIV` | `RC` | 1행 |
+| `SELECT_STD_DETAIL` | `select.do` | `S_YEAR`, `S_SHTM`, **`USER_ID`** | `APPLY_YEAR`, `NM`, `SCHOOL_STS`, `SCHOOL_STS_DESC`, `STUDENT_CD`, `STUDENT_SMT`, `STUDENT_YEAR` | 1행. 여기서는 학번이 `STUDENT_CD`로 온다 |
+| `SELECT_TAB_0_TOTAL` | `select.do` | `S_YEAR`, `S_SHTM`, `SUG_CHECK`, `DIV_GR`, **`USER_ID`** | `BVAL`, `RVAL`, `SMAJOR_NM`, `UVAL` | 1행 |
+| `SELECT_TAB_1_TOTAL` | `select.do` | `S_YEAR`, `S_SHTM`, `SUG_CHECK`, `DIV_GR`, **`USER_ID`** | `BVAL`, `RVAL`, `SMAJOR_NM`, `UVAL` | 1행 |
+| `SELECT_TAB_2` | `select.do` | `S_YEAR`, `S_SHTM`, `SUG_CHECK`, **`USER_ID`** | `CURI_NM`, `CURI_NO`, `DIV_CD`, `DIV_DESC`, `DIV_NM`, `N_CDT`, `P_CDT`, `SORT_SEQ`, `SUIA22_GROUP_NUM`, `S_CDT` | 18행 |
+| `SELECT_TAB_3_TOTAL` | `select.do` | `S_YEAR`, `S_SHTM`, `SUG_CHECK`, `DIV_GR`, **`USER_ID`** | `BVAL`, `RVAL`, `SMAJOR_NM`, `UVAL` | 1행 |
+| `SELECT_TAB_4` | `select.do` | **`USER_ID`**, `DIV_GR` | (0행이라 확인하지 못함) | 0행 |
+| `SELECT_TAB_5_1` | `select.do` | **`USER_ID`** | (0행이라 확인하지 못함) | 0행 |
+| `SELECT_TAB_5_2` | `select.do` | `S_YEAR`, `S_SHTM`, `APPLY_YEAR`, `DIV_GR`, `SUG_CHECK`, **`USER_ID`** | (0행이라 확인하지 못함) | 0행 |
+| `SELECT_TAB_LIST` | `select.do` | **`USER_ID`** | `TAB_DIV`, `TAB_NM`, `TAB_VIS` | 4행 |
+| `SELECT_YY_SHTM` | `select.do` | — | `SMT`, `SMT_NM`, `YEAR` | 1행 |
+| `SELECT_TAB_0` | `selectWithPage.do` | `S_YEAR`, `S_SHTM`, `SUG_CHECK`, `APPLY_YEAR`, `DIV_GR`, **`USER_ID`**, `rdoStatus0` | `CDT`, `CURI_NM`, `CURI_NO`, `DIV_CD`, `DIV_DESC`, `EDU_CD`, `EDU_GB`, `GRD`, `PASS`, `PASS_DIV`, `SMT`, `SMT_DESC`, `YEAR` | 21행. 화면 머리글: 교과연도, 학년, 학기, 구분, 교과목번호, 과목명, 학점, 이수구분 |
+| `SELECT_TAB_1` | `selectWithPage.do` | `S_YEAR`, `S_SHTM`, `SUG_CHECK`, **`USER_ID`**, `rdoStatus1` | (0행이라 확인하지 못함) | 0행 |
+| `SELECT_TAB_3` | `selectWithPage.do` | **`USER_ID`**, `DIV_GR` | (0행이라 확인하지 못함) | 0행 |
+| `SELECT_CURI_CHK` | 확인하지 못함 | `S_YEAR`, `S_SHTM`, **`USER_ID`** | (불리지 않음) | `수강후`에서만 불린다. 실행하지 않았다 |
+
+**과목출결조회 `AC110`** — 과목 3개를 차례로 골랐다.
+
+| 서비스 | 창구 | 매개변수 | 응답 필드 | 비고 |
+|---|---|---|---|---|
+| `SELECT_STATS` | `select.do` | `S_YEAR`, `S_SHTM`, `CURI_NUM`, `COURSE_CLS`, **`USER_ID`** | `ATTEND_01`, `ATTEND_02`, `ATTEND_03`, `ATTEND_04` | 1행. 과목별 출결 집계. 네 값이 각각 무엇인지는 확인하지 못했다 |
+| `S_YYSHYTM` | `select.do` | — | `SMT`, `YY` | 1행 |
+| `LIST` | `selectWithPage.do` | `S_YEAR`, `S_SHTM`, **`USER_ID`** | `CDT_NUM`, `COURSE_CLS`, `CURI_NM`, `CURI_NUM`, `ISU_GB_NM`, `NM` | 11행. 수강 과목 목록. 화면 머리글: 이수구분, 교과목명, 분반, 학점, 담당교수 |
+| `LIST` | `selectWithPage.do` | `S_YEAR`, `S_SHTM`, `CURI_NUM`, `COURSE_CLS`, **`USER_ID`** | (0행이라 확인하지 못함) | 0행. 과목별 출결 내역. 고른 과목 3개 모두 0행이었다. 화면의 열 선언은 `ABSENCE_DATE`(일자), `START_TIME`(시간), `CONT_DESC`(출결내용), `REMK`(사유), `HU_DATE`(비고)다 |
+
+**이번에 확인하지 못한 것**
+
+- 중간성적(`AE011`)과 확정전 성적(`AE010`)의 성적 목록 응답. 조회 기간이 아니라 화면이 요청하지 않았다. 필드는 화면의 열 선언으로만 적었다.
+- 과목출결조회(`AC110`)의 출결 내역 응답. 고른 과목 모두 0행이었다. 필드는 화면의 열 선언으로만 적었다. 출결 집계 `ATTEND_01`~`ATTEND_04`가 각각 무엇인지도 모른다.
+- 졸업시뮬레이션의 `수강후` 결과와 0행이었던 탭(`SELECT_TAB_1`, `SELECT_TAB_3`, `SELECT_TAB_4`, `SELECT_TAB_5_*`).
+- 한 학생의 한 시점 응답이다. 휴학·복수전공·편입 같은 다른 학적 상태에서 필드가 달라지는지는 모른다.
+
 ## 미확인 항목
 
 - dsso 로그인(3단계) 뒤의 리디렉션 경로와 세션 쿠키 이름. 로그아웃 상태에서 한 번 기록해야 한다
 - 로그인 실패 잠김 기준(몇 회, 얼마 동안)
 - 쿼리 토큰이 바뀌는 조건(배포·세션·날짜). 지금은 화면을 열 때마다 HTML에서 읽는 방식으로 대비한다
-- 화면별 목록 서비스(`LIST` 등)의 응답 필드. 화면을 열고 조회해야 나오는 것들은 일부만 확인했다
+- 화면별 목록 서비스(`LIST` 등)의 응답 필드. 성적·졸업시뮬레이션·학생기본정보·과목출결조회 여섯 화면은 §5에 기록했다(일부는 0행이거나 기간 밖이라 열 선언만 적었다). 나머지 화면은 확인하지 않았다
+- `selectWithPage.do`에 서비스 여러 개를 한 요청으로 묶을 수 있는지, 쪽 나누기 매개변수가 있는지(관찰한 요청은 서비스 하나였고 쪽 매개변수가 없었다)
 - 세션 연장(`sessionExtend.do`)만으로 60분 넘게 유지되는지, 최대 유지 시간
