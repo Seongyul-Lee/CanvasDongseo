@@ -128,6 +128,7 @@
 | 상황 | 판정 | application 오류 | 다음 행동(P5) |
 |---|---|---|---|
 | AI가 설치돼 있지 않음 | FS-02 F1 | `AiUnavailable(NotInstalled)` | 앱 메시지 → AI 연결 행(설치) |
+| AI가 최소 버전보다 낮음 | FS-02 F1 | `AiUnavailable(UpdateRequired)` | 앱 메시지 → AI 연결 행(업데이트) |
 | AI 로그아웃 | FS-02 | `AiUnavailable(LoggedOut)` | 앱 메시지 → AI 연결 행(로그인) |
 | 미지원 플랜 | FS-02 F4 | `AiUnavailable(PlanNotSupported)` | 유료 플랜 안내. 대화를 시작하지 않는다 |
 | 사용 한도 | `UsageLimit` 이벤트 | `AiUnavailable(UsageLimit)` | 풀리는 시각(알 때만). 상태 "Limited" |

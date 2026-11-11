@@ -305,6 +305,7 @@ T3 Code의 설정 모달(왼쪽 내비게이션 그룹, 오른쪽 내용)을 그
 |---|---|---|---|
 | 확인 중 | 확인하는 중 | 없음 | 없음 |
 | 설치 안 됨(AI만) | 설치가 필요해요 | 빨강 | 설치 |
+| 업데이트 필요(AI만) | 업데이트가 필요해요 | 빨강 | 업데이트 |
 | 로그인 필요 | 로그인이 필요해요 | 빨강 | 로그인 |
 | 곧 만료 | ○월 ○일 만료 예정 | 노랑 | 갱신 |
 | 사용할 수 없음 | 플랜 미지원 / 사용 한도 / 학교 시스템 장애 | 빨강 | 원인별 하나(P5) |
@@ -334,7 +335,7 @@ T3 Code의 설정 모달(왼쪽 내비게이션 그룹, 오른쪽 내용)을 그
 | `SourceChanged` | 학교 사이트가 바뀌어 앱 업데이트가 필요하다는 안내 |
 | `Temporary` | 다시 시도 |
 | `Rejected` | 거절된 이유 |
-| `AiUnavailable` | 원인별: 설치 / 로그인 / 한도가 풀리는 시각 / 유료 플랜 안내(사유 열거형은 [application §4.5](layers/02_application.md#45-application-오류)) |
+| `AiUnavailable` | 원인별: 설치 / 업데이트 / 로그인 / 한도가 풀리는 시각 / 유료 플랜 안내(사유 열거형은 [application §4.5](layers/02_application.md#45-application-오류)) |
 | `ComponentMissing` | 복구 방법별: 설치 프로그램 다시 실행 / OS 설정 열기 |
 
 ## 9. AI 응답 경험 원칙
@@ -395,6 +396,6 @@ T3 Code의 설정 모달(왼쪽 내비게이션 그룹, 오른쪽 내용)을 그
 
 경험상 필요하지만 아키텍처에 아직 없는 것이다. 설계 변경은 해당 문서에서 따로 한다. 반영되면 이 표에서 지우고 해당 문서를 링크한다. 번호는 다시 쓰지 않는다.
 
-반영된 것: ① 플랜 미지원·한도 해제 시각([application §4.5](layers/02_application.md#45-application-오류), [ai_adapters §2](layers/05_ai_adapters.md#2-claude-로그인)), ② 학과 1~2개와 다른 학과 공지([application §3](layers/02_application.md#3-유스케이스-후보), [06_school_site §3](layers/data_access/06_school_site.md#3-학과-공지)), ③ `cdx policy`([entrypoints §4](layers/04_entrypoints.md#4-cdx-명령)), ④ AI 응답 원칙의 `ToolGuide` 반영([entrypoints §6](layers/04_entrypoints.md#6-toolguide)), ⑤ 연결 상태 모음과 대화별 상태의 판정 위치(`presenters/shell`, [presentation §1](layers/03_presentation.md#1-개요)), ⑥ 학생 이름 저장([application §3](layers/02_application.md#3-유스케이스-후보)), ⑦ 테마 저장 위치([presentation §2.2](layers/03_presentation.md#22-디자인-토큰)).
+반영된 것: ① 플랜 미지원·한도 해제 시각([application §4.5](layers/02_application.md#45-application-오류), [ai_adapters §2](layers/05_ai_adapters.md#2-claude-로그인)), ② 학과 1~2개와 다른 학과 공지([application §3](layers/02_application.md#3-유스케이스-후보), [06_school_site §3](layers/data_access/06_school_site.md#3-학과-공지)), ③ `cdx policy`([entrypoints §4](layers/04_entrypoints.md#4-cdx-명령)), ④ AI 응답 원칙의 `ToolGuide` 반영([entrypoints §6](layers/04_entrypoints.md#6-toolguide)), ⑤ 연결 상태 모음과 대화별 상태의 판정 위치(`presenters/shell`, [presentation §1](layers/03_presentation.md#1-개요)), ⑥ 학생 이름 저장([application §3](layers/02_application.md#3-유스케이스-후보)), ⑦ 테마 저장 위치([presentation §2.2](layers/03_presentation.md#22-디자인-토큰)), ⑧ AI 설치·업데이트 실행과 실패 오류([application §4.2](layers/02_application.md#42-ai), [§4.5](layers/02_application.md#45-application-오류)), ⑨ AI 업데이트 필요 상태(§7.5, [application §4.5](layers/02_application.md#45-application-오류)), ⑩ 키체인 허용 거부와 로그아웃의 구별([application §4.2](layers/02_application.md#42-ai), [ai_adapters §3](layers/05_ai_adapters.md#3-실행-모드)).
 
-현재 남은 항목은 없다. 새로 생기면 `| # | 필요한 것 | 지금 상태 | 제안 | 관련 문서 |` 표로 적는다. 다음 번호는 ⑧이다.
+현재 남은 항목은 없다. 새로 생기면 `| # | 필요한 것 | 지금 상태 | 제안 | 관련 문서 |` 표로 적는다. 다음 번호는 ⑪이다.

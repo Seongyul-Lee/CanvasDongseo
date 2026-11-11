@@ -44,7 +44,7 @@
 | 학과 설정 | `ListDepartments`(학과 레지스트리에서 만든 선택 목록), `SetDepartments`(1~2개, 목록에 있는 값만) | `usecases/school` |
 | 개인 데이터 쓰기 | 개인 캘린더 일정, 플래너 메모·완료 표시(사용자 확인 뒤) | `usecases/school` |
 | 자료 | 강의 자료·동영상 내려받기 | `usecases/school` |
-| AI | 설치 감지, 로그인·로그아웃, 대화 시작·전송·취소, 권한 확인 응답, 대화 기록 관리 | `usecases/ai` |
+| AI | 설치 감지, 설치·업데이트(사용자 동의 뒤), 로그인·로그아웃, 대화 시작·전송·취소, 권한 확인 응답, 대화 기록 관리 | `usecases/ai` |
 | 정책 | `GetPolicy`: 앱의 데이터·보안 정책 원문(저장 위치, AI가 보는 범위, 하는 일과 하지 않는 일). 원문은 이 crate에 포함한 Markdown 파일 하나이고, 화면(설정 > 정책)과 `cdx policy`가 같은 원문을 쓴다. AI에게 무엇이 보이는지를 설명하는 내용이라 대화 안전과 같은 묶음에 둔다 | `usecases/ai` |
 | 대화 안전 | `Peer` 읽음 기록, hook 판정(`pass` / `warn` / `deny_once`), `Peer` 원문 격리 요약([security §4](../cross_cutting/01_security.md)) | `usecases/ai` |
 | 학습(확장) | `ExtractSlidePdf`(동영상 → 슬라이드 PDF), `Transcribe`(동영상 → 스크립트), 요약·퀴즈 생성 | `usecases/learning` |
@@ -75,9 +75,10 @@ crate: `ports/ai`(아래 세 포트, 중립 이벤트, §4.4의 `ConversationRep
 ```
 AiInstallation
   detect()            → 설치 여부, 버전, 최소 버전 충족
+  install() / update() → 성공 또는 실패. 진행률과 취소는 없다
 
 AiAccount
-  account()           → 로그인 여부, 구독 종류, Claude Code를 쓸 수 있는 플랜인지 (이메일·조직 ID는 버린다)
+  account()           → 로그인 상태(로그인됨·로그아웃·자격 증명 읽기 막힘), 구독 종류, Claude Code를 쓸 수 있는 플랜인지 (이메일·조직 ID는 버린다)
   start_login()       → LoginChallenge { open_url? , device_code? }
   wait_login(id) / cancel_login(id)
   logout()            → { outcome, affects_terminal }
@@ -90,6 +91,8 @@ AiSession
 ```
 
 - **중립 이벤트**: `TextDelta`, `ToolUse`, `ToolResult`, `PermissionRequest`, `UsageLimit`(제공자가 알려 주면 풀리는 시각 포함), `Done`, `Error`. 화면과 유스케이스는 제공자 형식을 모른다.
+- `install()`은 CLI가 없을 때, `update()`는 최소 버전보다 낮을 때 쓴다. 유스케이스가 `UserConfirmation`(§4.4)으로 동의를 받은 뒤에만 부르고, 끝나면 `detect()`로 다시 확인한다. 실패는 `Temporary`(§4.5)로 돌려준다. 멈춘 실행은 어댑터가 시간 상한으로 끊는다([ai_adapters §2](05_ai_adapters.md#2-claude-로그인)).
+- 로그인 상태의 **자격 증명 읽기 막힘**은 로그아웃과 다른 값이다. 제공자 CLI가 OS 비밀 저장소의 허용을 기다리거나 거부당한 것으로 보일 때 어댑터가 준다(판정은 [ai_adapters §3](05_ai_adapters.md#3-실행-모드)). 화면은 로그인 대신 허용 안내와 다시 시도를 보인다([FS-02 F7](../specs/FS-02_ai_connection.md#f7-키체인-허용-창-안내-s2-5)).
 - `session_spec`: 실행 모드(대화·격리·요약), 작업 폴더, `ToolGuide`, 모델, 재개할 세션 ID.
 - 제공자 어댑터 crate 하나가 세 포트를 모두 구현하고, composition root에서 제공자 ID로 묶어 등록한다. 구현은 [ai_adapters](05_ai_adapters.md).
 
@@ -136,9 +139,9 @@ crate: `ports/learning`(아래 표 전부)
 | `NeedsLogin` | 학교 재로그인(OTP)이 필요하다 |
 | `NotAvailable` | 권한이 없거나 그 과목에서 쓰지 않는 기능 |
 | `SourceChanged` | 학교 쪽 형식이 바뀌었다(실패 단계 이름만) |
-| `Temporary` | 네트워크·요청 제한. 다시 시도할 수 있다 |
+| `Temporary` | 네트워크·요청 제한, AI CLI 설치·업데이트 실패([FS-02 F2](../specs/FS-02_ai_connection.md#f2-설치와-업데이트-s1-1)). 다시 시도할 수 있다 |
 | `Rejected` | 사용자나 학교 서버, 정책이 요청을 거부했다. 사유를 열거형으로 준다: `UserDeclined`(사용자가 확인 창에서 거부), `PolicyDenied`(격리 모드 쓰기 등 앱 정책), `LimitExceeded`(학습 작업의 상한, [learning_adapters §3.4](06_learning_adapters.md#34-상한-security-r4)), `PasswordIncorrect`(학번·비밀번호 거부), `OtpNotRegistered`(OTP 미등록), `OtpIncorrect`(남은 시도 횟수를 알면 함께), `OtpLocked`(풀리는 시각을 알면 함께). 화면은 사유만 보고 안내를 고른다 |
-| `AiUnavailable` | AI를 쓸 수 없다. 사유를 열거형으로 준다: `NotInstalled`, `LoggedOut`, `PlanNotSupported`(Claude Code를 쓸 수 없는 계정. Free 계정은 로그인 단계에서 막혀 여기에 오지 않는다. 판정 입력은 [FS-02 F4](../specs/FS-02_ai_connection.md#f4-플랜-판정-s1-2)), `UsageLimit`(풀리는 시각을 알면 함께). 화면은 사유만 보고 안내를 고른다 |
+| `AiUnavailable` | AI를 쓸 수 없다. 사유를 열거형으로 준다: `NotInstalled`, `UpdateRequired`(설치돼 있지만 최소 버전보다 낮다), `LoggedOut`, `PlanNotSupported`(Claude Code를 쓸 수 없는 계정. Free 계정은 로그인 단계에서 막혀 여기에 오지 않는다. 판정 입력은 [FS-02 F4](../specs/FS-02_ai_connection.md#f4-플랜-판정-s1-2)), `UsageLimit`(풀리는 시각을 알면 함께). 화면은 사유만 보고 안내를 고른다 |
 | `ComponentMissing` | 학습 부품(ffmpeg, 전사 모델, OCR 언어 등)이 없거나 해시·서명 확인에 실패했다. 어떤 부품인지와 **복구 방법**(`Installer`: 설치 프로그램 다시 실행, `OsSettings`: OS 설정에서 설치)을 열거형으로 함께 준다. 화면은 복구 방법만 보고 안내를 고른다 |
 
 - data_access의 공통 오류([data_access §2.4](data_access/README.md))는 출력 포트 구현이 위 오류로 바꾼다.

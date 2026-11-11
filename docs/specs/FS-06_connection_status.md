@@ -32,18 +32,18 @@
 - **출력**: 연결마다 연결 행 ViewModel 하나(상태 종류, headline, 점, 행동 버튼). 상태 종류와 점·버튼의 대응은 [UX Strategy §7.5](../06_ux_strategy.md#75-설정) 표를 그대로 쓴다. 문구는 Foundation이 정한다.
 - **입력과 상태의 대응**:
 
-| 연결 | 입력 | 확인 중 | 설치 안 됨 | 로그인 필요 | 곧 만료 | 사용할 수 없음 | 연결됨 |
-|---|---|---|---|---|---|---|---|
-| 학교 계정 | `GetAuthState`([FS-03 F7](FS-03_school_account.md)) | 확인 중(키체인 `Locked` 포함) | 해당 없음 | 로그아웃, 세션 끊김(자동 갱신 실패 등, [FS-03 F7](FS-03_school_account.md#f7-연결-상태-조회)). 두 경우 모두 "로그인" 버튼이지만 행동이 다르다(로그아웃: 학번·비밀번호부터, 세션 끊김: OTP만). 행 ViewModel이 이 구별 값을 갖는다 | 로그인 유지 쿠키 만료가 2일 안 | 학교 계정 출처(Canvas·LearningX·스마트출결)의 장애(F5, §6) | 연결됨. 학생 이름 |
-| 학생지원시스템 | 세션 상태([FS-04 F7](FS-04_student_portal_login.md)) | 확인 중 | 해당 없음 | 로그인하지 않은 상태의 표시는 미정(§6) | 쓰지 않는다(추론, §6) | 학생지원시스템 장애(추론, §6) | 연결됨 |
-| AI | 설치·계정 상태(FS-02) | 확인 중 | `NotInstalled` | `LoggedOut` | 해당 없음 | `PlanNotSupported`, `UsageLimit`(입력 경로는 §6) | 연결됨. 구독 종류(`subscriptionType`, 예: "Claude Pro로 연결됨") |
+| 연결 | 입력 | 확인 중 | 설치 안 됨 | 업데이트 필요 | 로그인 필요 | 곧 만료 | 사용할 수 없음 | 연결됨 |
+|---|---|---|---|---|---|---|---|---|
+| 학교 계정 | `GetAuthState`([FS-03 F7](FS-03_school_account.md)) | 확인 중(키체인 `Locked` 포함) | 해당 없음 | 해당 없음 | 로그아웃, 세션 끊김(자동 갱신 실패 등, [FS-03 F7](FS-03_school_account.md#f7-연결-상태-조회)). 두 경우 모두 "로그인" 버튼이지만 행동이 다르다(로그아웃: 학번·비밀번호부터, 세션 끊김: OTP만). 행 ViewModel이 이 구별 값을 갖는다 | 로그인 유지 쿠키 만료가 2일 안 | 학교 계정 출처(Canvas·LearningX·스마트출결)의 장애(F5, §6) | 연결됨. 학생 이름 |
+| 학생지원시스템 | 세션 상태([FS-04 F7](FS-04_student_portal_login.md)) | 확인 중 | 해당 없음 | 해당 없음 | 로그인하지 않은 상태의 표시는 미정(§6) | 쓰지 않는다(추론, §6) | 학생지원시스템 장애(추론, §6) | 연결됨 |
+| AI | 설치·계정 상태(FS-02) | 확인 중 | `NotInstalled` | `UpdateRequired` | `LoggedOut` | 해당 없음 | `PlanNotSupported`, `UsageLimit`(입력 경로는 §6) | 연결됨. 구독 종류(`subscriptionType`, 예: "Claude Pro로 연결됨") |
 
 - 판정은 출력 DTO의 값만 본다. 같은 입력이면 항상 같은 ViewModel이 나온다(순수 함수, 샘플 JSON으로 테스트, [presentation §2.1](../layers/03_presentation.md#21-프런트엔드-spa-내부-구조)).
 - 입력 하나를 얻지 못해도(예: AI 설치 감지가 끝나지 않음) 그 행만 "확인 중"이 된다. 다른 행의 판정에는 영향이 없다(추론).
 
 ### F2 연결 알약
 
-- 점이 있는 상태(설치 안 됨, 로그인 필요, 곧 만료, 사용할 수 없음)인 행의 개수를 보인다. 0이면 알약을 보이지 않는다([UX Strategy §7.4](../06_ux_strategy.md#74-대화별-상태)).
+- 점이 있는 상태(설치 안 됨, 업데이트 필요, 로그인 필요, 곧 만료, 사용할 수 없음)인 행의 개수를 보인다. 0이면 알약을 보이지 않는다([UX Strategy §7.4](../06_ux_strategy.md#74-대화별-상태)).
 - 개수는 F1의 결과에서만 센다. 알약이 따로 판정하지 않는다.
 - 알약은 어느 연결이 문제인지 나누어 보이지 않는다. 누르면 설정 > 연결로 간다.
 
@@ -82,7 +82,7 @@
 | 학교 쪽 화면·형식이 바뀜 | `SourceChanged`(실패 단계 이름) | `SourceChanged` | 앱 업데이트가 필요하다는 안내 |
 | 학교 세션 만료 | `SessionExpired` | 없음. 유스케이스가 창 안에서 처리하고, 창을 닫거나 대기 상한을 넘기면 `NeedsLogin` | OTP 창([FS-03 F5](FS-03_school_account.md)), 대화는 "Input" |
 | 학생지원시스템 세션 만료 | `SessionExpired` | 없음. 유스케이스가 창 안에서 처리하고, 창을 닫거나 대기 상한을 넘기면 `NeedsLogin` | 학생지원시스템 로그인 창([FS-04 F4](FS-04_student_portal_login.md)), 대화는 "Input" |
-| AI를 쓸 수 없음 | — | `AiUnavailable(NotInstalled)`, `AiUnavailable(LoggedOut)`, `AiUnavailable(PlanNotSupported)`, `AiUnavailable(UsageLimit)` | 사유별: 설치 / 로그인 / 유료 플랜 안내 / 한도가 풀리는 시각 |
+| AI를 쓸 수 없음 | — | `AiUnavailable(NotInstalled)`, `AiUnavailable(UpdateRequired)`, `AiUnavailable(LoggedOut)`, `AiUnavailable(PlanNotSupported)`, `AiUnavailable(UsageLimit)` | 사유별: 설치 / 업데이트 / 로그인 / 유료 플랜 안내 / 한도가 풀리는 시각 |
 | 상태 입력 하나를 얻지 못함 | — | — | 그 행만 "확인 중". 다른 행은 그대로(추론) |
 
 ## 4. 수용 기준
