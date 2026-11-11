@@ -40,6 +40,7 @@ const allowed = [
   "src/stores/course.ts",
   "src/commands/course.ts",
   "src/commands/core.ts",
+  "src/commands/types.ts",
   "src/commands/sample/course.ts",
 ];
 
@@ -71,6 +72,8 @@ const violations = {
   "src/commands/BadSampleImport.ts": 'from elements of type "commands" to elements of type "commands-sample"',
   "src/commands/BadOutside.ts": 'from elements of type "commands" to entities of module with origin "local"',
   "src/commands/sample/BadTauri.ts": "Tauri API는 commands/의 실제 구현만 부른다",
+  "src/commands/sample/BadCore.ts": 'from elements of type "commands-sample" to file of category "sample-switch"',
+  "src/commands/sample/BadWrapper.ts": 'from elements of type "commands-sample" to elements of type "commands"',
 };
 
 for (const [file, expected] of Object.entries(violations)) {
