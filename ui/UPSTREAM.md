@@ -40,7 +40,7 @@ T3 Code의 소스 파일에는 파일별 라이선스 문구가 없다. 저작�
 | `lib/windowControlsOverlay.ts` | `lib/windowControlsOverlay.ts` | `useNativeTitlebarHeight`만 남기고 Tauri 창 설정에 맞는 값을 돌려주게 바꿨다 | 원본은 Electron(`isElectron`, Window Controls Overlay API, macOS 신호등 영역 52px)을 읽는다. Tauri의 WebView에는 그 API가 없다. `tooltip.tsx`와 `command.tsx`가 쓰는 것은 이 훅 하나라서 두 부품은 고치지 않았다(2026-11-11 결정) |
 
 - 타이틀바 높이는 창 설정(`crates/bin/app/tauri.conf.json`)과 맞아야 한다. 지금 창은 기본 장식이라 타이틀바가 WebView 밖에 있고 값은 0이다. 창을 `titleBarStyle: "Overlay"`로 바꾸면 타이틀바가 WebView 위에 겹치므로 이 값도 바꾼다. 어긋나면 `test/lib.test.js`가 실패한다.
-- `cn`의 tailwind-merge 설정(`text-2xs`~`text-5xs`, `bg-composer-seam-*`)은 `t3code.css`의 토큰과 짝이다. `test/lib.test.js`가 확인한다.
+- `cn`의 tailwind-merge 설정(`text-2xs`~`text-5xs`, `bg-composer-seam-*`)은 `t3code.css`의 토큰과 짝이다. 배경 이미지 클래스(`bg-composer-seam-*`) 설정은 `test/lib.test.js`가 확인한다. 글자 크기 설정은 테스트가 지켜 주지 않는다. tailwind-merge 3.6.0은 설정 없이도 `text-2xs`를 글자 크기로 알아봐서, 설정을 빼도 테스트가 통과한다.
 
 ## 3. 가져오지 않은 파일 (`components/ui/`)
 
