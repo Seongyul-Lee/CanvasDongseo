@@ -128,10 +128,11 @@
 | 상황 | 판정 | application 오류 | 다음 행동(P5) |
 |---|---|---|---|
 | AI가 설치돼 있지 않음 | FS-02 F1 | `AiUnavailable(NotInstalled)` | 앱 메시지 → AI 연결 행(설치) |
+| AI가 최소 버전보다 낮음 | FS-02 F1 | `AiUnavailable(UpdateRequired)` | 앱 메시지 → AI 연결 행(업데이트) |
 | AI 로그아웃 | FS-02 | `AiUnavailable(LoggedOut)` | 앱 메시지 → AI 연결 행(로그인) |
 | 미지원 플랜 | FS-02 F4 | `AiUnavailable(PlanNotSupported)` | 유료 플랜 안내. 대화를 시작하지 않는다 |
 | 사용 한도 | `UsageLimit` 이벤트 | `AiUnavailable(UsageLimit)` | 풀리는 시각(알 때만). 상태 "Limited" |
-| 키체인 허용 대기로 시작 구간 시간 초과 | FS-02 F7 | — | "항상 허용"·잠금 해제 안내, 다시 시도 |
+| AI 자격 증명 읽기 막힘(시작 구간 시간 초과, 또는 기준 시간보다 오래 걸린 뒤 로그아웃) | FS-02 F7 | — | "항상 허용"·잠금 해제 안내, 다시 시도 |
 | 응답 중 오류·프로세스 비정상 종료 | `Error` 이벤트 | 정하지 않음(§6) | 다시 시도. 상태 "Failed" |
 | 지원하지 않는 커맨드 | 분류 "지원 안 함" | — | 지원하지 않는다는 것과 대신 할 일 |
 | 권한 확인 거부 | 학생 거부 | — | 도구가 실행되지 않고 AI가 응답을 이어 간다 |
@@ -173,7 +174,7 @@
 
 - **응답 취소와 진행 중 작업**: F3은 응답 취소가 이 대화에서 시작한 작업을 멈추지 않는다고 본다(추론). S7-1("그동안 다른 대화를 쓸 수 있다")과 S7-2("작업 카드에 취소 버튼")가 작업을 응답과 따로 다루는 데서 추론했다. 작업 시작 직후(`cdx`가 작업 ID를 돌려주기 전) 취소하면 작업을 만들지 않는지 함께 정한다
 - **"Limited"가 풀리는 조건**: F8 표와 AC18은 다음 전송이 성공하면 "Limited"가 사라진다고 본다(추론). 한도가 풀리는 시각이 지나면 전송 없이도 풀어야 하는지, CLI가 한도 해제를 따로 알려 주는지([ai_adapters §8](../layers/05_ai_adapters.md#8-미확인-항목))를 확인한다
-- **AI 응답 실패에 대응하는 application 오류가 없다.** 중립 이벤트 `Error`와 프로세스 비정상 종료가 어느 application 오류로 바뀌는지 [application §4.5](../layers/02_application.md#45-application-오류)에 없다(`AiUnavailable`의 사유도 아니고 `Temporary`는 "네트워크·요청 제한"이다). 아키텍처에 없음 → UX Strategy §12 후보
+- **AI 응답 실패에 대응하는 application 오류가 없다.** 중립 이벤트 `Error`와 프로세스 비정상 종료가 어느 application 오류로 바뀌는지 [application §4.5](../layers/02_application.md#45-application-오류)에 없다(`AiUnavailable`의 사유도 아니고 `Temporary`는 네트워크·요청 제한과 AI CLI 설치·업데이트·로그아웃 실패다). 아키텍처에 없음 → UX Strategy §12 후보
 - **대화 제목을 어떻게 만드는지가 아키텍처에 없다.** 사이드바 행에 제목이 필요하다(T3 Code 구조). 첫 메시지를 자를지, AI에게 맡길지 정한다. 아키텍처에 없음 → UX Strategy §12 후보
 - **"보지 않은 완료"의 기록 위치.** [presentation §1](../layers/03_presentation.md#1-개요)은 대화별 상태의 입력으로 "보지 않은 완료"를 들지만, 학생이 대화를 봤는지를 어디에 두는지(메모리만인지, `ConversationRepository`인지) 정해지지 않았다. 앱을 다시 시작해도 남겨야 하는지 정한다
 - 권한 확인 요청의 stream-json 메시지 형식과, 학생이 오래 응답하지 않을 때 CLI가 기다리는 시간([ai_adapters §8](../layers/05_ai_adapters.md#8-미확인-항목)). F7의 "취소하면 거부로 돌려준다"(추론)는 이 형식을 본 뒤 정한다
